@@ -63,7 +63,7 @@ public class SecurityConfig {
         "ADMIN", "LOGISTICS_MANAGER")
 
     // Tài khoản & vai trò: chỉ ADMIN
-    .requestMatchers("/api/users", "/api/users/*", "/api/roles", "/api/roles/*").hasAnyRole("ADMIN", "CUSTOMER")
+    .requestMatchers("/api/users", "/api/users/*", "/api/roles", "/api/roles/*").hasAnyRole("ADMIN", "CUSTOMER", "LOGISTICS_MANAGER")
 
     // Địa điểm: GET cho mọi tài khoản đã đăng nhập (khách chọn điểm đi/đến); POST/PUT chỉ nhân viên
     .requestMatchers(HttpMethod.POST, "/api/locations").hasAnyRole(
@@ -113,7 +113,26 @@ public class SecurityConfig {
     .requestMatchers(HttpMethod.PATCH, "/api/incidents/*/approve-cost").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.PATCH, "/api/incidents/*", "/api/incidents/*/resolve")
         .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "FLEET_COORDINATOR", "DRIVER_ESCORT")
+    
+    // Invoices: chỉ ADMIN/LOGISTICS_MANAGER lập hóa đơn và cập nhật thanh toán.
+    // Xem: CUSTOMER chỉ thấy hóa đơn của mình (kiểm tra trong InvoiceService); "/my" là API riêng của CUSTOMER.
+    .requestMatchers(HttpMethod.POST, "/api/invoices").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")
+    .requestMatchers(HttpMethod.GET, "/api/my/invoices").hasRole("CUSTOMER")
+    .requestMatchers(HttpMethod.GET, "/api/invoices", "/api/invoices/*", "/api/transport-requests/*/invoice")
+        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER")
+    .requestMatchers(HttpMethod.PATCH, "/api/invoices/*/payment-status").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")
 
+    // Deliveries: chỉ DRIVER_ESCORT ghi nhận bàn giao (phải thuộc phân công của kế hoạch - kiểm tra trong DeliveryService).
+    // Hoàn tất chuyến: tài xế được phân công hoặc quản lý/điều phối viên. Xem: mọi vai trò; CUSTOMER chỉ xem chuyến của mình.
+    .requestMatchers(HttpMethod.POST, "/api/deliveries").hasRole("DRIVER_ESCORT")
+    .requestMatchers(HttpMethod.GET, "/api/deliveries/*", "/api/transport-plans/*/delivery")
+        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")
+    .requestMatchers(HttpMethod.PATCH, "/api/transport-plans/*/complete")
+        .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "FLEET_COORDINATOR", "DRIVER_ESCORT")
+
+    
+    // Audit logs: chỉ ADMIN được xem nhật ký hệ thống.
+    .requestMatchers(HttpMethod.GET, "/api/audit-logs", "/api/audit-logs/*").hasRole("LOGISTICS_MANAGER")
     // Các API còn lại phải đăng nhập
     .anyRequest().authenticated())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
