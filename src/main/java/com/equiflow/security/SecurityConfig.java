@@ -92,6 +92,28 @@ public class SecurityConfig {
     .requestMatchers(HttpMethod.DELETE, "/api/documents/*").hasAnyRole(
         "CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST")
         
+    // Tracking: chỉ tài xế/người đi kèm (DRIVER_ESCORT) ghi hành trình - phải thuộc phân công của kế hoạch (kiểm tra trong TrackingService).
+    // Xem lịch sử / vị trí mới nhất: mọi vai trò; CUSTOMER chỉ xem kế hoạch của yêu cầu của mình (kiểm tra trong TrackingService).
+    .requestMatchers(HttpMethod.POST, "/api/tracking").hasRole("DRIVER_ESCORT")
+    .requestMatchers(HttpMethod.GET, "/api/transport-plans/*/tracking", "/api/transport-plans/*/tracking/latest")
+        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")
+
+    // Health logs: chỉ DRIVER_ESCORT ghi (phải thuộc phân công của kế hoạch - kiểm tra trong HealthLogService).
+    // Xem: mọi vai trò; CUSTOMER chỉ xem ngựa/kế hoạch của mình (kiểm tra trong HealthLogService).
+    .requestMatchers(HttpMethod.POST, "/api/health-logs").hasAnyRole("DRIVER_ESCORT","CUSTOMER")
+    .requestMatchers(HttpMethod.GET, "/api/transport-plans/*/health-logs", "/api/horses/*/health-logs", "/api/health-logs/*")
+        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")
+    
+    // Incidents: DRIVER_ESCORT báo cáo/cập nhật/đánh dấu đã xử lý sự cố của chuyến mình (kiểm tra phân công trong IncidentService).
+    // Quản lý, điều phối viên cập nhật/xử lý mọi chuyến; chỉ ADMIN/LOGISTICS_MANAGER duyệt chi phí phát sinh.
+    // Xem: mọi vai trò; CUSTOMER chỉ thấy sự cố thuộc yêu cầu của mình (kiểm tra trong IncidentService).
+    .requestMatchers(HttpMethod.POST, "/api/incidents").hasRole("DRIVER_ESCORT")
+    .requestMatchers(HttpMethod.GET, "/api/incidents", "/api/incidents/*", "/api/transport-plans/*/incidents")
+        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")
+    .requestMatchers(HttpMethod.PATCH, "/api/incidents/*/approve-cost").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")
+    .requestMatchers(HttpMethod.PATCH, "/api/incidents/*", "/api/incidents/*/resolve")
+        .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "FLEET_COORDINATOR", "DRIVER_ESCORT")
+
     // Các API còn lại phải đăng nhập
     .anyRequest().authenticated())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
