@@ -5,6 +5,8 @@ import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -16,6 +18,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -38,6 +41,9 @@ public class FileStorageService {
             "doc", "application/msword",
             "docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
 
+    /** File đã lưu, dùng để controller trả về cho client. */
+    public record StoredFile(Resource resource, String fileName, String contentType) {}
+
     private final Path root;
 
     public FileStorageService(@Value("${app.upload.dir:uploads}") String uploadDir) {
@@ -53,8 +59,28 @@ public class FileStorageService {
         }
     }
 
-    /** Kiểm tra rồi lưu file, trả về khóa file để ghi vào file_url. */
+    /** Hồ sơ ngựa: PDF, JPG, PNG, DOC, DOCX. Trả về khóa file để ghi vào file_url. */
     public String store(MultipartFile file) {
+        return store(file, CONTENT_TYPES.keySet(), "Chỉ chấp nhận file PDF, JPG, PNG, DOC, DOCX");
+    }
+
+    /** Hóa đơn: chỉ PDF. */
+    public String storePdf(MultipartFile file) {
+        return store(file, Set.of("pdf"), "Hóa đơn chỉ chấp nhận file PDF");
+    }
+
+    /** Ảnh ngựa: chỉ JPG, PNG. */
+    public String storeImage(MultipartFile file) {
+        return store(file, Set.of("jpg", "jpeg", "png"), "Ảnh chỉ chấp nhận file JPG hoặc PNG");
+    }
+
+    /** Mở file đã lưu theo khóa (404 nếu file không còn trên máy chủ). */
+    public StoredFile open(String key) {
+        return new StoredFile(new FileSystemResource(load(key)), originalName(key), contentType(key));
+    }
+
+    /** Kiểm tra rồi lưu file, trả về khóa file để ghi vào cột lưu đường dẫn. */
+    private String store(MultipartFile file, Set<String> allowedExts, String badTypeMessage) {
         if (file == null || file.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng chọn file để tải lên");
         }
@@ -63,8 +89,8 @@ public class FileStorageService {
         }
         String name = cleanName(file.getOriginalFilename());
         String ext = extensionOf(name);
-        if (!CONTENT_TYPES.containsKey(ext)) {
-            throw new ApiException(HttpStatus.BAD_REQUEST, "Chỉ chấp nhận file PDF, JPG, PNG, DOC, DOCX");
+        if (!allowedExts.contains(ext)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, badTypeMessage);
         }
 
         try (InputStream in = file.getInputStream()) {

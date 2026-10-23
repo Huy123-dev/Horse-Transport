@@ -43,6 +43,10 @@ public class Horse {
     @Column(nullable = false, length = 10)
     private String gender;
 
+    /** Khóa file ảnh do hệ thống lưu (nullable). */
+    @Column(name = "image_url", length = 512)
+    private String imageUrl;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

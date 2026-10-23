@@ -114,11 +114,12 @@ public class SecurityConfig {
     .requestMatchers(HttpMethod.PATCH, "/api/incidents/*", "/api/incidents/*/resolve")
         .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "FLEET_COORDINATOR", "DRIVER_ESCORT")
     
-    // Invoices: chỉ ADMIN/LOGISTICS_MANAGER lập hóa đơn và cập nhật thanh toán.
+   // Invoices: chỉ ADMIN/LOGISTICS_MANAGER lập hóa đơn và cập nhật thanh toán.
     // Xem: CUSTOMER chỉ thấy hóa đơn của mình (kiểm tra trong InvoiceService); "/my" là API riêng của CUSTOMER.
     .requestMatchers(HttpMethod.POST, "/api/invoices").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.GET, "/api/my/invoices").hasRole("CUSTOMER")
-    .requestMatchers(HttpMethod.GET, "/api/invoices", "/api/invoices/*", "/api/transport-requests/*/invoice")
+    .requestMatchers(HttpMethod.GET, "/api/invoices", "/api/invoices/*", "/api/invoices/*/file",
+        "/api/transport-requests/*/invoice")
         .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.PATCH, "/api/invoices/*/payment-status").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")
 

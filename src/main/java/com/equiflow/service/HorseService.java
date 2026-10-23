@@ -11,6 +11,7 @@ import com.equiflow.repository.UserRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.text.Normalizer;
 import java.util.List;
@@ -26,14 +27,18 @@ public class HorseService {
 
     private final HorseRepository horseRepository;
     private final UserRepository userRepository;
+    private final FileStorageService storage;
 
-    public HorseService(HorseRepository horseRepository, UserRepository userRepository) {
+    public HorseService(HorseRepository horseRepository, UserRepository userRepository, FileStorageService storage) {
         this.horseRepository = horseRepository;
         this.userRepository = userRepository;
+        this.storage = storage;
     }
 
     // ================= CREATE (staff + customer) =================
-    public HorseResponse create(HorseRequest req, UUID currentUserId, boolean customer) {
+    /** image có thể null: ngựa chưa có ảnh. */
+    public HorseResponse create(HorseRequest req, MultipartFile image, UUID currentUserId, boolean customer) {
+        validate(req);
         String microchip = req.microchipId().trim();
         if (horseRepository.existsByMicrochipId(microchip)) {
             throw new ApiException(HttpStatus.CONFLICT, "Mã microchip đã tồn tại");
@@ -52,7 +57,15 @@ public class HorseService {
         Horse horse = new Horse();
         apply(horse, req, microchip);
         horse.setOwnerUserId(ownerId);
-        return toResponse(save(horse));
+
+        String imageKey = hasFile(image) ? storage.storeImage(image) : null; // lưu file sau khi mọi kiểm tra đã qua
+        try {
+            horse.setImageUrl(imageKey);
+            return toResponse(save(horse));
+        } catch (RuntimeException e) {
+            if (imageKey != null) storage.delete(imageKey);
+            throw e;
+        }
     }
 
     // ================= READ (staff) =================
@@ -70,7 +83,9 @@ public class HorseService {
     }
 
     // ================= UPDATE (staff + customer) =================
-    public HorseResponse update(UUID id, HorseRequest req, UUID currentUserId, boolean customer) {
+    /** image có thể null: giữ ảnh cũ. Có image: thay ảnh cũ bằng ảnh mới. */
+    public HorseResponse update(UUID id, HorseRequest req, MultipartFile image, UUID currentUserId, boolean customer) {
+        validate(req);
         Horse horse = getOrThrow(id);
         // khách hàng chỉ sửa được ngựa của mình; ngựa của người khác trả 404 như không tồn tại
         if (customer && !currentUserId.equals(horse.getOwnerUserId())) {
@@ -88,7 +103,19 @@ public class HorseService {
             requireUser(req.ownerUserId());
             horse.setOwnerUserId(req.ownerUserId());
         }
-        return toResponse(save(horse));
+
+        String oldKey = horse.getImageUrl();
+        String newKey = hasFile(image) ? storage.storeImage(image) : null;
+        HorseResponse response;
+        try {
+            if (newKey != null) horse.setImageUrl(newKey);
+            response = toResponse(save(horse));
+        } catch (RuntimeException e) {
+            if (newKey != null) storage.delete(newKey);
+            throw e;
+        }
+        if (newKey != null && oldKey != null) storage.delete(oldKey);
+        return response;
     }
 
     // ================= DELETE (staff) =================
@@ -101,10 +128,40 @@ public class HorseService {
             throw new ApiException(HttpStatus.CONFLICT,
                     "Không thể xóa ngựa vì đã có dữ liệu liên quan (đơn vận chuyển, hồ sơ, kiểm dịch hoặc nhật ký sức khỏe)");
         }
+        if (horse.getImageUrl() != null) storage.delete(horse.getImageUrl());
         return new MessageResponse("Xóa ngựa thành công");
     }
 
+    // ================= IMAGE =================
+    /** Xem ảnh ngựa. Customer chỉ xem được ảnh ngựa của mình; ngựa người khác trả 404 như không tồn tại. */
+    public FileStorageService.StoredFile findImage(UUID id, UUID currentUserId, boolean customer) {
+        Horse horse = getOrThrow(id);
+        if (customer && !currentUserId.equals(horse.getOwnerUserId())) {
+            throw notFound();
+        }
+        if (horse.getImageUrl() == null) {
+            throw new ApiException(HttpStatus.NOT_FOUND, "Ngựa chưa có ảnh");
+        }
+        return storage.open(horse.getImageUrl());
+    }
+
     // ================= helpers =================
+    /** multipart không đi qua @Valid nên kiểm tra thủ công, cùng quy tắc với HorseRequest. */
+    private static void validate(HorseRequest req) {
+        requireText(req.microchipId(), 50, "Vui lòng nhập mã microchip", "Mã microchip tối đa 50 ký tự");
+        requireText(req.name(), 100, "Vui lòng nhập tên ngựa", "Tên ngựa tối đa 100 ký tự");
+        requireText(req.gender(), 20, "Vui lòng chọn giới tính", "Giới tính không hợp lệ");
+    }
+
+    private static void requireText(String value, int max, String blankMessage, String tooLongMessage) {
+        if (value == null || value.isBlank()) throw new ApiException(HttpStatus.BAD_REQUEST, blankMessage);
+        if (value.trim().length() > max) throw new ApiException(HttpStatus.BAD_REQUEST, tooLongMessage);
+    }
+
+    private static boolean hasFile(MultipartFile f) {
+        return f != null && !f.isEmpty();
+    }
+
     private Horse getOrThrow(UUID id) {
         return horseRepository.findById(id).orElseThrow(HorseService::notFound);
     }
@@ -183,6 +240,7 @@ public class HorseService {
     private static HorseResponse build(Horse h, String ownerName) {
         return new HorseResponse(h.getHorseId(), h.getMicrochipId(), h.getName(), h.getGender(),
                 h.getPedigree(), h.getMedicalHistory(), h.getAllergies(), h.getTemperament(),
-                h.getOwnerUserId(), ownerName, h.getCreatedAt());
+                h.getOwnerUserId(), ownerName, h.getCreatedAt(),
+                h.getImageUrl() == null ? null : "/api/horses/" + h.getHorseId() + "/image");
     }
 }

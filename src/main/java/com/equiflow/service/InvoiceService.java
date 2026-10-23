@@ -8,6 +8,7 @@ import com.equiflow.repository.InvoiceRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -39,42 +40,75 @@ public class InvoiceService {
 
     private final InvoiceRepository repository;
     private final RequestAccessService access;
+    private final FileStorageService storage;
 
-    public InvoiceService(InvoiceRepository repository, RequestAccessService access) {
+    public InvoiceService(InvoiceRepository repository, RequestAccessService access, FileStorageService storage) {
         this.repository = repository;
         this.access = access;
+        this.storage = storage;
     }
 
     // ================= CREATE =================
+    /**
+     * Lập hóa đơn kèm file PDF tải lên. amount/currency để trống thì lấy theo báo giá của yêu cầu vận chuyển.
+     * Chỉ lập được cho yêu cầu đã phê duyệt, mỗi yêu cầu một hóa đơn.
+     */
     @Transactional
-    public InvoiceDto.Response create(InvoiceDto.CreateRequest req) {
-        TransportRequest request = access.getApprovedOrThrow(req.requestId());
+    public InvoiceDto.Response create(UUID requestId, BigDecimal amountInput, String currencyInput,
+                                      String paymentMethodInput, MultipartFile file) {
+        validateInput(amountInput, currencyInput, paymentMethodInput);
+        TransportRequest request = access.getApprovedOrThrow(requestId);
         if (repository.existsByRequestId(request.getRequestId())) {
             throw new ApiException(HttpStatus.CONFLICT, "Yêu cầu vận chuyển này đã có hóa đơn");
         }
 
-        BigDecimal amount = req.amount() != null ? req.amount() : request.getEstimatedAmount();
+        BigDecimal amount = amountInput != null ? amountInput : request.getEstimatedAmount();
         if (amount == null || amount.signum() <= 0) {
             throw new ApiException(HttpStatus.BAD_REQUEST,
                     "Vui lòng nhập số tiền hóa đơn (yêu cầu chưa có báo giá để lấy mặc định)");
         }
-        String currency = StatusSupport.blankToNull(req.currency()) != null
-                ? req.currency().trim().toUpperCase(Locale.ROOT)
+        String currency = StatusSupport.blankToNull(currencyInput) != null
+                ? currencyInput.trim().toUpperCase(Locale.ROOT)
                 : request.getCurrency();
 
-        Invoice inv = new Invoice();
-        inv.setRequestId(request.getRequestId());
-        inv.setAmount(amount);
-        inv.setCurrency(currency);
-        inv.setPdfUrl(req.pdfUrl().trim());
-        inv.setPaymentMethod(StatusSupport.blankToNull(req.paymentMethod()));
-        inv.setPaymentStatus(UNPAID);
-        inv = repository.saveAndFlush(inv);
+        String key = storage.storePdf(file); // lưu file sau khi mọi kiểm tra đã qua, tránh để lại file mồ côi
+        try {
+            Invoice inv = new Invoice();
+            inv.setRequestId(request.getRequestId());
+            inv.setAmount(amount);
+            inv.setCurrency(currency);
+            inv.setPdfUrl(key);
+            inv.setPaymentMethod(StatusSupport.blankToNull(paymentMethodInput));
+            inv.setPaymentStatus(UNPAID);
+            inv = repository.saveAndFlush(inv);
 
-        access.notify(request.getCustomerId(), "INVOICE", "Hóa đơn mới",
-                "Hóa đơn " + amount.toPlainString() + " " + currency + " đã được lập cho yêu cầu vận chuyển của bạn.",
-                "invoices", inv.getInvoiceId());
-        return toResponse(inv);
+            access.notify(request.getCustomerId(), "INVOICE", "Hóa đơn mới",
+                    "Hóa đơn " + amount.toPlainString() + " " + currency + " đã được lập cho yêu cầu vận chuyển của bạn.",
+                    "invoices", inv.getInvoiceId());
+            return toResponse(inv);
+        } catch (RuntimeException e) {
+            storage.delete(key);
+            throw e;
+        }
+    }
+
+    private static void validateInput(BigDecimal amount, String currency, String paymentMethod) {
+        if (amount != null) {
+            if (amount.signum() <= 0) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Số tiền phải lớn hơn 0");
+            }
+            if (amount.scale() > 2 || amount.precision() - amount.scale() > 10) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Số tiền tối đa 10 chữ số nguyên và 2 chữ số thập phân");
+            }
+        }
+        String cur = StatusSupport.blankToNull(currency);
+        if (cur != null && !cur.matches("^[A-Za-z]{3}$")) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Mã tiền tệ phải gồm 3 chữ cái (ví dụ JPY)");
+        }
+        if (paymentMethod != null && paymentMethod.trim().length() > 50) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Phương thức thanh toán tối đa 50 ký tự");
+        }
     }
 
     // ================= READ =================
@@ -121,6 +155,18 @@ public class InvoiceService {
         return toResponse(inv);
     }
 
+    /** Tải/xem file PDF của hóa đơn (cùng quy tắc quyền như xem chi tiết). */
+    @Transactional(readOnly = true)
+    public FileStorageService.StoredFile download(UUID id, UUID currentUserId, boolean customer) {
+        Invoice inv = repository.findById(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy hóa đơn"));
+        if (customer) access.assertCustomerOwns(inv.getRequestId(), currentUserId);
+        if (!storage.isStoredKey(inv.getPdfUrl())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Hóa đơn này là liên kết ngoài, hãy mở trực tiếp pdfUrl");
+        }
+        return storage.open(inv.getPdfUrl());
+    }
+
     // ================= UPDATE PAYMENT STATUS =================
     @Transactional
     public InvoiceDto.Response updatePaymentStatus(UUID id, InvoiceDto.PaymentStatusRequest req) {
@@ -156,7 +202,10 @@ public class InvoiceService {
 
     // ================= helpers =================
     private InvoiceDto.Response toResponse(Invoice i) {
+        boolean stored = storage.isStoredKey(i.getPdfUrl());
+        String pdfUrl = stored ? "/api/invoices/" + i.getInvoiceId() + "/file" : i.getPdfUrl();
+        String fileName = stored ? storage.originalName(i.getPdfUrl()) : null;
         return new InvoiceDto.Response(i.getInvoiceId(), i.getRequestId(), i.getAmount(), i.getCurrency(),
-                i.getPdfUrl(), i.getPaymentStatus(), i.getPaymentMethod(), i.getIssuedAt(), i.getPaidAt());
+                pdfUrl, fileName, i.getPaymentStatus(), i.getPaymentMethod(), i.getIssuedAt(), i.getPaidAt());
     }
 }

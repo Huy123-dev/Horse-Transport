@@ -3,11 +3,15 @@ package com.equiflow.controller;
 import com.equiflow.dto.InvoiceDto;
 import com.equiflow.service.InvoiceService;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -28,10 +32,19 @@ public class InvoiceController {
         this.service = service;
     }
 
-    /** Tạo hóa đơn cho yêu cầu đã phê duyệt (ADMIN / LOGISTICS_MANAGER) */
-    @PostMapping("/invoices")
-    public ResponseEntity<InvoiceDto.Response> create(@Valid @RequestBody InvoiceDto.CreateRequest req) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
+    /**
+     * Tạo hóa đơn cho yêu cầu đã phê duyệt (ADMIN / LOGISTICS_MANAGER), multipart/form-data.
+     * file: PDF hóa đơn chọn từ máy. amount/currency bỏ trống thì lấy theo báo giá của yêu cầu.
+     */
+    @PostMapping(value = "/invoices", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<InvoiceDto.Response> create(
+            @RequestParam("requestId") UUID requestId,
+            @RequestParam("file") MultipartFile file,
+            @RequestParam(value = "amount", required = false) BigDecimal amount,
+            @RequestParam(value = "currency", required = false) String currency,
+            @RequestParam(value = "paymentMethod", required = false) String paymentMethod) {
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(service.create(requestId, amount, currency, paymentMethod, file));
     }
 
     /** Danh sách theo quyền (lọc tùy chọn ?paymentStatus=UNPAID|PAID|REFUNDED) */
@@ -44,6 +57,12 @@ public class InvoiceController {
     @GetMapping("/invoices/{id}")
     public InvoiceDto.Response getById(@PathVariable UUID id, Authentication auth) {
         return service.findById(id, userId(auth), isCustomer(auth));
+    }
+
+    /** Xem/tải file PDF của hóa đơn */
+    @GetMapping("/invoices/{id}/file")
+    public ResponseEntity<Resource> download(@PathVariable UUID id, Authentication auth) {
+        return FileResponses.of(service.download(id, userId(auth), isCustomer(auth)));
     }
 
     /** Xem hóa đơn theo yêu cầu vận chuyển */
