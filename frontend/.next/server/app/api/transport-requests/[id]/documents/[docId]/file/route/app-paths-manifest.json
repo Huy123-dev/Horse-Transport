@@ -1,3 +1,0 @@
-{
-  "/api/transport-requests/[id]/documents/[docId]/file/route": "app/api/transport-requests/[id]/documents/[docId]/file/route.js"
-}
