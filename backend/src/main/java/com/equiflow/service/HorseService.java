@@ -1,0 +1,214 @@
+package com.equiflow.service;
+
+import com.equiflow.dto.HorseRequest;
+import com.equiflow.dto.HorseResponse;
+import com.equiflow.dto.MessageResponse;
+import com.equiflow.entity.Horse;
+import com.equiflow.entity.User;
+import com.equiflow.exception.ApiException;
+import com.equiflow.repository.HorseRepository;
+import com.equiflow.repository.UserRepository;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.text.Normalizer;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+public class HorseService {
+
+    private final HorseRepository horseRepository;
+    private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
+    private final CrewAssignmentAccessService crewAccess;
+
+    public HorseService(HorseRepository horseRepository, UserRepository userRepository,
+                        FileStorageService fileStorageService, CrewAssignmentAccessService crewAccess) {
+        this.horseRepository = horseRepository;
+        this.userRepository = userRepository;
+        this.fileStorageService = fileStorageService;
+        this.crewAccess = crewAccess;
+    }
+
+    public HorseResponse create(HorseRequest req, UUID currentUserId, boolean customer) {
+        String microchip = req.microchipId().trim();
+        if (horseRepository.existsByMicrochipId(microchip)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Mã microchip đã tồn tại");
+        }
+
+        UUID ownerId;
+        if (customer) {
+            ownerId = currentUserId;
+        } else {
+            ownerId = req.ownerUserId();
+            if (ownerId != null) {
+                requireUser(ownerId);
+            }
+        }
+
+        Horse horse = new Horse();
+        apply(horse, req, microchip);
+        horse.setOwnerUserId(ownerId);
+        return toResponse(save(horse));
+    }
+
+    @Transactional(readOnly = true)
+    public List<HorseResponse> findAll(UUID currentUserId, boolean customer) {
+        return findAll(currentUserId, customer, false);
+    }
+
+    @Transactional(readOnly = true)
+    public List<HorseResponse> findAll(UUID currentUserId, boolean customer, boolean assignedCrew) {
+        if (customer) {
+            return findMine(currentUserId);
+        }
+        if (assignedCrew) {
+            Set<UUID> horseIds = crewAccess.assignedHorseIds(currentUserId);
+            return horseIds.isEmpty() ? List.of()
+                    : toResponses(horseRepository.findByHorseIdInOrderByCreatedAtDesc(horseIds));
+        }
+        return toResponses(horseRepository.findAllByOrderByCreatedAtDesc());
+    }
+
+    @Transactional(readOnly = true)
+    public HorseResponse findById(UUID id, UUID currentUserId, boolean customer) {
+        return findById(id, currentUserId, customer, false);
+    }
+
+    @Transactional(readOnly = true)
+    public HorseResponse findById(UUID id, UUID currentUserId, boolean customer, boolean assignedCrew) {
+        if (assignedCrew && !crewAccess.assignedHorseIds(currentUserId).contains(id)) {
+            throw notFound();
+        }
+        Horse horse = getOrThrow(id);
+        if (customer && !currentUserId.equals(horse.getOwnerUserId())) {
+            throw notFound();
+        }
+        return toResponse(horse);
+    }
+
+    public List<HorseResponse> findMine(UUID userId) {
+        return toResponses(horseRepository.findByOwnerUserIdOrderByCreatedAtDesc(userId));
+    }
+
+    public HorseResponse update(UUID id, HorseRequest req, UUID currentUserId, boolean customer) {
+        Horse horse = getOrThrow(id);
+        if (customer && !currentUserId.equals(horse.getOwnerUserId())) {
+            throw notFound();
+        }
+
+        String microchip = req.microchipId().trim();
+        if (horseRepository.existsByMicrochipIdAndHorseIdNot(microchip, id)) {
+            throw new ApiException(HttpStatus.CONFLICT, "Mã microchip đã tồn tại");
+        }
+
+        apply(horse, req, microchip);
+        if (!customer && req.ownerUserId() != null) {
+            requireUser(req.ownerUserId());
+            horse.setOwnerUserId(req.ownerUserId());
+        }
+        return toResponse(save(horse));
+    }
+
+    public MessageResponse delete(UUID id) {
+        Horse horse = getOrThrow(id);
+        try {
+            horseRepository.delete(horse);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Không thể xóa ngựa vì đã có dữ liệu liên quan (đơn vận chuyển, hồ sơ, kiểm dịch hoặc nhật ký sức khỏe)");
+        }
+        return new MessageResponse("Xóa ngựa thành công");
+    }
+
+    private Horse getOrThrow(UUID id) {
+        return horseRepository.findById(id).orElseThrow(HorseService::notFound);
+    }
+
+    private static ApiException notFound() {
+        return new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy ngựa");
+    }
+
+    private void requireUser(UUID userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Chủ sở hữu không tồn tại");
+        }
+    }
+
+    private Horse save(Horse horse) {
+        try {
+            return horseRepository.saveAndFlush(horse);
+        } catch (DataIntegrityViolationException e) {
+            throw new ApiException(HttpStatus.CONFLICT, "Mã microchip đã tồn tại");
+        }
+    }
+
+    private void apply(Horse horse, HorseRequest req, String microchip) {
+        String imageUrl = blankToNull(req.imageUrl());
+        if (imageUrl != null) imageUrl = fileStorageService.normalizePublicImageUrl(imageUrl);
+        horse.setMicrochipId(microchip);
+        horse.setName(req.name().trim());
+        horse.setGender(normalizeGender(req.gender()));
+        horse.setPedigree(blankToNull(req.pedigree()));
+        horse.setMedicalHistory(blankToNull(req.medicalHistory()));
+        horse.setAllergies(blankToNull(req.allergies()));
+        horse.setTemperament(blankToNull(req.temperament()));
+        horse.setImageUrl(imageUrl);
+    }
+
+    private static String blankToNull(String s) {
+        if (s == null) return null;
+        String t = s.trim();
+        return t.isEmpty() ? null : t;
+    }
+
+    /**
+     * Cột gender là VARCHAR(10), dữ liệu mẫu dùng Duc / Cai / Thien (không dấu).
+     * Chấp nhận thêm "Đực/Cái/Thiến" có dấu và MALE/FEMALE/GELDING, rồi chuẩn hóa về 3 giá trị trên.
+     */
+    private static String normalizeGender(String raw) {
+        String s = Normalizer.normalize(raw.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .toLowerCase(Locale.ROOT)
+                .replace('đ', 'd');
+        return switch (s) {
+            case "duc", "male", "stallion" -> "Duc";
+            case "cai", "female", "mare" -> "Cai";
+            case "thien", "gelding" -> "Thien";
+            default -> throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Giới tính không hợp lệ (chấp nhận: Duc, Cai, Thien)");
+        };
+    }
+
+    private HorseResponse toResponse(Horse h) {
+        String ownerName = h.getOwnerUserId() == null ? null
+                : userRepository.findById(h.getOwnerUserId()).map(User::getName).orElse(null);
+        return build(h, ownerName);
+    }
+
+    private List<HorseResponse> toResponses(List<Horse> horses) {
+        Set<UUID> ownerIds = horses.stream()
+                .map(Horse::getOwnerUserId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        Map<UUID, String> names = userRepository.findAllById(ownerIds).stream()
+                .collect(Collectors.toMap(User::getUserId, User::getName));
+        return horses.stream()
+                .map(h -> build(h, h.getOwnerUserId() == null ? null : names.get(h.getOwnerUserId())))
+                .toList();
+    }
+
+    private static HorseResponse build(Horse h, String ownerName) {
+        return new HorseResponse(h.getHorseId(), h.getMicrochipId(), h.getName(), h.getGender(),
+                h.getPedigree(), h.getMedicalHistory(), h.getAllergies(), h.getTemperament(),
+                h.getOwnerUserId(), ownerName, h.getCreatedAt(), h.getImageUrl());
+    }
+}
