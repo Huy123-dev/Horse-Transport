@@ -21,6 +21,18 @@ public interface TransportAssignmentRepository extends JpaRepository<TransportAs
     List<UUID> findAssignedPlanIds(@Param("userId") UUID userId);
 
     @Query("""
+            select distinct a.planId from TransportAssignment a
+            where a.driverUserId = :userId
+            """)
+    List<UUID> findDriverPlanIds(@Param("userId") UUID userId);
+
+    @Query("""
+            select distinct a.planId from TransportAssignment a
+            where a.attendantUserId = :userId
+            """)
+    List<UUID> findAttendantPlanIds(@Param("userId") UUID userId);
+
+    @Query("""
             select count(a) from TransportAssignment a
             where a.planId = :planId and (a.driverUserId = :userId or a.attendantUserId = :userId)
             """)

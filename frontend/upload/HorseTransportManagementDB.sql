@@ -1,4 +1,4 @@
-/* ============================================================================
+﻿/* ============================================================================
    HorseTransportManagementDB.sql
    Database + 22 bang + PK + FK + Index + du lieu mau
    Cap nhat theo 5 vai tro nghiep vu va 6 luong xu ly (Flow 1-6)
@@ -71,12 +71,14 @@ CREATE TABLE users (
     name               NVARCHAR(100)    NOT NULL,
     phone_number       VARCHAR(20)      NULL,
     organization_name  NVARCHAR(150)    NULL,
+    staff_type         NVARCHAR(20)     NULL,
     created_at         DATETIME2        NOT NULL CONSTRAINT DF_users_created DEFAULT SYSUTCDATETIME(),
     updated_at         DATETIME2        NOT NULL CONSTRAINT DF_users_updated DEFAULT SYSUTCDATETIME(),
     CONSTRAINT PK_users PRIMARY KEY (user_id),
     CONSTRAINT UQ_users_email UNIQUE (email),
     CONSTRAINT UQ_users_phone_number UNIQUE (phone_number),
-    CONSTRAINT FK_users_role FOREIGN KEY (role_id) REFERENCES roles (role_id)
+    CONSTRAINT FK_users_role FOREIGN KEY (role_id) REFERENCES roles (role_id),
+    CONSTRAINT CK_users_staff_type CHECK (staff_type IS NULL OR staff_type IN ('DRIVER', 'ESCORT'))
 );
 GO
 
@@ -91,6 +93,11 @@ CREATE TABLE horses (
     allergies         NVARCHAR(MAX)    NULL,
     temperament       NVARCHAR(MAX)    NULL,
     gender            VARCHAR(10)      NOT NULL,
+    breed             NVARCHAR(100)    NULL,
+    birth_year        INT              NULL,
+    weight_kg         DECIMAL(6, 2)    NULL,
+    height_cm         DECIMAL(5, 1)    NULL,
+    recovery_days     INT              NULL,
     created_at        DATETIME2        NOT NULL CONSTRAINT DF_horses_created DEFAULT SYSUTCDATETIME(),
     CONSTRAINT PK_horses PRIMARY KEY (horse_id),
     CONSTRAINT UQ_horses_microchip UNIQUE (microchip_id),
@@ -484,14 +491,14 @@ INSERT INTO locations (location_id, name, type, latitude, longitude, capacity, c
 GO
 
 /* ---------- 4.4 users [CAP NHAT] mo rong thanh 7 nguoi dung, gan dung 5 vai tro nghiep vu ---------- */
-INSERT INTO users (user_id, email, password_hash, role_id, name, phone_number, organization_name) VALUES
-('c3000000-0000-0000-0000-000000000001', 'admin@example.com',              '$2a$hash_admin',      'ADMIN',                N'Nguyen Van An',    '0901000001', NULL),
-('c3000000-0000-0000-0000-000000000002', 'logistics.manager@example.com',  '$2a$hash_manager',    'LOGISTICS_MANAGER',    N'Tran Thi Hoa',     '0901000002', NULL),
-('c3000000-0000-0000-0000-000000000003', 'driver@example.com',             '$2a$hash_driver',     'DRIVER_ESCORT',        N'Le Van Binh',      '0901000003', NULL),
-('c3000000-0000-0000-0000-000000000004', 'escort.vet@example.com',         '$2a$hash_vet',        'DRIVER_ESCORT',        N'Pham Van Cuong',   '0901000004', NULL),
-('c3000000-0000-0000-0000-000000000005', 'customer@example.com',           '$2a$hash_customer',   'CUSTOMER',             N'Hoang Van Dung',   '0908123456', N'Trai Cu Chi Stable'),
-('c3000000-0000-0000-0000-000000000006', 'specialist@example.com',         '$2a$hash_specialist', 'TRANSPORT_SPECIALIST', N'Ngo Thi Mai',      '0901000006', NULL),
-('c3000000-0000-0000-0000-000000000007', 'fleet.coordinator@example.com',  '$2a$hash_coordinator','FLEET_COORDINATOR',    N'Dang Van Nam',     '0901000007', NULL);
+INSERT INTO users (user_id, email, password_hash, role_id, name, phone_number, organization_name, staff_type) VALUES
+('c3000000-0000-0000-0000-000000000001', 'admin@example.com',              '$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m',      'ADMIN',                N'Nguyen Van An',    '0901000001', NULL, NULL),
+('c3000000-0000-0000-0000-000000000002', 'logistics.manager@example.com',  '$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m',    'LOGISTICS_MANAGER',    N'Tran Thi Hoa',     '0901000002', NULL, NULL),
+('c3000000-0000-0000-0000-000000000003', 'driver@example.com',             '$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m',     'DRIVER_ESCORT',        N'Le Van Binh',      '0901000003', NULL, 'DRIVER'),
+('c3000000-0000-0000-0000-000000000004', 'escort.vet@example.com',         '$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m',        'DRIVER_ESCORT',        N'Pham Van Cuong',   '0901000004', NULL, 'ESCORT'),
+('c3000000-0000-0000-0000-000000000005', 'customer@example.com',           '$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m',   'CUSTOMER',             N'Hoang Van Dung',   '0908123456', N'Trai Cu Chi Stable', NULL),
+('c3000000-0000-0000-0000-000000000006', 'specialist@example.com',         '$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m', 'TRANSPORT_SPECIALIST', N'Ngo Thi Mai',      '0901000006', NULL, NULL),
+('c3000000-0000-0000-0000-000000000007', 'fleet.coordinator@example.com',  '$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m','FLEET_COORDINATOR',    N'Dang Van Nam',     '0901000007', NULL, NULL);
 GO
 
 /* ---------- 4.5 horses ---------- */
@@ -693,3 +700,4 @@ GO
 /* ============================================================================
    END OF SCRIPT
    ============================================================================ */
+

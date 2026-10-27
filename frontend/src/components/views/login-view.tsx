@@ -21,6 +21,7 @@ interface LoginResponse {
     phoneNumber: string | null;
     organizationName: string | null;
     roleId: string;
+    staffType?: "DRIVER" | "ESCORT" | null;
   };
 }
 
@@ -42,7 +43,7 @@ export function LoginView() {
       const otherStorage = remember ? sessionStorage : localStorage;
       otherStorage.removeItem("token");
       tokenStorage.setItem("token", data.accessToken);
-      setUser({ ...data.user, roleName: data.user.roleId });
+      setUser({ ...data.user, roleName: data.user.roleId, staffType: data.user.staffType ?? null });
 
       toast({ title: "Đăng nhập thành công", description: `Chào mừng, ${data.user.name}!` });
     } catch (err: unknown) {

@@ -45,6 +45,11 @@ public class CompensationClaimController {
         return service.findAll();
     }
 
+    @GetMapping("/compensation-claims/my")
+    public List<CompensationClaimDto.Response> findMyClaims(Authentication auth) {
+        return service.findMyClaims(userId(auth));
+    }
+
     @PatchMapping("/compensation-claims/{claimId}/review")
     public CompensationClaimDto.Response review(@PathVariable UUID claimId,
                                                @Valid @RequestBody CompensationClaimDto.ReviewRequest request,

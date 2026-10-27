@@ -10,7 +10,7 @@ import { EmptyState, ErrorState, LoadingState } from "@/components/app/empty-sta
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ClipboardCheck, FileText, HeartPulse, Route, ShieldCheck, Truck } from "lucide-react";
-import { formatDateTime, inspectionCode, inspectionStatusLabel, planCode, requestCode, transportPlanStatusLabel, transportRequestStatusLabel } from "@/lib/constants";
+import { formatDateTime, formatRouteDetails, inspectionCode, inspectionStatusLabel, planCode, requestCode, transportPlanStatusLabel, transportRequestStatusLabel } from "@/lib/constants";
 import { StatusPieChart } from "@/components/app/charts";
 
 interface TransportRequest {
@@ -146,7 +146,7 @@ export function SpecialistDashboard() {
               >
                 <Truck className="h-5 w-5 shrink-0 text-primary" />
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-sm font-semibold">{plan.routeDetails || `Kế hoạch ${planCode(plan.planId)}`}</span>
+                  <span className="block truncate text-sm font-semibold">{formatRouteDetails(plan.routeDetails)}</span>
                   <span className="mt-1 block text-xs text-muted-foreground">
                     Yêu cầu {requestCode(plan.requestId)} · {formatDateTime(plan.departureTime)}
                   </span>

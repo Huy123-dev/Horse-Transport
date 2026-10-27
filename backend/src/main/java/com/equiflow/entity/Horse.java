@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
@@ -30,6 +31,21 @@ public class Horse {
 
     @Column(name = "owner_user_id")
     private UUID ownerUserId;
+
+    @Column(name = "breed", length = 100)
+    private String breed;
+
+    @Column(name = "birth_year")
+    private Integer birthYear;
+
+    @Column(name = "weight_kg", precision = 6, scale = 2)
+    private BigDecimal weightKg;
+
+    @Column(name = "height_cm", precision = 5, scale = 1)
+    private BigDecimal heightCm;
+
+    @Column(name = "recovery_days")
+    private Integer recoveryDays;
 
     @Column(name = "medical_history")
     private String medicalHistory;

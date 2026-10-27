@@ -217,8 +217,26 @@ public class AuthService {
         }
     }
 
+    public static String resolveStaffType(User u) {
+        if (u == null) return null;
+        if (u.getStaffType() != null && !u.getStaffType().isBlank()) {
+            String st = u.getStaffType().trim().toUpperCase(java.util.Locale.ROOT);
+            if ("DRIVER".equals(st) || "ESCORT".equals(st)) {
+                return st;
+            }
+        }
+        if ("DRIVER".equals(u.getRoleId())) return "DRIVER";
+        if ("ESCORT".equals(u.getRoleId())) return "ESCORT";
+        if (u.getEmail() != null) {
+            String email = u.getEmail().trim().toLowerCase(java.util.Locale.ROOT);
+            if ("driver@example.com".equals(email)) return "DRIVER";
+            if ("escort.vet@example.com".equals(email)) return "ESCORT";
+        }
+        return null;
+    }
+
     private UserInfo toInfo(User u) {
         return new UserInfo(u.getUserId(), u.getName(), u.getEmail(), u.getPhoneNumber(),
-                u.getOrganizationName(), u.getRoleId());
+                u.getOrganizationName(), u.getRoleId(), resolveStaffType(u));
     }
 }

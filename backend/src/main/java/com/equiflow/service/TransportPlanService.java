@@ -112,7 +112,10 @@ public class TransportPlanService {
             Set<UUID> requestIds = access.requestIdsOf(currentUserId);
             list = requestIds.isEmpty() ? List.of() : planRepository.findByRequestIdInOrderByDepartureTimeDesc(requestIds);
         } else if (driverEscort) {
-            List<UUID> assignedPlanIds = crewAccess.assignedPlanIds(currentUserId);
+            String staffType = userRepository.findById(currentUserId)
+                    .map(AuthService::resolveStaffType)
+                    .orElse(null);
+            List<UUID> assignedPlanIds = staffType != null ? crewAccess.assignedPlanIds(currentUserId, staffType) : crewAccess.assignedPlanIds(currentUserId);
             list = assignedPlanIds.isEmpty() ? List.of()
                     : planRepository.findByPlanIdInOrderByDepartureTimeDesc(assignedPlanIds);
         } else {
@@ -167,13 +170,23 @@ public class TransportPlanService {
                     "Chỉ sửa được kế hoạch đang lập hoặc sẵn sàng (hiện tại: " + p.getStatus() + ")");
         }
         checkTimes(req.departureTime(), req.arrivalTime());
+        LocalDateTime oldDep = p.getDepartureTime();
+        LocalDateTime oldArr = p.getArrivalTime();
+        String oldRoute = p.getRouteDetails();
         p.setRouteDetails(blankToNull(req.routeDetails()));
         p.setDepartureTime(req.departureTime());
         p.setArrivalTime(req.arrivalTime());
         if (req.coordinatorId() != null) {
             p.setCoordinatorId(resolveCoordinator(req.coordinatorId(), currentUserId));
         }
-        return toResponse(planRepository.save(p));
+        TransportPlan saved = planRepository.save(p);
+        boolean scheduleChanged = (oldDep != null && !oldDep.equals(req.departureTime()))
+                || (oldArr != null && !oldArr.equals(req.arrivalTime()))
+                || (req.routeDetails() != null && !req.routeDetails().equals(oldRoute));
+        if (scheduleChanged) {
+            notifyCrewScheduleChanged(saved);
+        }
+        return toResponse(saved);
     }
 
 
@@ -235,6 +248,16 @@ public class TransportPlanService {
                 .filter(u -> COORDINATOR_ROLE.equals(u.getRoleId()))
                 .map(User::getUserId)
                 .orElse(null);
+    }
+
+
+    private void notifyCrewScheduleChanged(TransportPlan p) {
+        Set<UUID> crewUserIds = crewAccess.assignedCrewUserIds(p.getPlanId());
+        for (UUID userId : crewUserIds) {
+            access.notify(userId, "PLAN_UPDATE", "Thay đổi lịch trình chuyến vận chuyển",
+                    "Kế hoạch " + p.getPlanId() + " đã cập nhật thời gian hoặc lộ trình. Vui lòng kiểm tra lại chi tiết chuyến.",
+                    "transport_plans", p.getPlanId());
+        }
     }
 
     private void notifyCustomer(TransportPlan p, String title, String message) {

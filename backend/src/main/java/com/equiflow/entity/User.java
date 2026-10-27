@@ -37,6 +37,9 @@ public class User {
     @Column(name = "organization_name", length = 150)
     private String organizationName;
 
+    @Column(name = "staff_type", length = 20)
+    private String staffType;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 

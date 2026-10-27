@@ -76,6 +76,7 @@ interface HorseApiResponse {
   birthYear?: number | null;
   weightKg?: number | null;
   heightCm?: number | null;
+  recoveryDays?: number | null;
 }
 
 export function HorseList() {
@@ -191,6 +192,11 @@ export function HorseList() {
       name,
       microchipId,
       gender: form.gender.trim(),
+      breed: optionalText(form.breed),
+      birthYear: form.birthYear != null && form.birthYear !== ("" as unknown as number) ? Number(form.birthYear) : null,
+      weightKg: form.weightKg != null && form.weightKg !== ("" as unknown as number) ? Number(form.weightKg) : null,
+      heightCm: form.heightCm != null && form.heightCm !== ("" as unknown as number) ? Number(form.heightCm) : null,
+      recoveryDays: form.recoveryDays != null && form.recoveryDays !== ("" as unknown as number) ? Number(form.recoveryDays) : null,
       pedigree: optionalText(form.pedigree),
       medicalHistory: optionalText(form.medicalHistory),
       allergies: optionalText(form.allergies),
@@ -368,20 +374,63 @@ export function HorseList() {
                   <option value="Thiến">Thiến</option>
                 </select>
               </FormField>
-              <FormField label="Giống">
-                <Input value={form.breed ?? ""} disabled />
+              <FormField label="Giống ngựa">
+                <Input
+                  list="horse-breed-options"
+                  placeholder="Chọn hoặc nhập giống ngựa..."
+                  value={form.breed ?? ""}
+                  onChange={(event) => updateForm("breed", event.target.value)}
+                />
+                <datalist id="horse-breed-options">
+                  <option value="Thoroughbred" />
+                  <option value="Arabian" />
+                  <option value="Quarter Horse" />
+                  <option value="Standardbred" />
+                  <option value="Warmblood" />
+                  <option value="Ngựa thể thao lai" />
+                </datalist>
               </FormField>
               <FormField label="Năm sinh">
-                <Input type="number" value={form.birthYear ?? ""} disabled />
+                <Input
+                  type="number"
+                  min={1990}
+                  max={new Date().getFullYear()}
+                  placeholder="VD: 2019"
+                  value={form.birthYear ?? ""}
+                  onChange={(event) => updateForm("birthYear", event.target.value ? Number(event.target.value) : null)}
+                />
               </FormField>
               <FormField label="Cân nặng (kg)">
-                <Input type="number" value={form.weightKg ?? ""} disabled />
+                <Input
+                  type="number"
+                  step="0.1"
+                  min={1}
+                  max={2000}
+                  placeholder="VD: 520"
+                  value={form.weightKg ?? ""}
+                  onChange={(event) => updateForm("weightKg", event.target.value ? Number(event.target.value) : null)}
+                />
               </FormField>
               <FormField label="Chiều cao (cm)">
-                <Input type="number" value={form.heightCm ?? ""} disabled />
+                <Input
+                  type="number"
+                  step="0.1"
+                  min={1}
+                  max={300}
+                  placeholder="VD: 165"
+                  value={form.heightCm ?? ""}
+                  onChange={(event) => updateForm("heightCm", event.target.value ? Number(event.target.value) : null)}
+                />
               </FormField>
               <FormField label="Thời gian hồi phục (ngày)">
-                <Input type="number" value={form.recoveryDays ?? ""} disabled />
+                <Input
+                  type="number"
+                  min={0}
+                  max={365}
+                  placeholder="VD: 7"
+                  value={form.recoveryDays ?? ""}
+                  onChange={(event) => updateForm("recoveryDays", event.target.value ? Number(event.target.value) : null)}
+                />
               </FormField>
               <FormField label="Tính khí">
                 <Input value={form.temperament ?? ""} onChange={(event) => updateForm("temperament", event.target.value)} />
@@ -396,9 +445,6 @@ export function HorseList() {
                 <Input value={form.allergies ?? ""} onChange={(event) => updateForm("allergies", event.target.value)} />
               </FormField>
             </div>
-            <p className="text-xs text-muted-foreground">
-              Thông tin về giống, tuổi và thể trạng đang được hoàn thiện nên hiện chưa thể chỉnh sửa.
-            </p>
             {formError && (
               <p role="alert" className="flex items-center gap-2 text-sm text-destructive">
                 <AlertTriangle className="h-4 w-4" /> {formError}

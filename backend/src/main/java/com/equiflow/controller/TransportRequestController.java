@@ -2,6 +2,7 @@ package com.equiflow.controller;
 
 import com.equiflow.dto.TransportRequestCreateRequest;
 import com.equiflow.dto.TransportRequestCancelRequest;
+import com.equiflow.dto.TransportRequestApproveRequest;
 import com.equiflow.dto.PricingDto;
 import com.equiflow.dto.TransportRequestRejectRequest;
 import com.equiflow.dto.TransportRequestResponse;
@@ -13,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,12 +62,14 @@ public class TransportRequestController {
         return service.getStallConfigurations(id, userId(auth), isCustomer(auth));
     }
 
-    /** Manager phê duyệt đồng thời chốt báo giá đã xem trước. */
+    /** Manager phê duyệt đồng thời chốt báo giá (hỗ trợ previewFingerprint hoặc estimatedAmount tùy chọn). */
     @PatchMapping("/{id}/approve")
     public TransportRequestResponse approve(@PathVariable UUID id,
-                                            @Valid @RequestBody PricingDto.ApproveRequest req,
+                                            @Valid @RequestBody(required = false) TransportRequestApproveRequest req,
                                             Authentication auth) {
-        return service.approve(id, userId(auth), req.previewFingerprint());
+        String fingerprint = req != null ? req.previewFingerprint() : null;
+        BigDecimal estimatedAmount = req != null ? req.estimatedAmount() : null;
+        return service.approve(id, userId(auth), fingerprint, estimatedAmount);
     }
 
     /** Manager từ chối (bắt buộc có lý do) */

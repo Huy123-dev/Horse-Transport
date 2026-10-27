@@ -16,6 +16,11 @@ interface HorseResponse {
   name: string;
   microchipId: string;
   gender: string;
+  breed?: string | null;
+  birthYear?: number | null;
+  weightKg?: number | null;
+  heightCm?: number | null;
+  recoveryDays?: number | null;
   pedigree: string | null;
   medicalHistory: string | null;
   allergies: string | null;
@@ -137,8 +142,13 @@ export function HorseDetail() {
   };
 
   const info = [
-    { icon: Microchip, label: "Microchip", value: horse.microchipId || "—" },
+    { icon: Microchip, label: "Mã Microchip", value: horse.microchipId || "—" },
     { icon: Heart, label: "Giới tính", value: horse.gender || "—" },
+    { icon: Stethoscope, label: "Giống ngựa", value: horse.breed || "Chưa cập nhật" },
+    { icon: Stethoscope, label: "Năm sinh", value: horse.birthYear ? `${horse.birthYear} (${new Date().getFullYear() - horse.birthYear} tuổi)` : "Chưa cập nhật" },
+    { icon: Stethoscope, label: "Cân nặng", value: horse.weightKg != null ? `${horse.weightKg} kg` : "Chưa cập nhật" },
+    { icon: Stethoscope, label: "Chiều cao", value: horse.heightCm != null ? `${horse.heightCm} cm` : "Chưa cập nhật" },
+    { icon: Stethoscope, label: "Hồi phục dự kiến", value: horse.recoveryDays != null ? `${horse.recoveryDays} ngày` : "Chưa cập nhật" },
     { icon: Stethoscope, label: "Tính khí", value: horse.temperament || "—" },
   ];
 

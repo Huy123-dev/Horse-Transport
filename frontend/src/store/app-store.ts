@@ -24,6 +24,8 @@ export type ViewKey =
   | "compliance"
   | "invoices"
   | "invoice-detail"
+  | "claims-management"
+  | "feedback-management"
   | "recovery-dashboard";
 
 
@@ -48,6 +50,7 @@ interface AppState {
     roleId: string;
     roleName: string;
     organizationName: string | null;
+    staffType?: "DRIVER" | "ESCORT" | null;
   } | null;
   setUser: (u: AppState["user"]) => void;
 

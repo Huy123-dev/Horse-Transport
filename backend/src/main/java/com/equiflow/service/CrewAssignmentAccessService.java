@@ -36,6 +36,26 @@ public class CrewAssignmentAccessService {
     }
 
     @Transactional(readOnly = true)
+    public List<UUID> assignedPlanIds(UUID userId, String staffType) {
+        if ("DRIVER".equalsIgnoreCase(staffType)) {
+            return assignmentRepository.findDriverPlanIds(userId);
+        }
+        if ("ESCORT".equalsIgnoreCase(staffType)) {
+            return assignmentRepository.findAttendantPlanIds(userId);
+        }
+        return assignmentRepository.findAssignedPlanIds(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public Set<UUID> assignedCrewUserIds(UUID planId) {
+        return assignmentRepository.findByPlanIdOrderByAssignedAtAsc(planId).stream()
+                .flatMap(a -> java.util.stream.Stream.of(a.getDriverUserId(), a.getAttendantUserId()))
+                .filter(java.util.Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+
+    @Transactional(readOnly = true)
     public boolean isAssigned(UUID planId, UUID userId) {
         return assignmentRepository.countCrewAssignments(planId, userId) > 0;
     }

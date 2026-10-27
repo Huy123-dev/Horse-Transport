@@ -25,6 +25,7 @@ interface AuthenticatedUser {
   phoneNumber: string | null;
   organizationName: string | null;
   roleId: string;
+  staffType?: "DRIVER" | "ESCORT" | null;
 }
 
 export default function App() {
@@ -40,7 +41,7 @@ export default function App() {
       try {
         const data = await apiGet<AuthenticatedUser>("/auth/me");
         if (active) {
-          setUser({ ...data, roleName: data.roleId });
+          setUser({ ...data, roleName: data.roleId, staffType: data.staffType ?? null });
 
           if (intendedDestination) {
 

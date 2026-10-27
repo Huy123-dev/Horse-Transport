@@ -142,24 +142,27 @@ export function transportPlanStatusLabel(status: string | null | undefined): str
 }
 
 export function formatRouteDetails(routeDetails: string | null | undefined): string {
-  if (!routeDetails || typeof routeDetails !== "string") return "";
+  if (!routeDetails || typeof routeDetails !== "string") return "Chưa có thông tin tuyến";
   const trimmed = routeDetails.trim();
-  if (!trimmed) return "";
+  if (!trimmed) return "Chưa có thông tin tuyến";
 
   if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
     try {
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed.route) && parsed.route.length > 0) {
-        return parsed.route.join(" ➔ ");
+        return parsed.route.filter(Boolean).join(" ➔ ");
       }
       if (Array.isArray(parsed.stops) && parsed.stops.length > 0) {
-        return parsed.stops.join(" ➔ ");
+        return parsed.stops.filter(Boolean).join(" ➔ ");
       }
       if (parsed.origin && parsed.destination) {
         return `${parsed.origin} ➔ ${parsed.destination}`;
       }
+      if (parsed.fixture) {
+        return "Lộ trình nội địa";
+      }
     } catch {
-      // bỏ qua lỗi parse
+      // Bỏ qua lỗi parse
     }
   }
 
@@ -167,14 +170,18 @@ export function formatRouteDetails(routeDetails: string | null | undefined): str
     try {
       const parsed = JSON.parse(trimmed);
       if (Array.isArray(parsed) && parsed.length > 0) {
-        return parsed.join(" ➔ ");
+        return parsed.filter(Boolean).join(" ➔ ");
       }
     } catch {
-      // bỏ qua lỗi parse
+      // Bỏ qua lỗi parse
     }
   }
 
-  return trimmed.replaceAll("->", "➔").replaceAll("→", "➔");
+  const cleaned = trimmed.replaceAll("->", "➔").replaceAll("→", "➔");
+  if (cleaned.startsWith("{") || cleaned.startsWith("[")) {
+    return "Lộ trình vận chuyển";
+  }
+  return cleaned;
 }
 
 export function assetStatusLabel(status: string | null | undefined): string {
@@ -298,20 +305,32 @@ export function statusTone(status: string | null | undefined): "success" | "warn
 }
 
 export const CURRENCIES: Record<string, string> = {
-  VND: "₫",
-
   USD: "$",
+  JPY: "¥",
+  VND: "₫",
   EUR: "€",
 };
 
 export function formatMoney(amount: number | null | undefined, currency: string = "USD"): string {
   if (amount == null) return "—";
-  // USD format: USD 1,150.00
-  if (!currency || currency === "USD" || currency === "JPY") {
-    return `$${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const num = Number(amount);
+  if (isNaN(num)) return "—";
+
+  const upperCurr = (currency || "USD").toUpperCase();
+  if (upperCurr === "USD") {
+    return `$${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   }
-  const symbol = CURRENCIES[currency] || "";
-  return `${symbol}${amount.toLocaleString("vi-VN")}`;
+  if (upperCurr === "JPY") {
+    return `¥${num.toLocaleString("ja-JP", { maximumFractionDigits: 0 })}`;
+  }
+  if (upperCurr === "VND") {
+    return `${num.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} ₫`;
+  }
+  if (upperCurr === "EUR") {
+    return `€${num.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  }
+  const symbol = CURRENCIES[upperCurr] || `${upperCurr} `;
+  return `${symbol}${num.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 // Compact USD format for tables (e.g., "8,250.00")

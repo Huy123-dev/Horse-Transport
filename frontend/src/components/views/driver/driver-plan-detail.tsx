@@ -33,7 +33,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Activity, AlertTriangle, ArrowLeft, Heart, MapPin, Thermometer, Truck } from "lucide-react";
-import { formatDateTime, incidentStatusLabel, planCode, transportPlanStatusLabel } from "@/lib/constants";
+import { formatDateTime, formatRouteDetails, incidentStatusLabel, planCode, transportPlanStatusLabel } from "@/lib/constants";
 
 interface DriverPlanDetails {
   plan: DriverTransportPlan;
@@ -279,10 +279,14 @@ export function DriverPlanDetail() {
       />
 
       <Card>
-        <CardContent className="grid gap-4 p-5 sm:grid-cols-3">
+        <CardContent className="grid gap-4 p-5 sm:grid-cols-4">
           <div>
             <p className="text-xs text-muted-foreground">Trạng thái</p>
             <div className="mt-1"><StatusBadge status={transportPlanStatusLabel(plan.status)} /></div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Tuyến đường</p>
+            <p className="mt-1 text-sm font-semibold text-primary">{formatRouteDetails(plan.routeDetails)}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Khởi hành</p>

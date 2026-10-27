@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Heart, FileText, ClipboardCheck, ShieldCheck,
   Route, Truck, Users, Bell, Flag, ClipboardList, PackageCheck,
-  ScrollText, CheckCircle2, Receipt, Stethoscope, DollarSign, type LucideIcon,
+  ScrollText, CheckCircle2, Receipt, Stethoscope, DollarSign, Scale, MessageSquare, type LucideIcon,
 } from "lucide-react";
 
 type NavItem = { key: ViewKey; label: string; icon: LucideIcon };
@@ -32,6 +32,8 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { key: "approvals", label: "Phê duyệt đơn hàng", icon: ScrollText },
     { key: "trips", label: "Chuyến vận chuyển", icon: Truck },
     { key: "invoices", label: "Hóa đơn & Thanh toán", icon: Receipt },
+    { key: "claims-management", label: "Khiếu nại & Bồi thường", icon: Scale },
+    { key: "feedback-management", label: "Đánh giá dịch vụ", icon: MessageSquare },
     { key: "staff", label: "Quản lý nhân sự", icon: Users },
     { key: "pricing", label: "Bảng giá dịch vụ", icon: DollarSign },
     { key: "notifications", label: "Thông báo", icon: Bell },
@@ -64,7 +66,28 @@ export function AppSidebar() {
   const { user, view, navigate } = useAppStore();
   if (!user) return null;
 
-  const items = NAV_BY_ROLE[user.roleId] || [];
+  let items = NAV_BY_ROLE[user.roleId] || [];
+  let roleTitle = ROLE_LABELS[user.roleId] || user.roleId;
+
+  if (user.roleId === "DRIVER_ESCORT" || user.roleId === "DRIVER" || user.roleId === "ESCORT") {
+    if (user.staffType === "DRIVER" || user.roleId === "DRIVER") {
+      roleTitle = "Tài xế (Hiện trường)";
+      items = [
+        { key: "dashboard", label: "Tổng quan tài xế", icon: LayoutDashboard },
+        { key: "trips", label: "Chuyến được giao", icon: Truck },
+        { key: "notifications", label: "Thông báo", icon: Bell },
+      ];
+    } else if (user.staffType === "ESCORT" || user.roleId === "ESCORT") {
+      roleTitle = "Nhân viên đi kèm (Hiện trường)";
+      items = [
+        { key: "dashboard", label: "Tổng quan chăm sóc", icon: LayoutDashboard },
+        { key: "trips", label: "Chuyến tham gia", icon: Truck },
+        { key: "notifications", label: "Thông báo", icon: Bell },
+      ];
+    } else {
+      roleTitle = "Nhân viên hiện trường (Chưa phân loại)";
+    }
+  }
 
   return (
     <aside className="leather-texture flex w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
@@ -81,7 +104,7 @@ export function AppSidebar() {
       <div className="px-4 pt-4">
         <div className="rounded-lg bg-sidebar-accent px-3 py-2">
           <p className="text-[10px] uppercase tracking-wider text-sidebar-foreground/50">Vai trò</p>
-          <p className="text-sm font-semibold text-sidebar-accent-foreground">{ROLE_LABELS[user.roleId]}</p>
+          <p className="text-sm font-semibold text-sidebar-accent-foreground">{roleTitle}</p>
         </div>
       </div>
 

@@ -9,5 +9,6 @@ public record UserCreateRequest(
         @Pattern(regexp = "^(0|\\+84)\\d{9,10}$", message = "Số điện thoại không hợp lệ") String phone,
         @Size(max = 150, message = "Tên tổ chức tối đa 150 ký tự") String organizationName,
         @NotBlank(message = "Vui lòng nhập mật khẩu") @Size(min = 8, max = 72, message = "Mật khẩu tối thiểu 8 ký tự") String password,
-        @NotBlank(message = "Vui lòng chọn vai trò") @Size(max = 50, message = "Vai trò không hợp lệ") String roleId
+        @NotBlank(message = "Vui lòng chọn vai trò") @Size(max = 50, message = "Vai trò không hợp lệ") String roleId,
+        @Pattern(regexp = "DRIVER|ESCORT", message = "Loại nhiệm vụ phải là DRIVER hoặc ESCORT") String staffType
 ) {}

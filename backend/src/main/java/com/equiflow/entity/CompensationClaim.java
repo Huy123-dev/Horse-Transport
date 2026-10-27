@@ -34,8 +34,20 @@ public class CompensationClaim {
     @Column(nullable = false, length = 4000)
     private String description;
 
+    @Column(length = 50)
+    private String category;
+
+    @Column(length = 20)
+    private String severity;
+
+    @Column(length = 3, nullable = false)
+    private String currency = "USD";
+
     @Column(name = "requested_amount", precision = 12, scale = 2)
     private BigDecimal requestedAmount;
+
+    @Column(name = "approved_amount", precision = 12, scale = 2)
+    private BigDecimal approvedAmount;
 
     @Column(name = "evidence_url", length = 512)
     private String evidenceUrl;

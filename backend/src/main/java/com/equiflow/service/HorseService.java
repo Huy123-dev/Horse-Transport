@@ -157,6 +157,11 @@ public class HorseService {
         horse.setMicrochipId(microchip);
         horse.setName(req.name().trim());
         horse.setGender(normalizeGender(req.gender()));
+        horse.setBreed(blankToNull(req.breed()));
+        horse.setBirthYear(req.birthYear());
+        horse.setWeightKg(req.weightKg());
+        horse.setHeightCm(req.heightCm());
+        horse.setRecoveryDays(req.recoveryDays());
         horse.setPedigree(blankToNull(req.pedigree()));
         horse.setMedicalHistory(blankToNull(req.medicalHistory()));
         horse.setAllergies(blankToNull(req.allergies()));
@@ -208,6 +213,7 @@ public class HorseService {
 
     private static HorseResponse build(Horse h, String ownerName) {
         return new HorseResponse(h.getHorseId(), h.getMicrochipId(), h.getName(), h.getGender(),
+                h.getBreed(), h.getBirthYear(), h.getWeightKg(), h.getHeightCm(), h.getRecoveryDays(),
                 h.getPedigree(), h.getMedicalHistory(), h.getAllergies(), h.getTemperament(),
                 h.getOwnerUserId(), ownerName, h.getCreatedAt(), h.getImageUrl());
     }

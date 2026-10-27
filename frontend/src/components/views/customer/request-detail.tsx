@@ -10,6 +10,7 @@ import { InvoiceDisplay } from "@/components/views/shared/invoice-display";
 import { JourneyTimeline } from "@/components/views/shared/journey-timeline";
 import { RouteHistoryMap } from "@/components/views/shared/route-history-map";
 import { CompensationClaimsPanel } from "@/components/views/shared/compensation-claims-panel";
+import { ServiceFeedbackPanel } from "@/components/views/customer/service-feedback-panel";
 import { StatusBadge } from "@/components/app/status-badge";
 import { LoadingState, ErrorState, EmptyState } from "@/components/app/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -580,7 +581,12 @@ export function RequestDetail() {
             <CompensationClaimsPanel
               requestId={request.requestId}
               isManager={userRole === "LOGISTICS_MANAGER"}
-              canSubmit={isCustomer && !!plan && transportPlanStatusLabel(plan.status) === "Hoàn thành"}
+              canSubmit={isCustomer && ((!!plan && transportPlanStatusLabel(plan.status) === "Hoàn thành") || request.status === "COMPLETED")}
+            />
+            <ServiceFeedbackPanel
+              requestId={request.requestId}
+              canFeedback={isCustomer && ((!!plan && transportPlanStatusLabel(plan.status) === "Hoàn thành") || request.status === "COMPLETED")}
+              isCustomer={isCustomer}
             />
             <Card>
               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Trophy className="h-4 w-4" /> Thông tin đơn</CardTitle></CardHeader>

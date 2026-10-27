@@ -73,6 +73,7 @@ public class UserService {
         user.setOrganizationName(blankToNull(req.organizationName()));
         user.setPasswordHash(passwordEncoder.encode(req.password()));
         user.setRoleId(role.getRoleId());
+        user.setStaffType(blankToNull(req.staffType()));
         return toResponse(save(user), role.getRoleName());
     }
 
@@ -101,6 +102,7 @@ public class UserService {
         user.setPhoneNumber(phone);
         user.setOrganizationName(blankToNull(req.organizationName()));
         user.setRoleId(role.getRoleId());
+        user.setStaffType(blankToNull(req.staffType()));
         if (req.password() != null) {
             user.setPasswordHash(passwordEncoder.encode(req.password()));
         }
@@ -166,6 +168,6 @@ public class UserService {
 
     private static UserResponse toResponse(User u, String roleName) {
         return new UserResponse(u.getUserId(), u.getName(), u.getEmail(), u.getPhoneNumber(),
-                u.getOrganizationName(), u.getRoleId(), roleName, u.isActive(), u.getCreatedAt(), u.getUpdatedAt());
+                u.getOrganizationName(), u.getRoleId(), roleName, AuthService.resolveStaffType(u), u.isActive(), u.getCreatedAt(), u.getUpdatedAt());
     }
 }

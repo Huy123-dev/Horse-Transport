@@ -9,6 +9,7 @@ import com.equiflow.repository.UserRepository;
 import com.equiflow.service.FileStorageService;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
@@ -102,5 +103,37 @@ class HorseServiceTest {
                 true);
 
         assertEquals(storedPath, response.imageUrl());
+    }
+
+    @Test
+    void createAndMapAllHorsePhysicalProfileFields() {
+        UUID customerId = UUID.randomUUID();
+        when(horseRepository.existsByMicrochipId("CHIP-PROFILE")).thenReturn(false);
+        when(horseRepository.saveAndFlush(any(Horse.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        HorseRequest req = new HorseRequest(
+                "CHIP-PROFILE",
+                "Xích Thố",
+                "Duc",
+                "Thoroughbred",
+                2020,
+                new BigDecimal("510.5"),
+                new BigDecimal("165.2"),
+                7,
+                "Champion bloodline",
+                "Khoe manh",
+                "Khong",
+                "On hoa",
+                null,
+                null
+        );
+
+        HorseResponse res = service.create(req, customerId, true);
+        assertEquals("Thoroughbred", res.breed());
+        assertEquals(2020, res.birthYear());
+        assertEquals(new BigDecimal("510.5"), res.weightKg());
+        assertEquals(new BigDecimal("165.2"), res.heightCm());
+        assertEquals(7, res.recoveryDays());
     }
 }

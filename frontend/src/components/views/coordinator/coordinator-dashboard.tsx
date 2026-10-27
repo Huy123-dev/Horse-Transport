@@ -11,7 +11,7 @@ import { EmptyState, LoadingState, ErrorState } from "@/components/app/empty-sta
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Route, Truck, PackageCheck, Bell, MapPin, ChevronRight, Clock, Plus, PieChartIcon, BarChart3 } from "lucide-react";
-import { formatDateTime, planCode, requestCode, assetStatusLabel, transportPlanStatusLabel } from "@/lib/constants";
+import { formatDateTime, formatRouteDetails, planCode, requestCode, assetStatusLabel, transportPlanStatusLabel } from "@/lib/constants";
 import { StatusPieChart, TripVolumeChart } from "@/components/app/charts";
 
 interface TransportPlan {
@@ -197,7 +197,7 @@ export function CoordinatorDashboard() {
                   const request = requestsById.get(plan.requestId);
                   const route = request?.origin?.name && request.destination?.name
                     ? `${request.origin.name} → ${request.destination.name}`
-                    : plan.routeDetails;
+                    : formatRouteDetails(plan.routeDetails);
                   return (
                     <button key={plan.planId} onClick={() => navigate("plan-detail", { id: plan.planId })} className="flex w-full items-center gap-4 rounded-lg border border-border bg-card p-3 text-left transition-all hover:border-primary/40 hover:shadow-sm">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary"><Route className="h-5 w-5" /></div>

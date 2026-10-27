@@ -179,8 +179,37 @@ public class TransportRequestService {
 
 
     @Transactional
+    public TransportRequestResponse approve(UUID id, UUID managerId, String previewFingerprint, BigDecimal estimatedAmount) {
+        if (previewFingerprint != null && !previewFingerprint.isBlank()) {
+            return toResponse(pricingService.approveAndConfirmQuote(id, managerId, previewFingerprint));
+        }
+
+        // Bắt buộc xác nhận báo giá nếu đơn hàng có cấu hình gói dịch vụ
+        if (pricingService.hasPricingSelection(id)) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Yêu cầu vận chuyển này có cấu hình gói dịch vụ; bắt buộc phải xác nhận báo giá kèm previewFingerprint.");
+        }
+
+        TransportRequest r = getPendingForUpdate(id);
+        r.setStatus(APPROVED);
+        r.setApprovedBy(managerId);
+        r.setApprovedAt(LocalDateTime.now(ZoneOffset.UTC));
+        if (estimatedAmount != null) {
+            r.setEstimatedAmount(estimatedAmount);
+            if (r.getCurrency() == null) {
+                r.setCurrency("USD");
+            }
+        }
+        r = requestRepository.saveAndFlush(r);
+
+        notifyCustomer(r, "Đơn hàng đã được phê duyệt",
+                "Yêu cầu vận chuyển của bạn đã được Logistics Manager phê duyệt.");
+        return toResponse(r);
+    }
+
+    @Transactional
     public TransportRequestResponse approve(UUID id, UUID managerId, String previewFingerprint) {
-        return toResponse(pricingService.approveAndConfirmQuote(id, managerId, previewFingerprint));
+        return approve(id, managerId, previewFingerprint, null);
     }
 
     @Transactional

@@ -82,12 +82,12 @@ public class AssignmentService {
                 .map(user -> new AssignmentDto.Option(user.getUserId(), user.getName(), null))
                 .toList();
         List<AssignmentDto.Option> drivers = crewUsers.stream()
-                .filter(user -> CrewRoles.canBeDriver(user.getRoleId()))
-                .map(user -> new AssignmentDto.Option(user.getUserId(), user.getName(), null))
+                .filter(AssignmentService::canBeAssignedAsDriver)
+                .map(user -> new AssignmentDto.Option(user.getUserId(), user.getName() + " (" + crewRoleLabel(user) + ")", null))
                 .toList();
         List<AssignmentDto.Option> attendants = crewUsers.stream()
-                .filter(user -> CrewRoles.canBeEscort(user.getRoleId()))
-                .map(user -> new AssignmentDto.Option(user.getUserId(), user.getName(), null))
+                .filter(AssignmentService::canBeAssignedAsEscort)
+                .map(user -> new AssignmentDto.Option(user.getUserId(), user.getName() + " (" + crewRoleLabel(user) + ")", null))
                 .toList();
         return new AssignmentDto.OptionsResponse(assets, crew, drivers, attendants);
     }
@@ -103,8 +103,18 @@ public class AssignmentService {
         UUID oldAttendant = a.getAttendantUserId();
         apply(a, req);
         a = assignmentRepository.saveAndFlush(a);
+        if (oldDriver != null && !oldDriver.equals(a.getDriverUserId())) {
+            access.notify(oldDriver, "ASSIGNMENT", "Thay đổi phân công",
+                    "Bạn đã được thay đổi phân công tài xế cho kế hoạch " + plan.getPlanId() + ".",
+                    "transport_plans", plan.getPlanId());
+        }
         if (a.getDriverUserId() != null && !a.getDriverUserId().equals(oldDriver)) {
             notifyCrew(a.getDriverUserId(), "tài xế", plan.getPlanId(), a.getAssignmentId());
+        }
+        if (oldAttendant != null && !oldAttendant.equals(a.getAttendantUserId())) {
+            access.notify(oldAttendant, "ASSIGNMENT", "Thay đổi phân công",
+                    "Bạn đã được thay đổi phân công người đi kèm cho kế hoạch " + plan.getPlanId() + ".",
+                    "transport_plans", plan.getPlanId());
         }
         if (a.getAttendantUserId() != null && !a.getAttendantUserId().equals(oldAttendant)) {
             notifyCrew(a.getAttendantUserId(), "người đi kèm", plan.getPlanId(), a.getAssignmentId());
@@ -119,7 +129,20 @@ public class AssignmentService {
         if (TransportPlanService.COMPLETED.equals(plan.getStatus())) {
             throw new ApiException(HttpStatus.CONFLICT, "Chuyến đã hoàn tất, không thể hủy phân công");
         }
+        UUID oldDriver = a.getDriverUserId();
+        UUID oldAttendant = a.getAttendantUserId();
+        UUID planId = a.getPlanId();
         assignmentRepository.delete(a);
+        if (oldDriver != null) {
+            access.notify(oldDriver, "ASSIGNMENT", "Hủy phân công",
+                    "Phân công tài xế của bạn cho kế hoạch " + planId + " đã bị hủy.",
+                    "transport_plans", planId);
+        }
+        if (oldAttendant != null) {
+            access.notify(oldAttendant, "ASSIGNMENT", "Hủy phân công",
+                    "Phân công người đi kèm của bạn cho kế hoạch " + planId + " đã bị hủy.",
+                    "transport_plans", planId);
+        }
         return new MessageResponse("Đã hủy phân công");
     }
 
@@ -169,6 +192,15 @@ public class AssignmentService {
         if (!roleAllowed.test(user.getRoleId())) {
             String requiredRole = "Tài xế".equals(label) ? "DRIVER" : "ESCORT";
             throw new ApiException(HttpStatus.BAD_REQUEST, label + " phải là tài khoản có vai trò " + requiredRole);
+        }
+        String staffType = AuthService.resolveStaffType(user);
+        if ("Tài xế".equals(label) && "ESCORT".equals(staffType)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    label + " (" + user.getName() + ") là Nhân viên đi kèm (ESCORT), không thể phân công làm Tài xế");
+        }
+        if ("Người đi kèm".equals(label) && "DRIVER".equals(staffType)) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    label + " (" + user.getName() + ") là Tài xế (DRIVER), không thể phân công làm Người đi kèm");
         }
         if (assignmentRepository.countUserConflicts(userId, plan.getPlanId(), TransportPlanService.OPEN,
                 plan.getDepartureTime(), plan.getArrivalTime()) > 0) {
@@ -237,5 +269,26 @@ public class AssignmentService {
                     a.getAttendantUserId(), attendant == null ? null : attendant.getName(),
                     a.getAssignedAt());
         }).toList();
+    }
+
+    private static boolean canBeAssignedAsDriver(User u) {
+        String staffType = AuthService.resolveStaffType(u);
+        if ("DRIVER".equals(staffType)) return true;
+        if ("ESCORT".equals(staffType)) return false;
+        return CrewRoles.canBeDriver(u.getRoleId());
+    }
+
+    private static boolean canBeAssignedAsEscort(User u) {
+        String staffType = AuthService.resolveStaffType(u);
+        if ("ESCORT".equals(staffType)) return true;
+        if ("DRIVER".equals(staffType)) return false;
+        return CrewRoles.canBeEscort(u.getRoleId());
+    }
+
+    private static String crewRoleLabel(User u) {
+        String staffType = AuthService.resolveStaffType(u);
+        if ("DRIVER".equals(staffType)) return "Tài xế";
+        if ("ESCORT".equals(staffType)) return "Nhân viên đi kèm";
+        return "Hiện trường";
     }
 }

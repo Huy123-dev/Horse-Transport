@@ -21,12 +21,15 @@ const FleetView = lazy(() => import("./coordinator/fleet-view").then((module) =>
 const NotificationsView = lazy(() => import("./shared/notifications-view").then((module) => ({ default: module.NotificationsView })));
 const InvoiceList = lazy(() => import("./shared/invoice-list").then((module) => ({ default: module.InvoiceList })));
 const InvoiceDetail = lazy(() => import("./shared/invoice-detail").then((module) => ({ default: module.InvoiceDetail })));
+const ClaimsManagementView = lazy(() => import("./manager/claims-management-view").then((module) => ({ default: module.ClaimsManagementView })));
+const FeedbackManagementView = lazy(() => import("./manager/feedback-management-view").then((module) => ({ default: module.FeedbackManagementView })));
 const RecoveryDashboard = lazy(() => import("./customer/recovery-dashboard").then((module) => ({ default: module.RecoveryDashboard })));
 const BackendUnavailableView = lazy(() => import("./shared/backend-unavailable-view").then((module) => ({ default: module.BackendUnavailableView })));
 const ManagerDashboard = lazy(() => import("./manager/manager-dashboard").then((module) => ({ default: module.ManagerDashboard })));
 const CoordinatorDashboard = lazy(() => import("./coordinator/coordinator-dashboard").then((module) => ({ default: module.CoordinatorDashboard })));
 const SpecialistDashboard = lazy(() => import("./specialist/specialist-dashboard").then((module) => ({ default: module.SpecialistDashboard })));
 const DriverDashboard = lazy(() => import("./driver/driver-dashboard").then((module) => ({ default: module.DriverDashboard })));
+const EscortDashboard = lazy(() => import("./escort/escort-dashboard").then((module) => ({ default: module.EscortDashboard })));
 const DriverPlanDetail = lazy(() => import("./driver/driver-plan-detail").then((module) => ({ default: module.DriverPlanDetail })));
 const TripList = lazy(() => import("./shared/trip-list").then((module) => ({ default: module.TripList })));
 
@@ -42,9 +45,23 @@ function RoutedView() {
       case "LOGISTICS_MANAGER": return <ManagerDashboard />;
       case "FLEET_COORDINATOR": return <CoordinatorDashboard />;
       case "TRANSPORT_SPECIALIST": return <SpecialistDashboard />;
-      case "DRIVER":
-      case "ESCORT":
-      case "DRIVER_ESCORT": return <DriverDashboard />;
+      case "DRIVER": return <DriverDashboard />;
+      case "ESCORT": return <EscortDashboard />;
+      case "DRIVER_ESCORT": {
+        if (user.staffType === "DRIVER") {
+          return <DriverDashboard />;
+        }
+        if (user.staffType === "ESCORT") {
+          return <EscortDashboard />;
+        }
+        return (
+          <BackendUnavailableView
+            title="Dashboard Nhân viên hiện trường"
+            endpoint="/api/auth/me"
+            description="Tài khoản nhân viên vận chuyển hiện trường chưa được cấu hình loại nhiệm vụ (Tài xế hoặc Nhân viên đi kèm). Vui lòng liên hệ Quản lý Logistics để được chỉ định nhiệm vụ."
+          />
+        );
+      }
       default: return <BackendUnavailableView title="Dashboard" endpoint="/api/transport-plans" description="Vai trò này chưa có dashboard được hỗ trợ." />;
     }
   }
@@ -99,6 +116,9 @@ function RoutedView() {
 
   if (view === "invoices") return ["CUSTOMER", "LOGISTICS_MANAGER"].includes(role) ? <InvoiceList /> : <BackendUnavailableView title="Hóa đơn" endpoint="/api/invoices" description="Backend chỉ cấp quyền hóa đơn cho khách hàng và Logistics Manager." />;
   if (view === "invoice-detail") return ["CUSTOMER", "LOGISTICS_MANAGER"].includes(role) ? <InvoiceDetail /> : <BackendUnavailableView title="Chi tiết hóa đơn" endpoint="/api/invoices/{id}" description="Backend chỉ cấp quyền hóa đơn cho khách hàng và Logistics Manager." />;
+
+  if (view === "claims-management") return role === "LOGISTICS_MANAGER" ? <ClaimsManagementView /> : <BackendUnavailableView title="Quản lý bồi thường" endpoint="/api/compensation-claims" description="Chỉ Logistics Manager được quản lý các vụ việc bồi thường." />;
+  if (view === "feedback-management") return role === "LOGISTICS_MANAGER" ? <FeedbackManagementView /> : <BackendUnavailableView title="Đánh giá dịch vụ" endpoint="/api/feedbacks" description="Chỉ Logistics Manager được xem tổng hợp đánh giá chất lượng dịch vụ." />;
 
   if (view === "recovery-dashboard") return <RecoveryDashboard />;
 

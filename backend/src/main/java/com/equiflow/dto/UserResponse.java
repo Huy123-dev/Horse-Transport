@@ -12,6 +12,7 @@ public record UserResponse(
         String organizationName,
         String roleId,
         String roleName,
+        String staffType,
         boolean active,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

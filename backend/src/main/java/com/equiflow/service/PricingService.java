@@ -189,6 +189,11 @@ public class PricingService {
         return quoteForRequest(requestId, currentUserId, customer);
     }
 
+    @Transactional(readOnly = true)
+    public boolean hasPricingSelection(UUID requestId) {
+        return !selectionRepository.findByRequestId(requestId).isEmpty();
+    }
+
     @Transactional
     public TransportRequest approveAndConfirmQuote(UUID requestId, UUID managerId, String previewFingerprint) {
         TransportRequest request = requestRepository.findByIdForUpdate(requestId)
