@@ -1,0 +1,3 @@
+{
+  "/api/transport-requests/bulk-approval/route": "app/api/transport-requests/bulk-approval/route.js"
+}
