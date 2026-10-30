@@ -43,3 +43,6 @@
 
 # Logs
 *.log
+
+# Accidental local artifact
+/rcmainresourcesapplication.properties*
