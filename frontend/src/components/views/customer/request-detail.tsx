@@ -14,6 +14,7 @@ import { ServiceFeedbackPanel } from "@/components/views/customer/service-feedba
 import { StatusBadge } from "@/components/app/status-badge";
 import { LoadingState, ErrorState, EmptyState } from "@/components/app/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,6 +52,10 @@ interface TransportRequest {
   currency: string | null;
   approvedByName: string | null;
   approvedAt: string | null;
+  specialistApprovedBy?: string | null;
+  specialistApprovedByName?: string | null;
+  specialistApprovedAt?: string | null;
+  rejectionReason?: string | null;
   cancelledBy: string | null;
   cancelledAt: string | null;
   cancellationReason: string | null;
@@ -115,7 +120,7 @@ export function RequestDetail() {
   const [uploadingDocContext, setUploadingDocContext] = useState<{ docType: string, horseId: string } | null>(null);
 
   const [approvalNote, setApprovalNote] = useState("");
-  const [reviewAction, setReviewAction] = useState<"approve" | "reject" | null>(null);
+  const [reviewAction, setReviewAction] = useState<"approve" | "reject" | "specialist-approve" | "specialist-reject" | null>(null);
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [cancellationReason, setCancellationReason] = useState("");
   const [pricingCatalog, setPricingCatalog] = useState<PricingCatalogItem[]>([]);
@@ -123,7 +128,6 @@ export function RequestDetail() {
   const [pricingPackageCode, setPricingPackageCode] = useState("");
   const [pricingServiceCodes, setPricingServiceCodes] = useState<string[]>([]);
   const [pricingLoading, setPricingLoading] = useState(false);
-  const [pricingSaving, setPricingSaving] = useState(false);
   const [pricingError, setPricingError] = useState("");
 
   const [docsData, setDocsData] = useState<HorseDocument[] | null>(null);
@@ -192,7 +196,7 @@ export function RequestDetail() {
   }, [request?.requestId]);
 
   useEffect(() => {
-    if (!request || !["CUSTOMER", "LOGISTICS_MANAGER"].includes(user?.roleId ?? "")) return;
+    if (!request || !["CUSTOMER", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST"].includes(user?.roleId ?? "")) return;
     let active = true;
     void Promise.resolve().then(async () => {
       setPricingLoading(true);
@@ -248,17 +252,21 @@ export function RequestDetail() {
 
   const handleApproval = async () => {
     if (!reviewAction) return;
-    if (reviewAction === "reject" && !approvalNote.trim()) {
-      toast({ title: "Nhập lý do từ chối", variant: "destructive" });
+    if ((reviewAction === "reject" || reviewAction === "specialist-reject") && !approvalNote.trim()) {
+      toast({ title: "Vui lòng nhập lý do từ chối", variant: "destructive" });
       return;
     }
     setActionLoading(true);
     try {
+      let body: unknown = undefined;
+      if (reviewAction === "approve") {
+        body = { previewFingerprint: pricingQuote?.fingerprint };
+      } else if (reviewAction === "reject" || reviewAction === "specialist-reject") {
+        body = { reason: approvalNote.trim() };
+      }
       const updated = await apiPatch<TransportRequest>(
         `/transport-requests/${params.id}/${reviewAction}`,
-        reviewAction === "approve"
-          ? { previewFingerprint: pricingQuote?.fingerprint }
-          : { reason: approvalNote.trim() }
+        body
       );
       if (!updated.requestId || !updated.status) {
         throw new Error("Không nhận được trạng thái mới sau khi cập nhật.");
@@ -271,7 +279,13 @@ export function RequestDetail() {
           setPricingError(quoteError instanceof Error ? quoteError.message : "Không thể tải báo giá đã xác nhận.");
         }
       }
-      toast({ title: reviewAction === "approve" ? "Đã phê duyệt đơn" : "Đã từ chối đơn" });
+      toast({
+        title: reviewAction === "approve"
+          ? "Đã phê duyệt cấp 1 (Logistics Manager)"
+          : reviewAction === "specialist-approve"
+            ? "Đã phê duyệt cấp 2 (Transport Specialist) - Hoàn tất"
+            : "Đã từ chối yêu cầu vận chuyển",
+      });
       setApprovalNote("");
       setReviewAction(null);
     } catch (e: unknown) {
@@ -314,25 +328,6 @@ export function RequestDetail() {
       setActionLoading(false);
     }
   };
-
-  const savePricingSelection = async () => {
-    if (!request || !pricingPackageCode) return;
-    setPricingSaving(true);
-    setPricingError("");
-    try {
-      const quote = await apiPut<PricingQuote>(
-        `/transport-requests/${request.requestId}/pricing-selection`,
-        { packageCode: pricingPackageCode, serviceCodes: pricingServiceCodes },
-      );
-      setPricingQuote(quote);
-      toast({ title: "Đã cập nhật lựa chọn gói và dịch vụ" });
-    } catch (cause: unknown) {
-      setPricingError(cause instanceof Error ? cause.message : "Không thể lưu lựa chọn báo giá.");
-    } finally {
-      setPricingSaving(false);
-    }
-  };
-
 
   const triggerFileUpload = (docType: string, horseId: string) => {
     setUploadingDocContext({ docType, horseId });
@@ -394,16 +389,10 @@ export function RequestDetail() {
   const userRole = user?.roleId || "";
   
   const canApprove = userRole === "LOGISTICS_MANAGER" && ["dang tham dinh", "pending"].includes(reqStatus);
+  const canSpecialistApprove = (userRole === "TRANSPORT_SPECIALIST" || userRole === "LOGISTICS_MANAGER") && ["cho chuyen vien kiem tra", "manager approved", "manager_approved"].includes(reqStatus);
   const isCustomer = userRole === "CUSTOMER";
-  const listView = userRole === "LOGISTICS_MANAGER" ? "approvals" : userRole === "TRANSPORT_SPECIALIST" ? "inspections" : "requests";
+  const listView = (userRole === "LOGISTICS_MANAGER" || userRole === "TRANSPORT_SPECIALIST") ? "approvals" : "requests";
   const totalHorses = request.horses.length;
-  const selectedPackage = pricingCatalog.find((item) => item.code === pricingPackageCode);
-  const pricingServices = pricingCatalog.filter((item) => item.category === "SERVICE");
-  const pricingPackages = pricingCatalog.filter((item) => item.category === "PACKAGE");
-  const canEditPricing = canApprove && pricingCatalog.length > 0;
-  const savedServices = pricingQuote?.selectedServiceCodes ?? [];
-  const pricingDirty = pricingPackageCode !== (pricingQuote?.packageCode ?? "")
-    || [...pricingServiceCodes].sort().join("|") !== [...savedServices].sort().join("|");
 
   return (
     <div className="space-y-6">
@@ -444,6 +433,15 @@ export function RequestDetail() {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4">
+              {request.rejectionReason && (
+                <Card className="border-destructive/50 bg-destructive/10">
+                  <CardHeader><CardTitle className="text-base text-destructive flex items-center gap-2"><XCircle className="h-5 w-5" /> Yêu cầu đã bị từ chối</CardTitle></CardHeader>
+                  <CardContent className="space-y-1 text-sm text-destructive">
+                    <p className="font-semibold">Lý do từ chối:</p>
+                    <p className="rounded-md bg-background/80 p-3 text-foreground">{request.rejectionReason}</p>
+                  </CardContent>
+                </Card>
+              )}
               {request.cancelledAt && (
                 <Card>
                   <CardHeader><CardTitle className="text-base">Thông tin hủy yêu cầu</CardTitle></CardHeader>
@@ -454,7 +452,43 @@ export function RequestDetail() {
                   </CardContent>
                 </Card>
               )}
-            {["CUSTOMER", "LOGISTICS_MANAGER"].includes(userRole) && (
+
+              {/* Tiến trình phê duyệt 2 cấp */}
+              <Card>
+                <CardHeader><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-5 w-5 text-primary" /> Tiến trình phê duyệt 2 cấp</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="rounded-lg border border-border p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground">Cấp 1: Quản lý Logistics</span>
+                        {request.approvedAt ? (
+                          <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Đã duyệt báo giá</span>
+                        ) : (
+                          <span className="text-xs text-amber-600 font-medium">Chờ duyệt</span>
+                        )}
+                      </div>
+                      <p className="mt-2 text-sm font-medium">{request.approvedByName ? `Người duyệt: ${request.approvedByName}` : "Chưa phê duyệt"}</p>
+                      {request.approvedAt && <p className="text-xs text-muted-foreground mt-0.5">Thời gian: {formatDateTime(request.approvedAt)}</p>}
+                    </div>
+
+                    <div className="rounded-lg border border-border p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase text-muted-foreground">Cấp 2: Chuyên viên vận tải</span>
+                        {request.specialistApprovedAt ? (
+                          <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Đã duyệt hồ sơ pháp lý</span>
+                        ) : (
+                          <span className="text-xs text-amber-600 font-medium">
+                            {request.approvedAt ? "Đang chờ kiểm tra" : "Chờ cấp 1 hoàn tất"}
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-2 text-sm font-medium">{request.specialistApprovedByName ? `Chuyên viên: ${request.specialistApprovedByName}` : "Chưa phê duyệt"}</p>
+                      {request.specialistApprovedAt && <p className="text-xs text-muted-foreground mt-0.5">Thời gian: {formatDateTime(request.specialistApprovedAt)}</p>}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            {["CUSTOMER", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST"].includes(userRole) && (
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Gói dịch vụ và báo giá</CardTitle>
@@ -462,44 +496,31 @@ export function RequestDetail() {
                 <CardContent className="space-y-4">
                   {pricingError && <p role="alert" className="text-sm text-destructive">{pricingError}</p>}
                   {pricingLoading && <p className="text-sm text-muted-foreground">Đang tải thông tin báo giá...</p>}
-                  {canEditPricing && (
-                    <div className="space-y-4 rounded-lg border border-border p-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="request-pricing-package">Gói vận chuyển</Label>
-                        <select
-                          id="request-pricing-package"
-                          value={pricingPackageCode}
-                          onChange={(event) => setPricingPackageCode(event.target.value)}
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                        >
-                          <option value="">Chọn gói</option>
-                          {pricingPackages.map((item) => <option key={item.code} value={item.code}>{item.name}</option>)}
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Dịch vụ tùy chọn</Label>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          {pricingServices.map((item) => {
-                            const included = selectedPackage?.includedServiceCodes.includes(item.code) ?? false;
-                            const checked = included || item.required || pricingServiceCodes.includes(item.code);
-                            return (
-                              <label key={item.code} className="flex items-center gap-2 text-sm">
-                                <Checkbox
-                                  checked={checked}
-                                  disabled={item.required || included || pricingSaving}
-                                  onCheckedChange={() => setPricingServiceCodes((codes) => codes.includes(item.code)
-                                    ? codes.filter((code) => code !== item.code)
-                                    : [...codes, item.code])}
-                                />
-                                <span>{item.name}{item.required ? " · Bắt buộc" : included ? " · Đã gồm trong gói" : ""}</span>
-                              </label>
-                            );
-                          })}
+                  {pricingQuote && (
+                    <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Gói vận chuyển đã chọn bởi khách hàng</p>
+                          <p className="text-base font-semibold text-primary">
+                            {pricingCatalog.find((i) => i.code === pricingQuote.packageCode)?.name || pricingQuote.packageCode || "Chưa chọn gói"}
+                          </p>
                         </div>
+                        <Badge variant="outline" className="text-xs">
+                          {pricingQuote.status === "CONFIRMED" ? "Đã chốt báo giá" : "Đang thẩm định"}
+                        </Badge>
                       </div>
-                      <Button onClick={() => void savePricingSelection()} disabled={pricingSaving || !pricingPackageCode}>
-                        {pricingSaving ? "Đang lưu..." : "Lưu lựa chọn báo giá"}
-                      </Button>
+                      {pricingQuote.selectedServiceCodes.length > 0 && (
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1.5">Dịch vụ bổ sung đã chọn:</p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {pricingQuote.selectedServiceCodes.map((code) => (
+                              <Badge key={code} variant="secondary" className="text-xs font-normal">
+                                {pricingCatalog.find((i) => i.code === code)?.name || code}
+                              </Badge>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                   {pricingQuote?.status === "LEGACY" && (
@@ -558,7 +579,9 @@ export function RequestDetail() {
                 </CardContent>
               </Card>
             )}
-            <InvoiceDisplay requestId={request.requestId} />
+            {(isCustomer || userRole === "LOGISTICS_MANAGER") && (
+              <InvoiceDisplay requestId={request.requestId} />
+            )}
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Heart className="h-4 w-4" /> Ngựa vận chuyển ({totalHorses} con)</CardTitle></CardHeader>
@@ -578,16 +601,20 @@ export function RequestDetail() {
                 </div>
               </CardContent>
             </Card>
-            <CompensationClaimsPanel
-              requestId={request.requestId}
-              isManager={userRole === "LOGISTICS_MANAGER"}
-              canSubmit={isCustomer && ((!!plan && transportPlanStatusLabel(plan.status) === "Hoàn thành") || request.status === "COMPLETED")}
-            />
-            <ServiceFeedbackPanel
-              requestId={request.requestId}
-              canFeedback={isCustomer && ((!!plan && transportPlanStatusLabel(plan.status) === "Hoàn thành") || request.status === "COMPLETED")}
-              isCustomer={isCustomer}
-            />
+            {(isCustomer || userRole === "LOGISTICS_MANAGER") && (
+              <>
+                <CompensationClaimsPanel
+                  requestId={request.requestId}
+                  isManager={userRole === "LOGISTICS_MANAGER"}
+                  canSubmit={isCustomer && ((!!plan && transportPlanStatusLabel(plan.status) === "Hoàn thành") || request.status === "COMPLETED")}
+                />
+                <ServiceFeedbackPanel
+                  requestId={request.requestId}
+                  canFeedback={isCustomer && ((!!plan && transportPlanStatusLabel(plan.status) === "Hoàn thành") || request.status === "COMPLETED")}
+                  isCustomer={isCustomer}
+                />
+              </>
+            )}
             <Card>
               <CardHeader><CardTitle className="text-base flex items-center gap-2"><Trophy className="h-4 w-4" /> Thông tin đơn</CardTitle></CardHeader>
               <CardContent className="space-y-3 text-sm">
@@ -613,12 +640,28 @@ export function RequestDetail() {
 
           {canApprove && (
             <Card className="border-[var(--warning)]/30 bg-[var(--warning-bg)]/20">
-              <CardHeader><CardTitle className="text-base">Xử lý yêu cầu vận chuyển</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-base">Xử lý yêu cầu vận chuyển (Cấp 1 - Quản lý Logistics)</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-2"><Label>Lý do từ chối (bắt buộc khi từ chối)</Label><Textarea value={approvalNote} onChange={(e) => setApprovalNote(e.target.value)} placeholder="Lý do từ chối..." rows={2} /></div>
                 <div className="flex flex-wrap gap-2 pt-2">
-                  <Button onClick={() => setReviewAction("approve")} disabled={actionLoading || pricingLoading || pricingSaving || pricingDirty || !pricingQuote?.canConfirm || !pricingQuote.fingerprint} className="gap-2 bg-[var(--success)] hover:bg-[var(--success)]/90 text-white"><CheckCircle2 className="h-4 w-4" /> Phê duyệt và chốt báo giá</Button>
-                  <Button onClick={() => setReviewAction("reject")} disabled={actionLoading || !approvalNote.trim()} variant="outline" className="gap-2 border-[var(--danger)] text-[var(--danger-fg)]"><XCircle className="h-4 w-4" /> Từ chối</Button>
+                  <Button onClick={() => setReviewAction("approve")} disabled={actionLoading || pricingLoading || !pricingQuote?.canConfirm || !pricingQuote.fingerprint} className="gap-2 bg-[var(--success)] hover:bg-[var(--success)]/90 text-white"><CheckCircle2 className="h-4 w-4" /> Phê duyệt cấp 1 & chốt báo giá</Button>
+                  <Button onClick={() => setReviewAction("reject")} disabled={actionLoading || !approvalNote.trim()} variant="outline" className="gap-2 border-[var(--danger)] text-[var(--danger-fg)]"><XCircle className="h-4 w-4" /> Từ chối yêu cầu</Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {canSpecialistApprove && (
+            <Card className="border-blue-500/30 bg-blue-500/10">
+              <CardHeader><CardTitle className="text-base text-blue-700 flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Thẩm định hồ sơ & Phê duyệt cấp 2 (Chuyên viên vận tải)</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Yêu cầu đã được Quản lý Logistics chốt báo giá. Chuyên viên kiểm tra hồ sơ kiểm dịch, tính khả thi và bấm phê duyệt để cho phép Điều phối viên lập kế hoạch lộ trình.
+                </p>
+                <div className="space-y-2"><Label>Lý do từ chối (bắt buộc khi từ chối)</Label><Textarea value={approvalNote} onChange={(e) => setApprovalNote(e.target.value)} placeholder="Nhập lý do nếu hồ sơ hoặc tuyến không đạt yêu cầu..." rows={2} /></div>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <Button onClick={() => setReviewAction("specialist-approve")} disabled={actionLoading} className="gap-2 bg-[var(--success)] hover:bg-[var(--success)]/90 text-white"><CheckCircle2 className="h-4 w-4" /> Chuyên viên phê duyệt hoàn tất</Button>
+                  <Button onClick={() => setReviewAction("specialist-reject")} disabled={actionLoading || !approvalNote.trim()} variant="outline" className="gap-2 border-[var(--danger)] text-[var(--danger-fg)]"><XCircle className="h-4 w-4" /> Chuyên viên từ chối</Button>
                 </div>
               </CardContent>
             </Card>
@@ -716,11 +759,19 @@ export function RequestDetail() {
       <AlertDialog open={reviewAction !== null} onOpenChange={(open) => { if (!open) setReviewAction(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{reviewAction === "approve" ? "Phê duyệt yêu cầu?" : "Từ chối yêu cầu?"}</AlertDialogTitle>
+            <AlertDialogTitle>
+              {reviewAction === "approve"
+                ? "Phê duyệt cấp 1 & Chốt báo giá?"
+                : reviewAction === "specialist-approve"
+                  ? "Chuyên viên phê duyệt cấp 2 (Hoàn tất)?"
+                  : "Từ chối yêu cầu vận chuyển?"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
               {reviewAction === "approve"
-                ? "Yêu cầu sẽ được phê duyệt cùng báo giá USD hiện tại. Chi tiết và tổng tiền sẽ được lưu thành bản chụp không đổi theo bảng giá về sau."
-                : "Yêu cầu sẽ bị từ chối. Lý do được gửi cho khách hàng qua thông báo."}
+                ? "Yêu cầu sẽ được Logistics Manager phê duyệt cùng báo giá USD chốt. Trạng thái sẽ chuyển sang 'Chờ chuyên viên kiểm tra' (Cấp 2)."
+                : reviewAction === "specialist-approve"
+                  ? "Yêu cầu sẽ được phê duyệt hoàn tất (2 cấp). Hệ thống sẽ cho phép Điều phối viên lập kế hoạch lộ trình và điều phối phương tiện."
+                  : "Yêu cầu sẽ bị từ chối và lý do sẽ được lưu lại, thông báo trực tiếp đến khách hàng."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

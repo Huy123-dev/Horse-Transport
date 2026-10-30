@@ -160,7 +160,7 @@ export function InvoiceDetail() {
               </div>
 
               <p className="text-xs text-muted-foreground">
-                Backend chỉ lưu trạng thái và phương thức thanh toán; lịch sử giao dịch/cổng thanh toán chưa được cung cấp.
+                Thông tin thanh toán được ghi nhận và lưu trữ trực tiếp trên hệ thống.
               </p>
 
               {/* Pay button / form */}
@@ -171,7 +171,7 @@ export function InvoiceDetail() {
                   <Card className="border-primary/30 bg-primary/5">
                     <CardContent className="space-y-3 p-4">
                       <div className="space-y-2"><Label className="text-xs">Phương thức thanh toán</Label><select value={payForm.method} onChange={(e) => setPayForm({ method: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option>Chuyển khoản thủ công</option><option>Tiền mặt</option></select></div>
-                      <p className="text-xs text-muted-foreground">Thao tác này chỉ cập nhật trạng thái hóa đơn; cổng thanh toán không được tích hợp.</p>
+                      <p className="text-xs text-muted-foreground">Thao tác này sẽ ghi nhận trạng thái thanh toán vào hóa đơn.</p>
                       <div className="flex gap-2">
                         <Button onClick={() => setConfirmPaymentOpen(true)} disabled={actionLoading} className="flex-1 gap-2 bg-[var(--success)] hover:bg-[var(--success)]/90"><CheckCircle2 className="h-4 w-4" /> Ghi nhận đã thanh toán</Button>
                         <Button variant="outline" onClick={() => setShowPayForm(false)}>Hủy</Button>

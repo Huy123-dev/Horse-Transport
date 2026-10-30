@@ -71,6 +71,11 @@ public class CompensationClaimService {
 
         String category = normalizeCategory(request.category());
         String description = blankToNull(request.description());
+        String evidenceUrl = blankToNull(request.evidenceUrl());
+
+        if (("HORSE_HEALTH".equals(category) || "ASSET_DAMAGE".equals(category)) && evidenceUrl == null) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Danh mục này bắt buộc phải tải lên hình ảnh/tài liệu minh chứng");
+        }
 
         if ("OTHER".equals(category) && description == null) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng nhập mô tả chi tiết khi chọn lý do 'Khác'");
@@ -87,7 +92,7 @@ public class CompensationClaimService {
         claim.setDescription(description);
         claim.setRequestedAmount(request.requestedAmount());
         claim.setCurrency(blankToDefault(request.currency(), "USD"));
-        claim.setEvidenceUrl(blankToNull(request.evidenceUrl()));
+        claim.setEvidenceUrl(evidenceUrl);
         claim.setStatus(SUBMITTED);
 
         claim = claimRepository.saveAndFlush(claim);

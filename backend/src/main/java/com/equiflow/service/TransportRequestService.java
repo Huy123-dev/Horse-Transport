@@ -41,12 +41,15 @@ public class TransportRequestService {
 
 
     public static final String PENDING = "Dang tham dinh";
+    public static final String MANAGER_APPROVED = "Cho chuyen vien kiem tra";
     public static final String APPROVED = "Da phe duyet";
     public static final String REJECTED = "Tu choi";
     public static final String CANCELLED = "Da huy";
 
     private static final String DEFAULT_CURRENCY = "USD";
     private static final String MANAGER_ROLE = "LOGISTICS_MANAGER";
+    private static final String SPECIALIST_ROLE = "TRANSPORT_SPECIALIST";
+    private static final String COORDINATOR_ROLE = "FLEET_COORDINATOR";
 
     private final TransportRequestRepository requestRepository;
     private final HorseRepository horseRepository;
@@ -120,7 +123,7 @@ public class TransportRequestService {
         saveStallConfigurations(r.getRequestId(), horseIds, req.stallConfigurations());
         pricingService.saveSelection(r.getRequestId(), customerId, true, req.pricingSelection());
 
-        notifyManagers(r, userRepository.findById(customerId).map(User::getName).orElse("Khách hàng"));
+        notifyManagersAndSpecialists(r, userRepository.findById(customerId).map(User::getName).orElse("Khách hàng"));
         return toResponse(r);
     }
 
@@ -181,7 +184,9 @@ public class TransportRequestService {
     @Transactional
     public TransportRequestResponse approve(UUID id, UUID managerId, String previewFingerprint, BigDecimal estimatedAmount) {
         if (previewFingerprint != null && !previewFingerprint.isBlank()) {
-            return toResponse(pricingService.approveAndConfirmQuote(id, managerId, previewFingerprint));
+            TransportRequest req = pricingService.approveAndConfirmQuote(id, managerId, previewFingerprint);
+            notifySpecialists(req);
+            return toResponse(req);
         }
 
         // Bắt buộc xác nhận báo giá nếu đơn hàng có cấu hình gói dịch vụ
@@ -191,7 +196,7 @@ public class TransportRequestService {
         }
 
         TransportRequest r = getPendingForUpdate(id);
-        r.setStatus(APPROVED);
+        r.setStatus(MANAGER_APPROVED);
         r.setApprovedBy(managerId);
         r.setApprovedAt(LocalDateTime.now(ZoneOffset.UTC));
         if (estimatedAmount != null) {
@@ -202,8 +207,9 @@ public class TransportRequestService {
         }
         r = requestRepository.saveAndFlush(r);
 
-        notifyCustomer(r, "Đơn hàng đã được phê duyệt",
-                "Yêu cầu vận chuyển của bạn đã được Logistics Manager phê duyệt.");
+        notifyCustomer(r, "Yêu cầu đã được phê duyệt bước 1",
+                "Yêu cầu vận chuyển của bạn đã được Logistics Manager phê duyệt và đang chuyển sang Chuyên viên kiểm tra hồ sơ.");
+        notifySpecialists(r);
         return toResponse(r);
     }
 
@@ -216,10 +222,58 @@ public class TransportRequestService {
     public TransportRequestResponse reject(UUID id, String reason) {
         TransportRequest r = getPendingForUpdate(id);
         r.setStatus(REJECTED);
+        r.setRejectionReason(reason != null ? reason.trim() : null);
         r = requestRepository.saveAndFlush(r);
 
         notifyCustomer(r, "Yêu cầu vận chuyển bị từ chối",
-                "Yêu cầu vận chuyển của bạn đã bị từ chối. Lý do: " + reason.trim());
+                "Yêu cầu vận chuyển của bạn đã bị từ chối. Lý do: " + (reason != null ? reason.trim() : ""));
+        return toResponse(r);
+    }
+
+    @Transactional
+    public TransportRequestResponse specialistApprove(UUID id, UUID specialistId) {
+        TransportRequest r = requestRepository.findByIdForUpdate(id)
+                .orElseThrow(TransportRequestService::notFound);
+        if (!MANAGER_APPROVED.equals(r.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Chỉ có thể phê duyệt yêu cầu đã qua cấp quản lý (trạng thái hiện tại: " + r.getStatus() + ")");
+        }
+        r.setStatus(APPROVED);
+        r.setSpecialistApprovedBy(specialistId);
+        r.setSpecialistApprovedAt(LocalDateTime.now(ZoneOffset.UTC));
+        r = requestRepository.saveAndFlush(r);
+
+        notifyCustomer(r, "Yêu cầu vận chuyển đã được phê duyệt hoàn tất",
+                "Yêu cầu vận chuyển của bạn đã được Chuyên viên kiểm tra và phê duyệt hoàn tất. Hệ thống đang lập kế hoạch vận chuyển.");
+        notifyCoordinators(r);
+        return toResponse(r);
+    }
+
+    @Transactional
+    public TransportRequestResponse specialistReject(UUID id, UUID specialistId, String reason) {
+        TransportRequest r = requestRepository.findByIdForUpdate(id)
+                .orElseThrow(TransportRequestService::notFound);
+        if (!MANAGER_APPROVED.equals(r.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Chỉ có thể từ chối yêu cầu đang chờ chuyên viên kiểm tra (trạng thái hiện tại: " + r.getStatus() + ")");
+        }
+        r.setStatus(REJECTED);
+        r.setSpecialistApprovedBy(specialistId);
+        r.setSpecialistApprovedAt(LocalDateTime.now(ZoneOffset.UTC));
+        r.setRejectionReason(reason != null ? reason.trim() : null);
+        r = requestRepository.saveAndFlush(r);
+
+        notifyCustomer(r, "Yêu cầu vận chuyển bị từ chối bởi chuyên viên",
+                "Yêu cầu vận chuyển của bạn bị từ chối sau khi kiểm tra hồ sơ. Lý do: " + (reason != null ? reason.trim() : "Không đạt yêu cầu"));
+
+        final UUID rejectedRequestId = r.getRequestId();
+        final String reasonText = reason != null ? reason.trim() : "";
+        List<Notification> managerNotifs = userRepository.findByRoleId(MANAGER_ROLE).stream()
+                .map(m -> newNotification(m.getUserId(), rejectedRequestId, "Yêu cầu vận chuyển bị chuyên viên từ chối",
+                        "Yêu cầu #" + rejectedRequestId.toString().substring(0, 8) + " đã bị từ chối bởi chuyên viên. Lý do: " + reasonText))
+                .toList();
+        notificationRepository.saveAll(managerNotifs);
+
         return toResponse(r);
     }
 
@@ -307,10 +361,29 @@ public class TransportRequestService {
         stallRepository.saveAll(rows);
     }
 
-    private void notifyManagers(TransportRequest r, String customerName) {
-        List<Notification> list = userRepository.findByRoleId(MANAGER_ROLE).stream()
-                .map(m -> newNotification(m.getUserId(), r.getRequestId(), "Có yêu cầu vận chuyển mới",
+    private void notifyManagersAndSpecialists(TransportRequest r, String customerName) {
+        List<User> recipients = new java.util.ArrayList<>();
+        recipients.addAll(userRepository.findByRoleId(MANAGER_ROLE));
+        recipients.addAll(userRepository.findByRoleId(SPECIALIST_ROLE));
+        List<Notification> list = recipients.stream()
+                .map(u -> newNotification(u.getUserId(), r.getRequestId(), "Có yêu cầu vận chuyển mới",
                         customerName + " vừa gửi một yêu cầu vận chuyển đang chờ thẩm định."))
+                .toList();
+        notificationRepository.saveAll(list);
+    }
+
+    private void notifySpecialists(TransportRequest r) {
+        List<Notification> list = userRepository.findByRoleId(SPECIALIST_ROLE).stream()
+                .map(s -> newNotification(s.getUserId(), r.getRequestId(), "Có yêu cầu vận chuyển cần thẩm định hồ sơ",
+                        "Yêu cầu #" + r.getRequestId().toString().substring(0, 8) + " đã qua phê duyệt cấp quản lý và đang chờ chuyên viên kiểm tra hồ sơ."))
+                .toList();
+        notificationRepository.saveAll(list);
+    }
+
+    private void notifyCoordinators(TransportRequest r) {
+        List<Notification> list = userRepository.findByRoleId(COORDINATOR_ROLE).stream()
+                .map(c -> newNotification(c.getUserId(), r.getRequestId(), "Đơn vận chuyển sẵn sàng lập kế hoạch",
+                        "Yêu cầu #" + r.getRequestId().toString().substring(0, 8) + " đã được phê duyệt 2 cấp hoàn tất, sẵn sàng lập kế hoạch lộ trình."))
                 .toList();
         notificationRepository.saveAll(list);
     }
@@ -334,7 +407,7 @@ public class TransportRequestService {
     }
 
     /**
-     * Lọc theo ?status=. Chấp nhận giá trị DB (có/không dấu) hoặc PENDING/APPROVED/REJECTED/CANCELLED.
+     * Lọc theo ?status=. Chấp nhận giá trị DB (có/không dấu) hoặc PENDING/MANAGER_APPROVED/APPROVED/REJECTED/CANCELLED.
      * Không truyền thì không lọc.
      */
     private static String normalizeStatus(String raw) {
@@ -346,11 +419,12 @@ public class TransportRequestService {
                 .replace('_', ' ');
         return switch (s) {
             case "dang tham dinh", "pending" -> PENDING;
+            case "cho chuyen vien kiem tra", "manager approved" -> MANAGER_APPROVED;
             case "da phe duyet", "approved" -> APPROVED;
             case "tu choi", "rejected" -> REJECTED;
             case "da huy", "cancelled", "canceled" -> CANCELLED;
             default -> throw new ApiException(HttpStatus.BAD_REQUEST,
-                    "Trạng thái không hợp lệ (chấp nhận: PENDING, APPROVED, REJECTED, CANCELLED)");
+                    "Trạng thái không hợp lệ (chấp nhận: PENDING, MANAGER_APPROVED, APPROVED, REJECTED, CANCELLED)");
         };
     }
 
@@ -366,6 +440,7 @@ public class TransportRequestService {
         for (TransportRequest r : requests) {
             userIds.add(r.getCustomerId());
             if (r.getApprovedBy() != null) userIds.add(r.getApprovedBy());
+            if (r.getSpecialistApprovedBy() != null) userIds.add(r.getSpecialistApprovedBy());
             locationIds.add(r.getOriginLocationId());
             locationIds.add(r.getDestinationLocationId());
             horseIds.addAll(r.getHorseIds());
@@ -380,6 +455,7 @@ public class TransportRequestService {
         return requests.stream().map(r -> {
             User customer = users.get(r.getCustomerId());
             User approver = r.getApprovedBy() == null ? null : users.get(r.getApprovedBy());
+            User specialist = r.getSpecialistApprovedBy() == null ? null : users.get(r.getSpecialistApprovedBy());
             List<HorseInfo> horseInfos = r.getHorseIds().stream()
                     .map(horses::get)
                     .filter(java.util.Objects::nonNull)
@@ -400,6 +476,10 @@ public class TransportRequestService {
                     r.getApprovedBy(),
                     approver == null ? null : approver.getName(),
                     r.getApprovedAt(),
+                    r.getSpecialistApprovedBy(),
+                    specialist == null ? null : specialist.getName(),
+                    r.getSpecialistApprovedAt(),
+                    r.getRejectionReason(),
                     r.getCancelledBy(),
                     r.getCancelledAt(),
                     r.getCancellationReason(),

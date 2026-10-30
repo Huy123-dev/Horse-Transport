@@ -1,5 +1,6 @@
 package com.equiflow.security;
 
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -71,7 +72,13 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .cors(c -> {})
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.setContentType("application/json;charset=UTF-8");
+                    response.getWriter().write("{\"error\":\"Truy cập bị từ chối\",\"message\":\"Bạn không có quyền truy cập chức năng này\"}");
+                }))
             .authorizeHttpRequests(a -> a
     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
@@ -146,14 +153,18 @@ public class SecurityConfig {
     .requestMatchers(HttpMethod.PATCH, "/api/transport-requests/*/cancel").hasRole("CUSTOMER")
     .requestMatchers(HttpMethod.PATCH, "/api/transport-requests/*/approve", "/api/transport-requests/*/reject")
         .hasRole("LOGISTICS_MANAGER")
+    .requestMatchers(HttpMethod.PATCH, "/api/transport-requests/*/specialist-approve", "/api/transport-requests/*/specialist-reject")
+        .hasAnyRole("TRANSPORT_SPECIALIST", "LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.GET, "/api/pricing/catalog").hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.PUT, "/api/pricing/catalog/*").hasRole("LOGISTICS_MANAGER")
+    .requestMatchers(HttpMethod.GET, "/api/pricing/stalls").hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER")
+    .requestMatchers(HttpMethod.PUT, "/api/pricing/stalls").hasRole("LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.POST, "/api/pricing/quote-preview")
         .hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.GET, "/api/transport-requests/*/quote")
-        .hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER")
+        .hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST")
     .requestMatchers(HttpMethod.PUT, "/api/transport-requests/*/pricing-selection")
-        .hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER")
+        .hasRole("CUSTOMER")
 
     .requestMatchers(HttpMethod.POST, "/api/inspections").hasRole("TRANSPORT_SPECIALIST")
     .requestMatchers(HttpMethod.PATCH, "/api/inspections/*/status").hasRole("TRANSPORT_SPECIALIST")
@@ -189,6 +200,8 @@ public class SecurityConfig {
         .hasAnyRole("FLEET_COORDINATOR", "TRANSPORT_SPECIALIST")
     .requestMatchers(HttpMethod.PUT, "/api/route-stops/*")
         .hasAnyRole("FLEET_COORDINATOR", "TRANSPORT_SPECIALIST")
+    .requestMatchers(HttpMethod.PATCH, "/api/route-stops/*/status")
+        .hasAnyRole("DRIVER", "ESCORT", "DRIVER_ESCORT", "FLEET_COORDINATOR", "LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.DELETE, "/api/route-stops/*")
         .hasAnyRole("FLEET_COORDINATOR", "TRANSPORT_SPECIALIST")
 

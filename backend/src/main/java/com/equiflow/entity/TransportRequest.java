@@ -57,6 +57,15 @@ public class TransportRequest {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @Column(name = "specialist_approved_by")
+    private UUID specialistApprovedBy;
+
+    @Column(name = "specialist_approved_at")
+    private LocalDateTime specialistApprovedAt;
+
+    @Column(name = "rejection_reason", length = 500)
+    private String rejectionReason;
+
     @Column(name = "cancelled_by")
     private UUID cancelledBy;
 

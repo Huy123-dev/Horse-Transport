@@ -126,9 +126,9 @@ public class AuthService {
 
     @Transactional
     public MessageResponse requestPasswordReset(PasswordResetRequest req) {
-        if (mailHost.isBlank() || resetFrontendUrl.isBlank() || mailFrom.isBlank() || mailSender == null) {
+        if (mailHost.isBlank() || mailSender == null) {
             throw new ApiException(HttpStatus.SERVICE_UNAVAILABLE,
-                    "Dịch vụ đặt lại mật khẩu chưa được cấu hình email.");
+                    "Dịch vụ đặt lại mật khẩu chưa được cấu hình email (chưa cấu hình biến môi trường SMTP_HOST).");
         }
 
         String email = req.email().trim().toLowerCase();
@@ -168,7 +168,9 @@ public class AuthService {
             mailSender.send(message);
         } catch (MailException ex) {
             passwordResetTokenRepository.deleteByTokenHash(resetToken.getTokenHash());
-            logger.error("Password reset email delivery failed ({})", ex.getClass().getSimpleName());
+            logger.error("Password reset email delivery failed: {}", ex.getMessage());
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại dịch vụ email hoặc thử lại sau.");
         }
 
         return new MessageResponse(RESET_REQUEST_MESSAGE);

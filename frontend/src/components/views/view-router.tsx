@@ -77,7 +77,7 @@ function RoutedView() {
       : <BackendUnavailableView title="Chi tiết chuyến vận chuyển" endpoint="/api/transport-plans/{id}" description="Vai trò hiện tại không có quyền xem chi tiết chuyến vận chuyển." />;
   if (view === "request-detail") {
     return ["DRIVER", "ESCORT", "DRIVER_ESCORT"].includes(role)
-      ? <BackendUnavailableView title="Chi tiết yêu cầu" endpoint="/api/transport-requests/{id}" description="Backend chưa cấp quyền đọc yêu cầu cho Driver/Escort." />
+      ? <BackendUnavailableView title="Chi tiết yêu cầu" endpoint="/api/transport-requests/{id}" description="Tài xế và nhân viên đi kèm vui lòng xem chi tiết trong trang Chuyến được giao." />
       : <RequestDetail />;
   }
 
@@ -97,8 +97,8 @@ function RoutedView() {
     : <BackendUnavailableView title="Chi tiết kiểm định" endpoint="/api/inspections/{id}" description="Chỉ chuyên viên thủ tục và kiểm dịch được mở màn hình xử lý kiểm định." />;
   if (view === "compliance") return role === "TRANSPORT_SPECIALIST" ? <InspectionList /> : <BackendUnavailableView title="Kiểm dịch & thông quan" endpoint="/api/inspections" description="Chỉ chuyên viên thủ tục và kiểm dịch được xem bản ghi kiểm định." />;
 
-  if (view === "approvals") return role === "LOGISTICS_MANAGER" ? <ApprovalList /> : <BackendUnavailableView title="Phê duyệt yêu cầu" endpoint="/api/transport-requests?status=PENDING" description="Chỉ Logistics Manager được xử lý yêu cầu." />;
-  if (view === "approval-detail") return role === "LOGISTICS_MANAGER" ? <RequestDetail /> : <BackendUnavailableView title="Phê duyệt yêu cầu" endpoint="/api/transport-requests/{id}/approve|reject" description="Chỉ Logistics Manager được xử lý yêu cầu." />;
+  if (view === "approvals") return ["LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST"].includes(role) ? <ApprovalList /> : <BackendUnavailableView title="Phê duyệt yêu cầu" endpoint="/api/transport-requests" description="Chỉ Logistics Manager hoặc Chuyên viên vận tải được xử lý yêu cầu." />;
+  if (view === "approval-detail") return ["LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST"].includes(role) ? <RequestDetail /> : <BackendUnavailableView title="Phê duyệt yêu cầu" endpoint="/api/transport-requests/{id}" description="Chỉ Logistics Manager hoặc Chuyên viên vận tải được xử lý yêu cầu." />;
   if (view === "staff") return role === "LOGISTICS_MANAGER" ? <StaffView /> : <BackendUnavailableView title="Quản lý nhân sự" endpoint="/api/users" description="Chức năng nhân sự chỉ dành cho vai trò quản lý được backend cấp quyền." />;
   if (view === "pricing") return role === "LOGISTICS_MANAGER" ? <PricingCatalogView /> : <BackendUnavailableView title="Bảng giá dịch vụ" endpoint="/api/pricing/catalog" description="Chỉ Logistics Manager được cấu hình giá." />;
 

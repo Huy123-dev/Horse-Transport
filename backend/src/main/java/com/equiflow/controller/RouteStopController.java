@@ -47,6 +47,13 @@ public class RouteStopController {
         return service.update(id, req);
     }
 
+    @PatchMapping("/route-stops/{id}/status")
+    public RouteStopDto.Response updateStatus(@PathVariable UUID id,
+                                              @Valid @RequestBody RouteStopDto.StatusRequest req,
+                                              Authentication auth) {
+        return service.updateStatus(id, req, userId(auth), isDriverEscort(auth));
+    }
+
     @DeleteMapping("/route-stops/{id}")
     public MessageResponse delete(@PathVariable UUID id) {
         return service.delete(id);

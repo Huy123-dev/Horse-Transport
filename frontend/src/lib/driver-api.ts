@@ -1,4 +1,4 @@
-import { ApiError, apiGet, apiPost } from "@/lib/api-client";
+import { ApiError, apiGet, apiPatch, apiPost } from "@/lib/api-client";
 
 export interface DriverTransportPlan {
   planId: string;
@@ -93,6 +93,15 @@ export const getDriverPlan = (planId: string) =>
 
 export const getDriverPlanStops = (planId: string) =>
   apiGet<DriverRouteStop[]>(`/transport-plans/${planId}/stops`);
+
+export const updateRouteStopStatus = (
+  stopId: string,
+  payload: {
+    actualArrivalTime?: string | null;
+    actualDepartureTime?: string | null;
+    notes?: string | null;
+  }
+) => apiPatch<DriverRouteStop>(`/route-stops/${stopId}/status`, payload);
 
 export const getDriverPlanHealthLogs = (planId: string) =>
   apiGet<DriverHealthLog[]>(`/transport-plans/${planId}/health-logs`);

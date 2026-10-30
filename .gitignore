@@ -1,0 +1,45 @@
+﻿
+# ===== Equideli local files and sensitive data =====
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local secret configurations
+**/application-local.properties
+**/application-secret.properties
+**/secrets/
+
+# Private keys and certificates
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+
+# Local database and backup
+/DB
+/Database/
+*.bak
+*.bacpac
+*.mdf
+*.ldf
+
+# Temporary testing files
+/backend/scratch/
+/scratch/
+
+# Build outputs and cache
+/backend/bin/
+/backend/build/
+/backend/.gradle/
+/frontend/.next/
+/frontend/node_modules/
+/frontend/dist/
+/frontend/build/
+
+# Logs
+*.log

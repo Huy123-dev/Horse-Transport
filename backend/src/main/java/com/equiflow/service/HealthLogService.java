@@ -29,8 +29,9 @@ import static com.equiflow.service.StatusSupport.blankToNull;
 @Service
 public class HealthLogService {
 
-    /** Chỉ ghi sức khỏe khi chuyến đã sẵn sàng hoặc đang thực hiện. */
-    private static final Set<String> LOGGABLE = Set.of(TransportPlanService.READY, TransportPlanService.IN_PROGRESS);
+    /** Ghi sức khỏe khi chuyến đã sẵn sàng, đang thực hiện hoặc đã hoàn thành. */
+    private static final Set<String> LOGGABLE = Set.of(
+            TransportPlanService.READY, TransportPlanService.IN_PROGRESS, TransportPlanService.COMPLETED);
 
     private final HealthLogRepository healthRepository;
     private final TransportPlanRepository planRepository;
@@ -59,7 +60,7 @@ public class HealthLogService {
         }
         if (!LOGGABLE.contains(plan.getStatus())) {
             throw new ApiException(HttpStatus.CONFLICT,
-                    "Chỉ ghi nhận sức khỏe khi kế hoạch ở trạng thái sẵn sàng hoặc đang thực hiện (hiện tại: "
+                    "Chỉ ghi nhận sức khỏe khi kế hoạch ở trạng thái sẵn sàng, đang thực hiện hoặc đã hoàn thành (hiện tại: "
                             + plan.getStatus() + ")");
         }
         String appetite = blankToNull(req.appetiteStatus());

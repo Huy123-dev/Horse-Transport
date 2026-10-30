@@ -12,6 +12,7 @@ import {
   getDriverPlanIncidents,
   getDriverPlanStops,
   getDriverPlanTracking,
+  updateRouteStopStatus,
   type DriverDelivery,
   type DriverHealthLog,
   type DriverIncident,
@@ -32,7 +33,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, AlertTriangle, ArrowLeft, Heart, MapPin, Thermometer, Truck } from "lucide-react";
+import { Activity, AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Clock, Heart, MapPin, Thermometer, Truck } from "lucide-react";
 import { formatDateTime, formatRouteDetails, incidentStatusLabel, planCode, transportPlanStatusLabel } from "@/lib/constants";
 
 interface DriverPlanDetails {
@@ -55,9 +56,14 @@ function normalizedPlanStatus(status: string): string {
 }
 
 export function DriverPlanDetail() {
-  const { params, navigate } = useAppStore();
+  const { params, navigate, user } = useAppStore();
   const { toast } = useToast();
   const planId = params.id;
+  const userRole = user?.roleId || "";
+  const staffType = user?.staffType;
+  const isDriver = userRole === "DRIVER" || (userRole === "DRIVER_ESCORT" && staffType === "DRIVER");
+  const isEscort = userRole === "ESCORT" || (userRole === "DRIVER_ESCORT" && staffType === "ESCORT");
+  const defaultTab = isEscort ? "health" : "stops";
   const [loadState, setLoadState] = useState<LoadState | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [actionLoading, setActionLoading] = useState(false);
@@ -120,6 +126,41 @@ export function DriverPlanDetail() {
   const planStatus = normalizedPlanStatus(plan.status);
   const canRecordTripData = ["san sang", "ready", "dang thuc hien", "in progress"].includes(planStatus);
   const canRecordDelivery = ["dang thuc hien", "in progress"].includes(planStatus);
+  const canRecordHealth = ["san sang", "ready", "dang thuc hien", "in progress", "hoan thanh", "completed"].includes(planStatus);
+
+  const handleConfirmArrival = async (stopId: string) => {
+    setActionLoading(true);
+    try {
+      await updateRouteStopStatus(stopId, { actualArrivalTime: new Date().toISOString() });
+      toast({ title: "Đã xác nhận đến điểm dừng thành công" });
+      setAttempt((value) => value + 1);
+    } catch (error) {
+      toast({
+        title: "Không thể xác nhận đến mốc",
+        description: error instanceof Error ? error.message : "Vui lòng kiểm tra lại thứ tự các mốc.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConfirmDeparture = async (stopId: string) => {
+    setActionLoading(true);
+    try {
+      await updateRouteStopStatus(stopId, { actualDepartureTime: new Date().toISOString() });
+      toast({ title: "Đã xác nhận rời điểm dừng thành công" });
+      setAttempt((value) => value + 1);
+    } catch (error) {
+      toast({
+        title: "Không thể xác nhận rời mốc",
+        description: error instanceof Error ? error.message : "Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleCreateHealthLog = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -299,147 +340,231 @@ export function DriverPlanDetail() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="stops" className="space-y-4">
-        <TabsList className="grid h-auto w-full grid-cols-5">
+      <Tabs defaultValue={defaultTab} className="space-y-4">
+        <TabsList className={`grid h-auto w-full ${isDriver ? "grid-cols-4" : isEscort ? "grid-cols-3" : "grid-cols-5"}`}>
           <TabsTrigger value="stops" className="gap-2"><MapPin className="h-4 w-4" />Lộ trình</TabsTrigger>
-          <TabsTrigger value="health" className="gap-2"><Heart className="h-4 w-4" />Sức khỏe</TabsTrigger>
+          {!isDriver && (
+            <TabsTrigger value="health" className="gap-2"><Heart className="h-4 w-4" />{isEscort ? "Chăm sóc & Sức khỏe" : "Sức khỏe"}</TabsTrigger>
+          )}
           <TabsTrigger value="incidents" className="gap-2"><AlertTriangle className="h-4 w-4" />Sự cố</TabsTrigger>
-          <TabsTrigger value="tracking" className="gap-2"><MapPin className="h-4 w-4" />Hành trình</TabsTrigger>
-          <TabsTrigger value="delivery" className="gap-2"><Truck className="h-4 w-4" />Bàn giao</TabsTrigger>
+          {!isEscort && (
+            <>
+              <TabsTrigger value="tracking" className="gap-2"><MapPin className="h-4 w-4" />Hành trình</TabsTrigger>
+              <TabsTrigger value="delivery" className="gap-2"><Truck className="h-4 w-4" />Bàn giao</TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         <TabsContent value="stops">
           <Card>
-            <CardHeader><CardTitle className="text-base">Các điểm dừng</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center justify-between">
+                <span>Các mốc hành trình ({stops.length} điểm)</span>
+                {isDriver && <span className="text-xs font-normal text-muted-foreground">Xác nhận theo tuần tự từng mốc</span>}
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               {stops.length === 0 ? (
                 <EmptyState icon={<MapPin className="h-6 w-6" />} title="Chưa có điểm dừng" description="Chưa có điểm dừng nào được ghi nhận cho kế hoạch này." className="py-8" />
               ) : (
                 <div className="space-y-3">
-                  {stops.map((stop) => (
-                    <div key={stop.stopId} className="flex gap-3 rounded-lg border border-border p-4">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">{stop.sequenceNo}</div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-medium">{stop.stopName}</p>
-                          <Badge variant="outline">{stop.stopType}</Badge>
+                  {[...stops].sort((a, b) => a.sequenceNo - b.sequenceNo).map((stop, index, sortedArr) => {
+                    const priorStopsConfirmed = sortedArr.slice(0, index).every((s) => s.actualArrivalTime !== null);
+                    const isPendingArrival = !stop.actualArrivalTime;
+                    const isPendingDeparture = !!stop.actualArrivalTime && !stop.actualDepartureTime && stop.stopType !== "DESTINATION";
+                    const isStopFinished = !!stop.actualArrivalTime && (!!stop.actualDepartureTime || stop.stopType === "DESTINATION");
+
+                    return (
+                      <div key={stop.stopId} className="rounded-lg border border-border p-4 space-y-3 bg-card">
+                        <div className="flex items-start gap-3">
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${isStopFinished ? "bg-emerald-500/10 text-emerald-600" : isPendingDeparture ? "bg-amber-500/10 text-amber-600" : "bg-primary/10 text-primary"}`}>
+                            {stop.sequenceNo}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <p className="font-semibold text-foreground">{stop.stopName}</p>
+                              <Badge variant="outline">{stop.stopType}</Badge>
+                              {isStopFinished && (
+                                <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 bg-emerald-500/10 gap-1 text-[11px] py-0.5">
+                                  <CheckCircle2 className="h-3 w-3" /> Đã hoàn thành
+                                </Badge>
+                              )}
+                              {isPendingDeparture && (
+                                <Badge variant="outline" className="border-amber-500/40 text-amber-600 bg-amber-500/10 gap-1 text-[11px] py-0.5">
+                                  <Clock className="h-3 w-3" /> Đang dừng tại trạm
+                                </Badge>
+                              )}
+                            </div>
+                            {stop.locationName && <p className="mt-1 text-sm text-muted-foreground">{stop.locationName}{stop.countryCode ? ` · ${stop.countryCode}` : ""}</p>}
+                            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                              {stop.plannedArrivalTime && <span>Dự kiến đến: {formatDateTime(stop.plannedArrivalTime)}</span>}
+                              {stop.plannedDepartureTime && <span>Dự kiến rời: {formatDateTime(stop.plannedDepartureTime)}</span>}
+                              {stop.actualArrivalTime && <span className="text-foreground font-medium">Thực tế đến: {formatDateTime(stop.actualArrivalTime)}</span>}
+                              {stop.actualDepartureTime && <span className="text-foreground font-medium">Thực tế rời: {formatDateTime(stop.actualDepartureTime)}</span>}
+                            </div>
+                            {stop.notes && <p className="mt-2 text-sm text-muted-foreground italic">{stop.notes}</p>}
+                          </div>
                         </div>
-                        {stop.locationName && <p className="mt-1 text-sm text-muted-foreground">{stop.locationName}{stop.countryCode ? ` · ${stop.countryCode}` : ""}</p>}
-                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                          {stop.plannedArrivalTime && <span>Dự kiến đến: {formatDateTime(stop.plannedArrivalTime)}</span>}
-                          {stop.actualArrivalTime && <span>Thực tế đến: {formatDateTime(stop.actualArrivalTime)}</span>}
-                          {stop.plannedDepartureTime && <span>Dự kiến rời: {formatDateTime(stop.plannedDepartureTime)}</span>}
-                          {stop.actualDepartureTime && <span>Thực tế rời: {formatDateTime(stop.actualDepartureTime)}</span>}
-                        </div>
-                        {stop.notes && <p className="mt-2 text-sm text-muted-foreground">{stop.notes}</p>}
+
+                        {/* Thao tác xác nhận mốc dành cho Tài xế */}
+                        {isDriver && (
+                          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-border pt-3">
+                            <div className="text-xs">
+                              {isPendingArrival && !priorStopsConfirmed && (
+                                <span className="text-amber-500 font-medium">⚠️ Cần hoàn thành xác nhận các mốc trước đó</span>
+                              )}
+                              {isPendingArrival && priorStopsConfirmed && (
+                                <span className="text-primary font-medium">Đã sẵn sàng xác nhận đến mốc này</span>
+                              )}
+                              {isPendingDeparture && (
+                                <span className="text-muted-foreground">Đã ghi nhận đến lúc {formatDateTime(stop.actualArrivalTime!)}</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {isPendingArrival && (
+                                <Button
+                                  size="sm"
+                                  onClick={() => void handleConfirmArrival(stop.stopId)}
+                                  disabled={actionLoading || !priorStopsConfirmed || !["san sang", "ready", "dang thuc hien", "in progress"].includes(planStatus)}
+                                  className="gap-1.5"
+                                >
+                                  <CheckCircle2 className="h-4 w-4" /> Xác nhận đã đến mốc
+                                </Button>
+                              )}
+                              {isPendingDeparture && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => void handleConfirmDeparture(stop.stopId)}
+                                  disabled={actionLoading}
+                                  className="gap-1.5"
+                                >
+                                  <ArrowRight className="h-4 w-4" /> Xác nhận rời mốc
+                                </Button>
+                              )}
+                              {isStopFinished && (
+                                <span className="text-xs text-emerald-600 font-medium flex items-center gap-1">
+                                  <CheckCircle2 className="h-3.5 w-3.5" /> Mốc đã hoàn tất
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="health">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Heart className="h-4 w-4" />Nhật ký sức khỏe</CardTitle></CardHeader>
-            <CardContent>
-              {healthLogs.length === 0 ? (
-                <EmptyState icon={<Heart className="h-6 w-6" />} title="Chưa có nhật ký sức khỏe" className="py-8" />
-              ) : (
-                <div className="space-y-3">
-                  {healthLogs.map((log) => (
-                    <div key={log.logId} className="rounded-lg border border-border p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-medium">{log.horseName || `Hồ sơ ngựa #${log.horseId.slice(-8)}`}</p>
-                        <span className="text-xs text-muted-foreground">{formatDateTime(log.loggedAt)}</span>
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
-                        {log.stressLevel !== null && <span className="flex items-center gap-1.5"><Activity className="h-4 w-4 text-muted-foreground" />Căng thẳng {log.stressLevel}/10</span>}
-                        {log.heartRate !== null && <span>Nhịp tim {log.heartRate} lần/phút</span>}
-                        {log.temperature !== null && <span className="flex items-center gap-1.5"><Thermometer className="h-4 w-4 text-muted-foreground" />{log.temperature} °C</span>}
-                        {log.appetiteStatus && <span>Ăn uống: {log.appetiteStatus}</span>}
-                      </div>
-                      {log.notes && <p className="mt-3 border-t border-border pt-3 text-sm text-muted-foreground">{log.notes}</p>}
-                      {log.loggedByName && <p className="mt-2 text-xs text-muted-foreground">Ghi nhận bởi {log.loggedByName}</p>}
-                    </div>
-                  ))}
-                </div>
-              )}
-              {canRecordTripData ? (
-                <form onSubmit={handleCreateHealthLog} className="mt-6 space-y-4 border-t border-border pt-5">
-                  <h3 className="font-medium">Ghi nhận sức khỏe mới</h3>
-                  {plan.horses.length > 0 && (
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {plan.horses.map((horse) => (
-                        <div key={horse.horseId} className="flex items-center gap-3 rounded-md border p-2">
-                          <HorseImage src={horse.imageUrl} name={horse.name} className="h-12 w-12 shrink-0 rounded-md" />
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{horse.name}</p>
-                            <p className="truncate text-xs text-muted-foreground">{horse.microchipId}</p>
-                          </div>
+        {!isDriver && (
+          <TabsContent value="health">
+            <Card>
+              <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Heart className="h-4 w-4" />{isEscort ? "Chăm sóc & Quan sát sức khỏe ngựa" : "Nhật ký sức khỏe"}</CardTitle></CardHeader>
+              <CardContent>
+                {healthLogs.length === 0 ? (
+                  <EmptyState icon={<Heart className="h-6 w-6" />} title="Chưa có nhật ký quan sát sức khỏe" className="py-8" />
+                ) : (
+                  <div className="space-y-3">
+                    {healthLogs.map((log) => (
+                      <div key={log.logId} className="rounded-lg border border-border p-4">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <p className="font-medium">{log.horseName || `Hồ sơ ngựa #${log.horseId.slice(-8)}`}</p>
+                          <span className="text-xs text-muted-foreground">{formatDateTime(log.loggedAt)}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="health-horse">Ngựa</Label>
-                      <select
-                        id="health-horse"
-                        required
-                        value={healthForm.horseId}
-                        onChange={(event) => setHealthForm((form) => ({ ...form, horseId: event.target.value }))}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      >
-                        <option value="">Chọn ngựa</option>
-                        {plan.horseIds.map((horseId) => (
-                          <option key={horseId} value={horseId}>Hồ sơ ngựa #{horseId.slice(-8)}</option>
-                        ))}
-                      </select>
-                      {plan.horseIds.length === 0 && (
-                        <p className="text-sm text-muted-foreground">Chưa có hồ sơ ngựa được gắn với kế hoạch này.</p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="health-stress">Mức căng thẳng (1–10)</Label>
-                      <Input id="health-stress" type="number" min="1" max="10" value={healthForm.stressLevel}
-                        onChange={(event) => setHealthForm((form) => ({ ...form, stressLevel: event.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="health-heart-rate">Nhịp tim (lần/phút)</Label>
-                      <Input id="health-heart-rate" type="number" min="10" max="250" value={healthForm.heartRate}
-                        onChange={(event) => setHealthForm((form) => ({ ...form, heartRate: event.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="health-temperature">Nhiệt độ (°C)</Label>
-                      <Input id="health-temperature" type="number" min="30" max="45" step="0.1" value={healthForm.temperature}
-                        onChange={(event) => setHealthForm((form) => ({ ...form, temperature: event.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="health-appetite">Tình trạng ăn uống</Label>
-                      <Input id="health-appetite" maxLength={50} value={healthForm.appetiteStatus}
-                        onChange={(event) => setHealthForm((form) => ({ ...form, appetiteStatus: event.target.value }))} />
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="health-notes">Ghi chú</Label>
-                      <Textarea id="health-notes" value={healthForm.notes}
-                        onChange={(event) => setHealthForm((form) => ({ ...form, notes: event.target.value }))} />
-                    </div>
+                        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm">
+                          {log.stressLevel !== null && <span className="flex items-center gap-1.5"><Activity className="h-4 w-4 text-muted-foreground" />Căng thẳng {log.stressLevel}/10</span>}
+                          {log.heartRate !== null && <span>Nhịp tim {log.heartRate} lần/phút</span>}
+                          {log.temperature !== null && <span className="flex items-center gap-1.5"><Thermometer className="h-4 w-4 text-muted-foreground" />{log.temperature} °C</span>}
+                          {log.appetiteStatus && <span>Ăn uống: {log.appetiteStatus}</span>}
+                        </div>
+                        {log.notes && <p className="mt-3 border-t border-border pt-3 text-sm text-muted-foreground">{log.notes}</p>}
+                        {log.loggedByName && <p className="mt-2 text-xs text-muted-foreground">Ghi nhận bởi {log.loggedByName}</p>}
+                      </div>
+                    ))}
                   </div>
-                  <Button type="submit" disabled={actionLoading || plan.horseIds.length === 0}>
-                    {actionLoading ? "Đang gửi..." : "Lưu nhật ký sức khỏe"}
-                  </Button>
-                </form>
-              ) : (
-                <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
-                  Chỉ có thể ghi nhật ký khi kế hoạch sẵn sàng hoặc đang thực hiện.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                )}
+                {canRecordHealth ? (
+                  <form onSubmit={handleCreateHealthLog} className="mt-6 space-y-4 border-t border-border pt-5">
+                    <h3 className="font-medium">Ghi nhận thể trạng & quan sát mới</h3>
+                    {plan.horses.length > 0 && (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {plan.horses.map((horse) => (
+                          <button
+                            key={horse.horseId}
+                            type="button"
+                            onClick={() => setHealthForm((form) => ({ ...form, horseId: horse.horseId }))}
+                            className={`flex items-center gap-3 rounded-md border p-2 text-left transition-all ${healthForm.horseId === horse.horseId ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border hover:border-border/80"}`}
+                          >
+                            <HorseImage src={horse.imageUrl} name={horse.name} className="h-12 w-12 shrink-0 rounded-md" />
+                            <div className="min-w-0 flex-1">
+                              <p className="truncate text-sm font-medium">{horse.name}</p>
+                              <p className="truncate text-xs text-muted-foreground">{horse.microchipId || "Không mã chip"}</p>
+                            </div>
+                            {healthForm.horseId === horse.horseId && (
+                              <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="health-horse">Chọn cá thể ngựa *</Label>
+                        <select
+                          id="health-horse"
+                          required
+                          value={healthForm.horseId}
+                          onChange={(event) => setHealthForm((form) => ({ ...form, horseId: event.target.value }))}
+                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        >
+                          <option value="">Chọn ngựa cần ghi nhận</option>
+                          {plan.horses.map((h) => (
+                            <option key={h.horseId} value={h.horseId}>{h.name} ({h.microchipId || "Không mã"})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="health-stress">Mức căng thẳng (1–10)</Label>
+                        <Input id="health-stress" type="number" min="1" max="10" value={healthForm.stressLevel}
+                          onChange={(event) => setHealthForm((form) => ({ ...form, stressLevel: event.target.value }))} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="health-heart-rate">Nhịp tim (lần/phút)</Label>
+                        <Input id="health-heart-rate" type="number" min="10" max="250" value={healthForm.heartRate}
+                          onChange={(event) => setHealthForm((form) => ({ ...form, heartRate: event.target.value }))} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="health-temperature">Nhiệt độ (°C)</Label>
+                        <Input id="health-temperature" type="number" min="30" max="45" step="0.1" value={healthForm.temperature}
+                          onChange={(event) => setHealthForm((form) => ({ ...form, temperature: event.target.value }))} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="health-appetite">Tình trạng ăn uống</Label>
+                        <Input id="health-appetite" maxLength={50} value={healthForm.appetiteStatus} placeholder="Ví dụ: Tốt, Bình thường, Bỏ ăn..."
+                          onChange={(event) => setHealthForm((form) => ({ ...form, appetiteStatus: event.target.value }))} />
+                      </div>
+                      <div className="space-y-2 sm:col-span-2">
+                        <Label htmlFor="health-notes">Ghi chú & quan sát thực tế</Label>
+                        <Textarea id="health-notes" value={healthForm.notes} placeholder="Ghi nhận biểu hiện hành vi, thể trạng cơ thể..."
+                          onChange={(event) => setHealthForm((form) => ({ ...form, notes: event.target.value }))} />
+                      </div>
+                    </div>
+                    <Button type="submit" disabled={actionLoading || !healthForm.horseId}>
+                      {actionLoading ? "Đang gửi..." : "Lưu nhật ký chăm sóc"}
+                    </Button>
+                  </form>
+                ) : (
+                  <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
+                    Chỉ có thể ghi nhật ký khi kế hoạch sẵn sàng, đang thực hiện hoặc đã hoàn thành.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         <TabsContent value="incidents">
           <Card>
@@ -517,122 +642,128 @@ export function DriverPlanDetail() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="tracking">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4" />Nhật ký hành trình</CardTitle></CardHeader>
-            <CardContent>
-              {tracking.length === 0 ? (
-                <EmptyState icon={<MapPin className="h-6 w-6" />} title="Chưa có cập nhật hành trình" className="py-8" />
-              ) : (
-                <div className="space-y-3">
-                  {tracking.map((entry) => (
-                    <div key={entry.logId} className="rounded-lg border border-border p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-medium">{entry.milestone || "Cập nhật vị trí"}</p>
-                        <span className="text-xs text-muted-foreground">{formatDateTime(entry.reportedAt)}</span>
-                      </div>
-                      <p className="mt-2 text-sm">{entry.latitude}, {entry.longitude}</p>
-                      {entry.reportedByName && <p className="mt-1 text-xs text-muted-foreground">Cập nhật bởi {entry.reportedByName}</p>}
+        {!isEscort && (
+          <>
+            <TabsContent value="tracking">
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4" />Nhật ký hành trình</CardTitle></CardHeader>
+                <CardContent>
+                  {tracking.length === 0 ? (
+                    <EmptyState icon={<MapPin className="h-6 w-6" />} title="Chưa có cập nhật hành trình" className="py-8" />
+                  ) : (
+                    <div className="space-y-3">
+                      {tracking.map((entry) => (
+                        <div key={entry.logId} className="rounded-lg border border-border p-4">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="font-medium">{entry.milestone || "Cập nhật vị trí"}</p>
+                            <span className="text-xs text-muted-foreground">{formatDateTime(entry.reportedAt)}</span>
+                          </div>
+                          <p className="mt-2 text-sm">{entry.latitude}, {entry.longitude}</p>
+                          {entry.reportedByName && <p className="mt-1 text-xs text-muted-foreground">Cập nhật bởi {entry.reportedByName}</p>}
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              )}
-              {canRecordTripData ? (
-                <form onSubmit={handleCreateTrackingLog} className="mt-6 space-y-4 border-t border-border pt-5">
-                  <h3 className="font-medium">Cập nhật vị trí</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="tracking-milestone">Mốc hành trình (không bắt buộc)</Label>
-                      <Input id="tracking-milestone" maxLength={100} value={trackingForm.milestone}
-                        onChange={(event) => setTrackingForm((form) => ({ ...form, milestone: event.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="tracking-latitude">Vĩ độ</Label>
-                      <Input id="tracking-latitude" type="number" required min="-90" max="90" step="any"
-                        value={trackingForm.latitude}
-                        onChange={(event) => setTrackingForm((form) => ({ ...form, latitude: event.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="tracking-longitude">Kinh độ</Label>
-                      <Input id="tracking-longitude" type="number" required min="-180" max="180" step="any"
-                        value={trackingForm.longitude}
-                        onChange={(event) => setTrackingForm((form) => ({ ...form, longitude: event.target.value }))} />
-                    </div>
-                  </div>
-                  <Button type="submit" disabled={actionLoading}>{actionLoading ? "Đang gửi..." : "Gửi cập nhật"}</Button>
-                </form>
-              ) : (
-                <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
-                  Chỉ có thể cập nhật hành trình khi kế hoạch sẵn sàng hoặc đang thực hiện.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="delivery">
-          <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Truck className="h-4 w-4" />Biên bản bàn giao</CardTitle></CardHeader>
-            <CardContent>
-              {delivery ? (
-                <div className="rounded-lg border border-border p-4">
-                  <p className="font-medium">Người nhận: {delivery.recipientName}</p>
-                  <p className="mt-2 text-sm text-muted-foreground">Thời gian: {formatDateTime(delivery.deliveredAt)}</p>
-                  <a className="mt-2 inline-block text-sm text-primary underline" href={delivery.signatureImageUrl} target="_blank" rel="noreferrer">
-                    Xem tham chiếu chữ ký
-                  </a>
-                  {delivery.podDocumentUrl && (
-                    <a className="ml-4 inline-block text-sm text-primary underline" href={delivery.podDocumentUrl} target="_blank" rel="noreferrer">
-                      Xem chứng từ POD
-                    </a>
                   )}
-                </div>
-              ) : (
-                <EmptyState icon={<Truck className="h-6 w-6" />} title="Chưa có biên bản bàn giao" className="py-8" />
-              )}
-              {canRecordDelivery && !delivery ? (
-                <form onSubmit={handleCreateDelivery} className="mt-6 space-y-4 border-t border-border pt-5">
-                  <h3 className="font-medium">Ghi nhận bàn giao</h3>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label htmlFor="delivery-recipient">Tên người nhận</Label>
-                      <Input id="delivery-recipient" required maxLength={150} value={deliveryForm.recipientName}
-                        onChange={(event) => setDeliveryForm((form) => ({ ...form, recipientName: event.target.value }))} />
+                  {canRecordTripData ? (
+                    <form onSubmit={handleCreateTrackingLog} className="mt-6 space-y-4 border-t border-border pt-5">
+                      <h3 className="font-medium">Cập nhật vị trí</h3>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor="tracking-milestone">Mốc hành trình (không bắt buộc)</Label>
+                          <Input id="tracking-milestone" maxLength={100} value={trackingForm.milestone}
+                            onChange={(event) => setTrackingForm((form) => ({ ...form, milestone: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="tracking-latitude">Vĩ độ</Label>
+                          <Input id="tracking-latitude" type="number" required min="-90" max="90" step="any"
+                            value={trackingForm.latitude}
+                            onChange={(event) => setTrackingForm((form) => ({ ...form, latitude: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="tracking-longitude">Kinh độ</Label>
+                          <Input id="tracking-longitude" type="number" required min="-180" max="180" step="any"
+                            value={trackingForm.longitude}
+                            onChange={(event) => setTrackingForm((form) => ({ ...form, longitude: event.target.value }))} />
+                        </div>
+                      </div>
+                      <Button type="submit" disabled={actionLoading}>{actionLoading ? "Đang gửi..." : "Gửi cập nhật"}</Button>
+                    </form>
+                  ) : (
+                    <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
+                      Chỉ có thể cập nhật hành trình khi kế hoạch sẵn sàng hoặc đang thực hiện.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="delivery">
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2 text-base"><Truck className="h-4 w-4" />Biên bản bàn giao</CardTitle></CardHeader>
+                <CardContent>
+                  {delivery ? (
+                    <div className="rounded-lg border border-border p-4">
+                      <p className="font-medium">Người nhận: {delivery.recipientName}</p>
+                      <p className="mt-2 text-sm text-muted-foreground">Thời gian: {formatDateTime(delivery.deliveredAt)}</p>
+                      <a className="mt-2 inline-block text-sm text-primary underline" href={delivery.signatureImageUrl} target="_blank" rel="noreferrer">
+                        Xem tham chiếu chữ ký
+                      </a>
+                      {delivery.podDocumentUrl && (
+                        <a className="ml-4 inline-block text-sm text-primary underline" href={delivery.podDocumentUrl} target="_blank" rel="noreferrer">
+                          Xem chứng từ POD
+                        </a>
+                      )}
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="delivery-signature">Ảnh chữ ký người nhận</Label>
-                      <Input id="delivery-signature" type="file" accept="image/jpeg,image/png"
-                        disabled={actionLoading || uploadingDeliveryField !== null}
-                        onChange={(event) => {
-                          const file = event.currentTarget.files?.[0];
-                          event.currentTarget.value = "";
-                          if (file) void handleUploadDeliveryFile(file, "signatureImageUrl");
-                        }} />
-                      {deliveryForm.signatureImageUrl && <p className="break-all text-xs text-[var(--success-fg)]">Đã tải ảnh chữ ký: {deliveryForm.signatureImageUrl}</p>}
-                    </div>
-                    <div className="space-y-2 sm:col-span-2">
-                      <Label htmlFor="delivery-pod">Chứng từ POD (không bắt buộc)</Label>
-                      <Input id="delivery-pod" type="file" accept="image/jpeg,image/png,application/pdf"
-                        disabled={actionLoading || uploadingDeliveryField !== null}
-                        onChange={(event) => {
-                          const file = event.currentTarget.files?.[0];
-                          event.currentTarget.value = "";
-                          if (file) void handleUploadDeliveryFile(file, "podDocumentUrl");
-                        }} />
-                      {deliveryForm.podDocumentUrl && <p className="break-all text-xs text-[var(--success-fg)]">Đã tải chứng từ: {deliveryForm.podDocumentUrl}</p>}
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground">Tệp JPG/PNG/PDF, tối đa 10 MB. Tệp đã tải lên sẽ có URL công khai.</p>
-                  <Button type="submit" disabled={actionLoading || uploadingDeliveryField !== null}>{uploadingDeliveryField ? "Đang tải tệp..." : actionLoading ? "Đang gửi..." : "Xác nhận bàn giao"}</Button>
-                </form>
-              ) : !delivery && !canRecordDelivery ? (
-                <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
-                  Chỉ có thể ghi nhận bàn giao khi chuyến đang thực hiện.
-                </p>
-              ) : null}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  ) : (
+                    <EmptyState icon={<Truck className="h-6 w-6" />} title="Chưa có biên bản bàn giao" className="py-8" />
+                  )}
+                  {canRecordDelivery && !delivery ? (
+                    <form onSubmit={handleCreateDelivery} className="mt-6 space-y-4 border-t border-border pt-5">
+                      <h3 className="font-medium">Ghi nhận bàn giao</h3>
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label htmlFor="delivery-recipient">Tên người nhận</Label>
+                          <Input id="delivery-recipient" required maxLength={150} value={deliveryForm.recipientName}
+                            onChange={(event) => setDeliveryForm((form) => ({ ...form, recipientName: event.target.value }))} />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="delivery-signature">Ảnh minh chứng / Chữ ký người nhận *</Label>
+                          <Input id="delivery-signature" type="file" accept="image/jpeg,image/png"
+                            disabled={actionLoading || uploadingDeliveryField !== null}
+                            onChange={(event) => {
+                              const file = event.currentTarget.files?.[0];
+                              event.currentTarget.value = "";
+                              if (file) void handleUploadDeliveryFile(file, "signatureImageUrl");
+                            }} />
+                          {deliveryForm.signatureImageUrl && <p className="break-all text-xs text-[var(--success-fg)]">✓ Đã tải ảnh minh chứng: {deliveryForm.signatureImageUrl}</p>}
+                        </div>
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor="delivery-pod">Chứng từ POD (không bắt buộc)</Label>
+                          <Input id="delivery-pod" type="file" accept="image/jpeg,image/png,application/pdf"
+                            disabled={actionLoading || uploadingDeliveryField !== null}
+                            onChange={(event) => {
+                              const file = event.currentTarget.files?.[0];
+                              event.currentTarget.value = "";
+                              if (file) void handleUploadDeliveryFile(file, "podDocumentUrl");
+                            }} />
+                          {deliveryForm.podDocumentUrl && <p className="break-all text-xs text-[var(--success-fg)]">Đã tải chứng từ: {deliveryForm.podDocumentUrl}</p>}
+                        </div>
+                      </div>
+                      <p className="text-sm text-muted-foreground">Tệp JPG/PNG/PDF, tối đa 10 MB. Tệp đã tải lên sẽ có URL công khai.</p>
+                      <Button type="submit" disabled={actionLoading || uploadingDeliveryField !== null || !deliveryForm.signatureImageUrl}>
+                        {uploadingDeliveryField ? "Đang tải tệp..." : actionLoading ? "Đang gửi..." : "Xác nhận bàn giao"}
+                      </Button>
+                    </form>
+                  ) : !delivery && !canRecordDelivery ? (
+                    <p className="mt-5 border-t border-border pt-4 text-sm text-muted-foreground">
+                      Chỉ có thể ghi nhận bàn giao khi chuyến đang thực hiện.
+                    </p>
+                  ) : null}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </>
+        )}
       </Tabs>
     </div>
   );

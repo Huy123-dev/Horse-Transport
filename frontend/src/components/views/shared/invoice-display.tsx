@@ -129,7 +129,7 @@ export function InvoiceDisplay({ requestId }: InvoiceDisplayProps) {
           </div>
         </div>
         <p className="text-xs text-muted-foreground">
-          Backend hiện chỉ cung cấp tổng tiền hóa đơn, chưa có dữ liệu tách giá cơ bản và phụ phí.
+          Tổng chi phí dịch vụ vận chuyển và chăm sóc ngựa trọn gói.
         </p>
         <div className="rounded-lg border border-border bg-muted/30 p-4">
           <div className="flex items-center gap-2 font-medium"><CreditCard className="h-4 w-4" /> Hướng dẫn thanh toán</div>

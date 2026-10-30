@@ -26,8 +26,13 @@ public final class PricingDto {
             @NotBlank(message = "Vui lòng chọn gói vận chuyển") String packageCode,
             @Size(max = 8, message = "Chỉ được chọn tối đa 8 dịch vụ bổ sung")
             List<@NotBlank String> serviceCodes,
-            @Min(value = 1, message = "Số ngựa phải lớn hơn 0") int horseCount
-    ) {}
+            @Min(value = 1, message = "Số ngựa phải lớn hơn 0") int horseCount,
+            List<String> stallSizes
+    ) {
+        public PreviewRequest(String packageCode, List<String> serviceCodes, int horseCount) {
+            this(packageCode, serviceCodes, horseCount, null);
+        }
+    }
 
     public record ApproveRequest(
             @NotBlank(message = "Vui lòng xác nhận bản xem trước báo giá đang hiển thị")

@@ -11,6 +11,7 @@ import com.equiflow.repository.TransportRequestPricingSelectionRepository;
 import com.equiflow.repository.TransportRequestQuoteLineRepository;
 import com.equiflow.repository.TransportRequestQuoteRepository;
 import com.equiflow.repository.TransportRequestRepository;
+import com.equiflow.repository.TransportRequestStallRepository;
 import com.equiflow.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,6 +49,12 @@ class PricingServiceTest {
     private TransportRequestRepository requestRepository;
     @Mock
     private RequestAccessService access;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private StallPricingService stallPricingService;
+    @Mock
+    private TransportRequestStallRepository stallRepository;
 
     @InjectMocks
     private PricingService pricingService;
@@ -144,12 +151,12 @@ class PricingServiceTest {
                 new PricingDto.PreviewRequest("BASIC_TRANSPORT", List.of(), 1));
         TransportRequest approved = pricingService.approveAndConfirmQuote(requestId, managerId, preview.fingerprint());
 
-        assertEquals(TransportRequestService.APPROVED, approved.getStatus());
+        assertEquals(TransportRequestService.MANAGER_APPROVED, approved.getStatus());
         assertEquals(0, approved.getEstimatedAmount().compareTo(new BigDecimal("125.00")));
         assertEquals("USD", approved.getCurrency());
         verify(quoteLineRepository).saveAll(any());
-        verify(access).notify(request.getCustomerId(), "REQUEST_STATUS", "Đơn hàng đã được phê duyệt",
-                "Báo giá 125.00 USD đã được xác nhận cho yêu cầu vận chuyển.",
+        verify(access).notify(request.getCustomerId(), "REQUEST_STATUS", "Báo giá đã được phê duyệt bước 1",
+                "Báo giá 125.00 USD đã được Logistics Manager xác nhận. Yêu cầu đang được chuyển sang Chuyên viên kiểm tra hồ sơ.",
                 "transport_requests", requestId);
     }
 
@@ -167,6 +174,36 @@ class PricingServiceTest {
         assertEquals(HttpStatus.CONFLICT, error.getStatus());
         verify(quoteRepository, never()).saveAndFlush(any());
         verify(requestRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void previewIncludesStallFeesWhenStallSizesProvided() {
+        PricingItemConfig packageConfig = config("BASIC_TRANSPORT", "PER_REQUEST", "200.00");
+        when(configRepository.findAll()).thenReturn(List.of(packageConfig));
+
+        com.equiflow.entity.StallPricingConfig stallConfig = new com.equiflow.entity.StallPricingConfig();
+        when(stallPricingService.getOrCreateCurrentConfig()).thenReturn(stallConfig);
+        when(stallPricingService.getSizeDetail("MEDIUM", stallConfig)).thenReturn(
+                new com.equiflow.dto.StallPricingDto.SizeDetail(
+                        "MEDIUM", "Tiêu chuẩn (Medium)", new BigDecimal("2.80"), new BigDecimal("1.20"),
+                        "2.8 × 1.2 m", new BigDecimal("150.00")));
+        when(stallPricingService.getSizeDetail("LARGE", stallConfig)).thenReturn(
+                new com.equiflow.dto.StallPricingDto.SizeDetail(
+                        "LARGE", "Lớn (Large)", new BigDecimal("3.65"), new BigDecimal("3.65"),
+                        "3.65 × 3.65 m", new BigDecimal("300.00")));
+
+        PricingDto.QuoteResponse quote = pricingService.preview(
+                new PricingDto.PreviewRequest("BASIC_TRANSPORT", List.of(), 2, List.of("MEDIUM", "LARGE")));
+
+        assertTrue(quote.canConfirm());
+        // Package 200 + Medium 150 + Large 300 = 650
+        assertEquals(0, quote.totalAmount().compareTo(new BigDecimal("650.00")));
+        assertEquals(3, quote.lines().size());
+        assertEquals("BASIC_TRANSPORT", quote.lines().get(0).code());
+        assertEquals("STALL_MEDIUM", quote.lines().get(1).code());
+        assertEquals(0, quote.lines().get(1).lineTotalUsd().compareTo(new BigDecimal("150.00")));
+        assertEquals("STALL_LARGE", quote.lines().get(2).code());
+        assertEquals(0, quote.lines().get(2).lineTotalUsd().compareTo(new BigDecimal("300.00")));
     }
 
     private static PricingItemConfig config(String code, String unit, String price) {

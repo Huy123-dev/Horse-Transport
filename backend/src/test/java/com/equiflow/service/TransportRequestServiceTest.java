@@ -83,10 +83,79 @@ class TransportRequestServiceTest {
         TransportRequestResponse res = service.approve(requestId, managerId, null, directAmount);
 
         assertNotNull(res);
-        assertEquals("Da phe duyet", res.status());
+        assertEquals(TransportRequestService.MANAGER_APPROVED, res.status());
         assertEquals(directAmount, res.estimatedAmount());
         assertEquals("USD", res.currency());
         verify(requestRepository).saveAndFlush(any(TransportRequest.class));
+    }
+
+    @Test
+    void specialistApproveSucceedsAfterManagerApproved() {
+        UUID requestId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID specialistId = UUID.randomUUID();
+        UUID originId = UUID.randomUUID();
+        UUID destId = UUID.randomUUID();
+
+        TransportRequest tr = new TransportRequest();
+        tr.setRequestId(requestId);
+        tr.setCustomerId(customerId);
+        tr.setStatus(TransportRequestService.MANAGER_APPROVED);
+        tr.setOriginLocationId(originId);
+        tr.setDestinationLocationId(destId);
+
+        Location loc1 = new Location();
+        loc1.setLocationId(originId);
+        loc1.setName("Hà Nội");
+
+        Location loc2 = new Location();
+        loc2.setLocationId(destId);
+        loc2.setName("Hồ Chí Minh");
+
+        when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.of(tr));
+        when(requestRepository.saveAndFlush(any(TransportRequest.class))).thenAnswer(i -> i.getArgument(0));
+        when(locationRepository.findAllById(any())).thenReturn(List.of(loc1, loc2));
+
+        TransportRequestResponse res = service.specialistApprove(requestId, specialistId);
+
+        assertNotNull(res);
+        assertEquals(TransportRequestService.APPROVED, res.status());
+        assertEquals(specialistId, res.specialistApprovedBy());
+        assertNotNull(res.specialistApprovedAt());
+    }
+
+    @Test
+    void specialistRejectSucceedsWithReason() {
+        UUID requestId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID specialistId = UUID.randomUUID();
+        UUID originId = UUID.randomUUID();
+        UUID destId = UUID.randomUUID();
+
+        TransportRequest tr = new TransportRequest();
+        tr.setRequestId(requestId);
+        tr.setCustomerId(customerId);
+        tr.setStatus(TransportRequestService.MANAGER_APPROVED);
+        tr.setOriginLocationId(originId);
+        tr.setDestinationLocationId(destId);
+
+        Location loc1 = new Location();
+        loc1.setLocationId(originId);
+        loc1.setName("Hà Nội");
+
+        Location loc2 = new Location();
+        loc2.setLocationId(destId);
+        loc2.setName("Hồ Chí Minh");
+
+        when(requestRepository.findByIdForUpdate(requestId)).thenReturn(Optional.of(tr));
+        when(requestRepository.saveAndFlush(any(TransportRequest.class))).thenAnswer(i -> i.getArgument(0));
+        when(locationRepository.findAllById(any())).thenReturn(List.of(loc1, loc2));
+
+        TransportRequestResponse res = service.specialistReject(requestId, specialistId, "Hồ sơ kiểm dịch không hợp lệ");
+
+        assertNotNull(res);
+        assertEquals(TransportRequestService.REJECTED, res.status());
+        assertEquals("Hồ sơ kiểm dịch không hợp lệ", res.rejectionReason());
     }
 
     @Test

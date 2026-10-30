@@ -17,6 +17,6 @@ public record TransportRequestApproveRequest(
         @Digits(integer = 10, fraction = 2, message = "Số tiền ước tính không hợp lệ")
         BigDecimal estimatedAmount,
 
-        @Size(max = 128, message = "Mã fingerprint tối đa 128 ký tự")
+        @Size(max = 4000, message = "Mã fingerprint tối đa 4000 ký tự")
         String previewFingerprint
 ) {}

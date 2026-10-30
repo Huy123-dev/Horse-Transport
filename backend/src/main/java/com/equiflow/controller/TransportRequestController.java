@@ -79,6 +79,21 @@ public class TransportRequestController {
         return service.reject(id, req.reason());
     }
 
+    /** Transport Specialist phê duyệt cấp 2 */
+    @PatchMapping("/{id}/specialist-approve")
+    public TransportRequestResponse specialistApprove(@PathVariable UUID id,
+                                                      Authentication auth) {
+        return service.specialistApprove(id, userId(auth));
+    }
+
+    /** Transport Specialist từ chối cấp 2 (bắt buộc có lý do) */
+    @PatchMapping("/{id}/specialist-reject")
+    public TransportRequestResponse specialistReject(@PathVariable UUID id,
+                                                     @Valid @RequestBody TransportRequestRejectRequest req,
+                                                     Authentication auth) {
+        return service.specialistReject(id, userId(auth), req.reason());
+    }
+
     /** Khách hàng chỉ hủy yêu cầu của mình khi yêu cầu còn chờ thẩm định. */
     @PatchMapping("/{id}/cancel")
     public TransportRequestResponse cancel(@PathVariable UUID id,

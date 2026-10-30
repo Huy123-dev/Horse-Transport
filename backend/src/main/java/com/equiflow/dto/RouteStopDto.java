@@ -29,6 +29,12 @@ public final class RouteStopDto {
             String notes
     ) {}
 
+    public record StatusRequest(
+            LocalDateTime actualArrivalTime,
+            LocalDateTime actualDepartureTime,
+            String notes
+    ) {}
+
     public record Response(
             UUID stopId,
             UUID planId,

@@ -81,7 +81,7 @@ export function TransportPlanCreate() {
     <div className="space-y-6">
       <PageHeader
         title="Tạo kế hoạch vận chuyển"
-        description="Tạo transport plan bằng các trường được hỗ trợ trực tiếp bởi backend."
+        description="Lập kế hoạch vận chuyển, thiết lập lộ trình và thời gian dự kiến cho đơn hàng."
         icon={<Route className="h-5 w-5" />}
         actions={<Button variant="outline" onClick={() => navigate("plans")} className="gap-2"><ArrowLeft className="h-4 w-4" /> Quay lại</Button>}
       />
@@ -116,9 +116,6 @@ export function TransportPlanCreate() {
                   <Input id="plan-arrival" type="datetime-local" value={arrivalTime} onChange={(event) => setArrivalTime(event.target.value)} required />
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Endpoint hiện không nhận phương tiện, tài xế hoặc checklist readiness; các dữ liệu đó không được giả lập ở đây.
-              </p>
               <div className="flex justify-end">
                 <Button type="submit" disabled={saving}>{saving ? "Đang tạo..." : "Tạo kế hoạch"}</Button>
               </div>

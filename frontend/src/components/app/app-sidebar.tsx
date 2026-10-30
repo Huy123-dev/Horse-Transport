@@ -22,6 +22,7 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
   ],
   TRANSPORT_SPECIALIST: [
     { key: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
+    { key: "approvals", label: "Thẩm định yêu cầu", icon: ScrollText },
     { key: "plans", label: "Kế hoạch & điểm dừng", icon: Route },
     { key: "inspections", label: "Hồ sơ thẩm định", icon: ClipboardCheck },
     { key: "compliance", label: "Kiểm dịch & Thông quan", icon: ShieldCheck },

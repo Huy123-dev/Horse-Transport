@@ -30,6 +30,13 @@ interface LocationOption {
   countryCode: string;
 }
 
+interface PricingCatalogItem {
+  code: string;
+  name: string;
+  category: string;
+  unitPriceUsd: number;
+}
+
 interface CreatedRequest {
   requestId: string;
   status: string;
@@ -40,6 +47,8 @@ export function RequestCreate() {
   const { toast } = useToast();
   const [horses, setHorses] = useState<HorseOption[]>([]);
   const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [pricingPackages, setPricingPackages] = useState<PricingCatalogItem[]>([]);
+  const [selectedPackageCode, setSelectedPackageCode] = useState<string>("STANDARD_TRANSPORT");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -56,12 +65,18 @@ export function RequestCreate() {
   useEffect(() => {
     (async () => {
       try {
-        const [horseRecords, locationRecords] = await Promise.all([
+        const [horseRecords, locationRecords, pricingRecords] = await Promise.all([
           apiGet<HorseOption[]>("/horses/my-horses"),
           apiGet<LocationOption[]>("/locations"),
+          apiGet<PricingCatalogItem[]>("/pricing/catalog").catch(() => [] as PricingCatalogItem[]),
         ]);
         setHorses(horseRecords);
         setLocations(locationRecords);
+        const pkgs = (pricingRecords || []).filter((p) => p.category === "PACKAGE");
+        setPricingPackages(pkgs);
+        if (pkgs.length > 0 && !pkgs.some((p) => p.code === selectedPackageCode)) {
+          setSelectedPackageCode(pkgs[0].code);
+        }
       } catch (loadError: unknown) {
         setError(loadError instanceof Error ? loadError.message : "Không thể tải hồ sơ ngựa và địa điểm.");
       } finally {
@@ -104,6 +119,14 @@ export function RequestCreate() {
         horseIds: form.horseIds,
         specialRequirements: form.specialRequirements.trim() || null,
         currency: form.currency,
+        pricingSelection: {
+          packageCode: selectedPackageCode || "STANDARD_TRANSPORT",
+          serviceCodes: [],
+        },
+        stallConfigurations: form.horseIds.map((horseId) => ({
+          horseId,
+          size: "MEDIUM",
+        })),
       });
       if (!created.requestId) {
         throw new Error("Response không có requestId theo hợp đồng API.");
@@ -128,7 +151,7 @@ export function RequestCreate() {
     <div className="space-y-6">
       <PageHeader
         title="Tạo yêu cầu vận chuyển"
-        description="Nhập thông tin được backend lưu trực tiếp vào yêu cầu."
+        description="Nhập đầy đủ thông tin để tạo yêu cầu vận chuyển mới."
         icon={<Plus className="h-5 w-5" />}
         actions={<Button variant="outline" size="sm" onClick={() => navigate("requests")} className="gap-2"><ArrowLeft className="h-4 w-4" /> Quay lại</Button>}
       />
@@ -191,6 +214,26 @@ export function RequestCreate() {
                 <div className="space-y-2">
                   <Label htmlFor="request-arrival">Ngày đến</Label>
                   <Input id="request-arrival" type="date" required value={form.scheduledArrivalDate} onChange={(event) => setForm({ ...form, scheduledArrivalDate: event.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="request-package">Gói vận chuyển *</Label>
+                  <select
+                    id="request-package"
+                    required
+                    value={selectedPackageCode}
+                    onChange={(event) => setSelectedPackageCode(event.target.value)}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    {pricingPackages.length === 0 ? (
+                      <option value="STANDARD_TRANSPORT">Vận chuyển tiêu chuẩn (STANDARD_TRANSPORT)</option>
+                    ) : (
+                      pricingPackages.map((pkg) => (
+                        <option key={pkg.code} value={pkg.code}>
+                          {pkg.name} (${pkg.unitPriceUsd?.toLocaleString()})
+                        </option>
+                      ))
+                    )}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="request-currency">Loại tiền</Label>

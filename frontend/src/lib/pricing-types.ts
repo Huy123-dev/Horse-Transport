@@ -44,6 +44,31 @@ export interface PricingQuote {
   fingerprint: string | null;
 }
 
+export interface StallSizeDetail {
+  size: "SMALL" | "MEDIUM" | "LARGE" | "EXTRA_LARGE";
+  label: string;
+  lengthMeters: number;
+  widthMeters: number;
+  dimensionsFormatted: string;
+  priceUsd: number;
+}
+
+export interface StallPricingConfig {
+  configId: string;
+  basePriceSmall: number;
+  mediumMultiplier: number;
+  largeMultiplier: number;
+  extraLargeMultiplier: number;
+  currency: string;
+  active: boolean;
+  small: StallSizeDetail;
+  medium: StallSizeDetail;
+  large: StallSizeDetail;
+  extraLarge: StallSizeDetail;
+  updatedBy: string | null;
+  updatedAt: string;
+}
+
 export function pricingUnitLabel(unit: PricingUnit | null): string {
   switch (unit) {
     case "PER_HORSE": return "ngựa";

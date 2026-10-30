@@ -119,13 +119,15 @@ export function TransportPlanDetail() {
   const [assignmentForm, setAssignmentForm] = useState({ assetId: "", driverUserId: "", attendantUserId: "" });
   const [assignmentSaving, setAssignmentSaving] = useState(false);
   const [routeStopForm, setRouteStopForm] = useState({
+    locationId: "",
     sequenceNo: "",
     stopName: "",
-    stopType: "REST",
+    stopType: "TRANSIT",
     plannedArrivalTime: "",
     plannedDepartureTime: "",
     notes: "",
   });
+  const [locations, setLocations] = useState<Array<{ locationId: string; name: string; countryCode: string }>>([]);
   const [routeStopSaving, setRouteStopSaving] = useState(false);
   const [panelErrors, setPanelErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -168,6 +170,9 @@ export function TransportPlanDetail() {
         }
       };
       await Promise.all([
+        apiGet<Array<{ locationId: string; name: string; countryCode: string }>>("/locations")
+          .then(setLocations)
+          .catch(() => {}),
         loadPanel("stops", `/transport-plans/${params.id}/stops`, setStops),
         loadPanel("tracking", `/transport-plans/${params.id}/tracking`, setTracking),
         loadPanel("health", `/transport-plans/${params.id}/health-logs`, setHealth),
@@ -207,17 +212,19 @@ export function TransportPlanDetail() {
     setRouteStopSaving(true);
     try {
       await apiPost(`/transport-plans/${params.id}/stops`, {
+        locationId: routeStopForm.locationId || null,
         sequenceNo: routeStopForm.sequenceNo ? Number(routeStopForm.sequenceNo) : null,
-        stopName: routeStopForm.stopName.trim(),
+        stopName: routeStopForm.stopName.trim() || undefined,
         stopType: routeStopForm.stopType,
         plannedArrivalTime: routeStopForm.plannedArrivalTime || null,
         plannedDepartureTime: routeStopForm.plannedDepartureTime || null,
         notes: routeStopForm.notes.trim() || null,
       });
       setRouteStopForm({
+        locationId: "",
         sequenceNo: "",
         stopName: "",
-        stopType: "REST",
+        stopType: "TRANSIT",
         plannedArrivalTime: "",
         plannedDepartureTime: "",
         notes: "",
@@ -281,9 +288,9 @@ export function TransportPlanDetail() {
 
   if (!canViewDriverResource) {
     return <BackendUnavailableView
-      title="Chi tiết chuyến được giao"
+      title="Chi tiết kế hoạch vận chuyển"
       endpoint="/api/transport-plans/{id}"
-      description="Backend chưa giới hạn GET kế hoạch, tracking và sức khỏe theo phân công tài xế. Trang này bị chặn cho Driver/Escort để tránh lộ dữ liệu chuyến của người khác."
+      description="Trang này dành cho Điều phối viên và Quản lý. Nhân viên vận chuyển vui lòng xem danh sách và chi tiết các chuyến được giao trong phân hệ tương ứng."
     />;
   }
   if (loading) return <LoadingState />;
@@ -339,21 +346,47 @@ export function TransportPlanDetail() {
           ))}
           {canManageStops && plan && ["planning", "dang lap ke hoach", "ready", "san sang"].includes(plan.status.trim().toLowerCase()) && (
             <form onSubmit={handleCreateRouteStop} className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
+              <div className="space-y-2 sm:col-span-2">
+                <label htmlFor="route-stop-location" className="text-sm font-medium">Chọn địa điểm từ danh mục có sẵn</label>
+                <select
+                  id="route-stop-location"
+                  value={routeStopForm.locationId}
+                  onChange={(event) => {
+                    const locId = event.target.value;
+                    const loc = locations.find((l) => l.locationId === locId);
+                    setRouteStopForm((f) => ({
+                      ...f,
+                      locationId: locId,
+                      stopName: loc ? loc.name : f.stopName,
+                    }));
+                  }}
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">-- Chọn địa điểm từ danh mục hệ thống (hoặc nhập tên thủ công bên dưới) --</option>
+                  {locations.map((loc) => (
+                    <option key={loc.locationId} value={loc.locationId}>
+                      {loc.name} {loc.countryCode ? `(${loc.countryCode})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="space-y-2">
                 <label htmlFor="route-stop-name" className="text-sm font-medium">Tên điểm dừng</label>
                 <Input id="route-stop-name" required maxLength={150} value={routeStopForm.stopName}
                   onChange={(event) => setRouteStopForm((form) => ({ ...form, stopName: event.target.value }))} />
               </div>
               <div className="space-y-2">
-                <label htmlFor="route-stop-type" className="text-sm font-medium">Loại điểm dừng</label>
+                <label htmlFor="route-stop-type" className="text-sm font-medium">Loại điểm dừng *</label>
                 <select id="route-stop-type" value={routeStopForm.stopType}
                   onChange={(event) => setRouteStopForm((form) => ({ ...form, stopType: event.target.value }))}
                   className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm">
-                  <option value="TRANSIT">Trung chuyển</option>
-                  <option value="CUSTOMS">Hải quan</option>
-                  <option value="QUARANTINE">Kiểm dịch</option>
-                  <option value="REST">Nghỉ</option>
-                  <option value="REFUEL">Tiếp nhiên liệu</option>
+                  <option value="ORIGIN">Điểm xuất phát (ORIGIN)</option>
+                  <option value="TRANSIT">Trung chuyển (TRANSIT)</option>
+                  <option value="QUARANTINE">Trạm kiểm dịch (QUARANTINE)</option>
+                  <option value="CUSTOMS">Hải quan (CUSTOMS)</option>
+                  <option value="REST">Trạm dừng nghỉ (REST)</option>
+                  <option value="REFUEL">Tiếp nhiên liệu (REFUEL)</option>
+                  <option value="DESTINATION">Điểm đến (DESTINATION)</option>
                 </select>
               </div>
               <div className="space-y-2">
@@ -466,10 +499,10 @@ export function TransportPlanDetail() {
               <div key={record.logId} className="rounded-lg border p-3">
                 <p className="text-sm font-medium">{record.milestone || "Cập nhật vị trí"}</p>
                 <p className="mt-1 text-xs text-muted-foreground">{formatDateTime(record.reportedAt)} · {record.reportedByName || "Người báo cáo không rõ"}</p>
-                <p className="mt-1 text-xs">Tọa độ do người dùng gửi: {record.latitude}, {record.longitude}</p>
+                <p className="mt-1 text-xs text-muted-foreground">Tọa độ ghi nhận: {record.latitude}, {record.longitude}</p>
               </div>
             ))}
-            <p className="text-xs text-muted-foreground">Đây là các mốc do người dùng cập nhật, không phải theo dõi GPS trực tiếp.</p>
+            <p className="text-xs text-muted-foreground">Các mốc vị trí do đội ngũ vận hành cập nhật trong quá trình di chuyển.</p>
           </CardContent>
         </Card>
 

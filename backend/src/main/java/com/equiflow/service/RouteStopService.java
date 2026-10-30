@@ -102,6 +102,52 @@ public class RouteStopService {
         return toResponse(stopRepository.save(s));
     }
 
+    /** Cập nhật trạng thái mốc hành trình dành cho Tài xế / Điều phối viên (chặn vượt mốc). */
+    @Transactional
+    public RouteStopDto.Response updateStatus(UUID id, RouteStopDto.StatusRequest req, UUID currentUserId,
+                                              boolean driverEscort) {
+        RouteStop s = getOrThrow(id);
+        TransportPlan plan = planOrThrow(s.getPlanId());
+        if (driverEscort) {
+            crewAccess.assertAssigned(plan.getPlanId(), currentUserId);
+        }
+        if (!Set.of(TransportPlanService.READY, TransportPlanService.IN_PROGRESS).contains(plan.getStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Chỉ có thể cập nhật mốc khi kế hoạch ở trạng thái sẵn sàng hoặc đang thực hiện (hiện tại: "
+                            + plan.getStatus() + ")");
+        }
+
+        List<RouteStop> planStops = stopRepository.findByPlanIdOrderBySequenceNoAsc(plan.getPlanId());
+        for (RouteStop prev : planStops) {
+            if (prev.getSequenceNo() < s.getSequenceNo()) {
+                if (prev.getActualArrivalTime() == null) {
+                    throw new ApiException(HttpStatus.BAD_REQUEST,
+                            "Không thể xác nhận vượt mốc. Bạn cần xác nhận mốc trước đó (Mốc "
+                                    + prev.getSequenceNo() + ": " + prev.getStopName() + ")");
+                }
+            }
+        }
+
+        LocalDateTime arrival = req.actualArrivalTime() != null ? req.actualArrivalTime() : LocalDateTime.now();
+        s.setActualArrivalTime(arrival);
+        if (req.actualDepartureTime() != null) {
+            if (req.actualDepartureTime().isBefore(arrival)) {
+                throw new ApiException(HttpStatus.BAD_REQUEST, "Giờ rời đi thực tế không được trước giờ đến");
+            }
+            s.setActualDepartureTime(req.actualDepartureTime());
+        }
+        if (req.notes() != null && !req.notes().isBlank()) {
+            s.setNotes(req.notes().trim());
+        }
+
+        if (TransportPlanService.READY.equals(plan.getStatus())) {
+            plan.setStatus(TransportPlanService.IN_PROGRESS);
+            planRepository.save(plan);
+        }
+
+        return toResponse(stopRepository.save(s));
+    }
+
     @Transactional
     public MessageResponse delete(UUID id) {
         RouteStop s = getOrThrow(id);

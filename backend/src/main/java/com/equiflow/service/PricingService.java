@@ -1,17 +1,21 @@
 package com.equiflow.service;
 
 import com.equiflow.dto.PricingDto;
+import com.equiflow.dto.StallPricingDto;
 import com.equiflow.entity.PricingItemConfig;
+import com.equiflow.entity.StallPricingConfig;
 import com.equiflow.entity.TransportRequest;
 import com.equiflow.entity.TransportRequestPricingSelection;
 import com.equiflow.entity.TransportRequestQuote;
 import com.equiflow.entity.TransportRequestQuoteLine;
+import com.equiflow.entity.TransportRequestStall;
 import com.equiflow.exception.ApiException;
 import com.equiflow.repository.PricingItemConfigRepository;
 import com.equiflow.repository.TransportRequestPricingSelectionRepository;
 import com.equiflow.repository.TransportRequestQuoteLineRepository;
 import com.equiflow.repository.TransportRequestQuoteRepository;
 import com.equiflow.repository.TransportRequestRepository;
+import com.equiflow.repository.TransportRequestStallRepository;
 import com.equiflow.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -34,6 +38,7 @@ public class PricingService {
 
     private static final String USD = "USD";
     private static final String PENDING = TransportRequestService.PENDING;
+    private static final String MANAGER_APPROVED = TransportRequestService.MANAGER_APPROVED;
     private static final String APPROVED = TransportRequestService.APPROVED;
     private static final List<ItemDefinition> DEFINITIONS = List.of(
             new ItemDefinition("BASIC_TRANSPORT", "Basic Transport", "PACKAGE"),
@@ -61,6 +66,8 @@ public class PricingService {
     private final TransportRequestRepository requestRepository;
     private final RequestAccessService access;
     private final UserRepository userRepository;
+    private final StallPricingService stallPricingService;
+    private final TransportRequestStallRepository stallRepository;
 
     public PricingService(PricingItemConfigRepository configRepository,
                           TransportRequestPricingSelectionRepository selectionRepository,
@@ -68,7 +75,9 @@ public class PricingService {
                           TransportRequestQuoteLineRepository quoteLineRepository,
                           TransportRequestRepository requestRepository,
                           RequestAccessService access,
-                          UserRepository userRepository) {
+                          UserRepository userRepository,
+                          StallPricingService stallPricingService,
+                          TransportRequestStallRepository stallRepository) {
         this.configRepository = configRepository;
         this.selectionRepository = selectionRepository;
         this.quoteRepository = quoteRepository;
@@ -76,6 +85,8 @@ public class PricingService {
         this.requestRepository = requestRepository;
         this.access = access;
         this.userRepository = userRepository;
+        this.stallPricingService = stallPricingService;
+        this.stallRepository = stallRepository;
     }
 
     @Transactional(readOnly = true)
@@ -120,7 +131,8 @@ public class PricingService {
 
     @Transactional(readOnly = true)
     public PricingDto.QuoteResponse preview(PricingDto.PreviewRequest request) {
-        return calculate(request.packageCode(), request.serviceCodes(), request.horseCount(), null, null);
+        return calculate(request.packageCode(), request.serviceCodes(), request.horseCount(),
+                request.stallSizes(), null, null);
     }
 
     @Transactional(readOnly = true)
@@ -151,8 +163,11 @@ public class PricingService {
             return new PricingDto.QuoteResponse("DRAFT", USD, null, null, null, false,
                     List.of("Chọn gói vận chuyển"), List.of(), null, null, List.of(), null);
         }
+        List<String> stallSizes = stallRepository != null
+                ? stallRepository.findByRequestIdOrderByHorseIdAsc(requestId).stream().map(TransportRequestStall::getSize).toList()
+                : List.of();
         PricingDto.QuoteResponse draft = calculate(packageCode, serviceCodes, request.getHorseIds().size(),
-                request.getEstimatedAmount(), request.getCurrency());
+                stallSizes, request.getEstimatedAmount(), request.getCurrency());
         boolean incompatibleHistory = !USD.equalsIgnoreCase(request.getCurrency())
                 || (request.getEstimatedAmount() != null
                 && (draft.totalAmount() == null || request.getEstimatedAmount().compareTo(draft.totalAmount()) != 0));
@@ -170,7 +185,10 @@ public class PricingService {
                                                   PricingDto.SelectionRequest selection) {
         TransportRequest request = requestRepository.findByIdForUpdate(requestId)
                 .orElseThrow(PricingService::notFound);
-        if (customer && !currentUserId.equals(request.getCustomerId())) {
+        if (!customer) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Quản lý logistics chỉ có quyền thẩm định báo giá, không được sửa đổi gói dịch vụ khách hàng đã chọn");
+        }
+        if (!currentUserId.equals(request.getCustomerId())) {
             throw notFound();
         }
         if (!PENDING.equals(request.getStatus())) {
@@ -212,8 +230,11 @@ public class PricingService {
                     "Chưa thể xác nhận báo giá: yêu cầu chưa chọn gói vận chuyển");
         }
 
+        List<String> stallSizes = stallRepository != null
+                ? stallRepository.findByRequestIdOrderByHorseIdAsc(requestId).stream().map(TransportRequestStall::getSize).toList()
+                : List.of();
         PricingDto.QuoteResponse draft = calculate(packageCode, services, request.getHorseIds().size(),
-                request.getEstimatedAmount(), request.getCurrency());
+                stallSizes, request.getEstimatedAmount(), request.getCurrency());
         if (!draft.canConfirm()) {
             throw new ApiException(HttpStatus.CONFLICT,
                     "Chưa thể xác nhận báo giá. Cần cấu hình giá và đơn vị tính cho: "
@@ -267,18 +288,19 @@ public class PricingService {
 
         request.setEstimatedAmount(total);
         request.setCurrency(USD);
-        request.setStatus(APPROVED);
+        request.setStatus(MANAGER_APPROVED);
         request.setApprovedBy(managerId);
         request.setApprovedAt(LocalDateTime.now(ZoneOffset.UTC));
         request = requestRepository.saveAndFlush(request);
-        access.notify(request.getCustomerId(), "REQUEST_STATUS", "Đơn hàng đã được phê duyệt",
-                "Báo giá " + total.toPlainString() + " USD đã được xác nhận cho yêu cầu vận chuyển.",
+        access.notify(request.getCustomerId(), "REQUEST_STATUS", "Báo giá đã được phê duyệt bước 1",
+                "Báo giá " + total.toPlainString() + " USD đã được Logistics Manager xác nhận. Yêu cầu đang được chuyển sang Chuyên viên kiểm tra hồ sơ.",
                 "transport_requests", requestId);
         return request;
     }
 
     private PricingDto.QuoteResponse calculate(String packageCode, List<String> selectedServiceCodes,
-                                               int horseCount, BigDecimal legacyAmount, String legacyCurrency) {
+                                               int horseCount, List<String> stallSizes,
+                                               BigDecimal legacyAmount, String legacyCurrency) {
         validateSelection(packageCode, selectedServiceCodes);
         Map<String, PricingItemConfig> configs = loadConfigs();
         ItemDefinition packageDefinition = ITEMS.get(packageCode);
@@ -300,6 +322,46 @@ public class PricingService {
         if (packageLine.missing()) missing.add(packageDefinition.name());
         if (packageLine.line().lineTotalUsd() == null) complete = false;
         else total = total.add(packageLine.line().lineTotalUsd());
+
+        if (stallSizes != null && !stallSizes.isEmpty() && stallPricingService != null) {
+            StallPricingConfig stallConfig = stallPricingService.getOrCreateCurrentConfig();
+            Map<String, Long> stallCounts = stallSizes.stream()
+                    .filter(s -> s != null && !s.isBlank())
+                    .map(s -> s.trim().toUpperCase(Locale.ROOT))
+                    .collect(Collectors.groupingBy(s -> s, Collectors.counting()));
+
+            List<String> orderedSizes = List.of("SMALL", "MEDIUM", "LARGE", "EXTRA_LARGE");
+            for (String size : orderedSizes) {
+                if (!stallCounts.containsKey(size)) continue;
+                long count = stallCounts.get(size);
+                StallPricingDto.SizeDetail detail = stallPricingService.getSizeDetail(size, stallConfig);
+                BigDecimal unitPrice = detail != null ? detail.priceUsd() : null;
+                BigDecimal lineTotal = unitPrice != null ? unitPrice.multiply(BigDecimal.valueOf(count)) : null;
+                boolean priceConfigured = unitPrice != null;
+
+                PricingDto.QuoteLine stallLine = new PricingDto.QuoteLine(
+                        "STALL_" + size,
+                        "Phí kích thước chuồng: " + (detail != null ? detail.label() : size) + " (" + (detail != null ? detail.dimensionsFormatted() : "") + ")",
+                        "SERVICE",
+                        "Chuồng tiêu chuẩn kích thước " + (detail != null ? detail.dimensionsFormatted() : ""),
+                        "PER_HORSE",
+                        (int) count,
+                        unitPrice,
+                        lineTotal,
+                        true,
+                        false,
+                        priceConfigured,
+                        true
+                );
+                lines.add(stallLine);
+                if (!priceConfigured) {
+                    missing.add("Giá chuồng " + size);
+                    complete = false;
+                } else {
+                    total = total.add(lineTotal);
+                }
+            }
+        }
 
         for (String serviceCode : SERVICE_CODES) {
             if (!services.contains(serviceCode)) continue;
