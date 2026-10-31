@@ -92,6 +92,7 @@ public class SecurityConfig {
         HttpMethod.POST,
         "/api/auth/register",
         "/api/auth/login",
+        "/api/auth/google",
         "/api/auth/password-reset/request",
         "/api/auth/password-reset/confirm"
     ).permitAll()

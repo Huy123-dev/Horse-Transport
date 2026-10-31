@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, Lock, Mail, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { GoogleSignInButton } from "@/components/views/google-sign-in-button";
 
 interface LoginResponse {
   accessToken: string;
@@ -34,18 +35,42 @@ export function LoginView() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const completeLogin = (data: LoginResponse) => {
+    const tokenStorage = remember ? localStorage : sessionStorage;
+    const otherStorage = remember ? sessionStorage : localStorage;
+    otherStorage.removeItem("token");
+    tokenStorage.setItem("token", data.accessToken);
+    setUser({ ...data.user, roleName: data.user.roleId, staffType: data.user.staffType ?? null });
+
+    toast({ title: "Đăng nhập thành công", description: `Chào mừng, ${data.user.name}!` });
+  };
+
+  const handleGoogleCredential = async (idToken: string) => {
+    setLoading(true);
+    try {
+      const data = await apiPost<LoginResponse>("/auth/google", { idToken });
+      completeLogin(data);
+    } catch (err: unknown) {
+      toast({
+        title: "Đăng nhập Google thất bại",
+        description: err instanceof Error ? err.message : "Đã xảy ra lỗi khi đăng nhập bằng Google.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = (message: string) => {
+    toast({ title: "Đăng nhập Google thất bại", description: message, variant: "destructive" });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const data = await apiPost<LoginResponse>("/auth/login", { email, password });
-      const tokenStorage = remember ? localStorage : sessionStorage;
-      const otherStorage = remember ? sessionStorage : localStorage;
-      otherStorage.removeItem("token");
-      tokenStorage.setItem("token", data.accessToken);
-      setUser({ ...data.user, roleName: data.user.roleId, staffType: data.user.staffType ?? null });
-
-      toast({ title: "Đăng nhập thành công", description: `Chào mừng, ${data.user.name}!` });
+      completeLogin(data);
     } catch (err: unknown) {
       toast({
         title: "Đăng nhập thất bại",
@@ -138,6 +163,21 @@ export function LoginView() {
               <Button type="submit" disabled={loading} className="w-full h-11 text-sm font-semibold" size="lg">
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Đang đăng nhập...</> : "Đăng nhập"}
               </Button>
+
+              {import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+                <>
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-border" />
+                    <span className="text-xs text-muted-foreground">hoặc</span>
+                    <div className="h-px flex-1 bg-border" />
+                  </div>
+                  <GoogleSignInButton
+                    onCredential={handleGoogleCredential}
+                    onError={handleGoogleError}
+                    disabled={loading}
+                  />
+                </>
+              )}
 
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">

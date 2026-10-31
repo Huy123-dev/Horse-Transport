@@ -40,6 +40,9 @@ public class User {
     @Column(name = "staff_type", length = 20)
     private String staffType;
 
+    @Column(name = "google_id", length = 64)
+    private String googleId;
+
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
