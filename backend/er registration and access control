@@ -1,0 +1,263 @@
+[1mdiff --git a/src/main/java/com/equiflow/controller/UserController.java b/src/main/java/com/equiflow/controller/UserController.java[m
+[1mindex 5538318..69806d5 100644[m
+[1m--- a/src/main/java/com/equiflow/controller/UserController.java[m
+[1m+++ b/src/main/java/com/equiflow/controller/UserController.java[m
+[36m@@ -25,22 +25,26 @@[m [mpublic class UserController {[m
+     }[m
+ [m
+     @GetMapping[m
+[31m-    public List<UserResponse> getAll() {[m
+[31m-        return userService.findAll();[m
+[32m+[m[32m    public List<UserResponse> getAll(Authentication auth) {[m
+[32m+[m[32m        return userService.findAll(isAdmin(auth));[m
+     }[m
+ [m
+     @GetMapping("/{id}")[m
+[31m-    public UserResponse getById(@PathVariable UUID id) {[m
+[31m-        return userService.findById(id);[m
+[32m+[m[32m    public UserResponse getById(@PathVariable UUID id, Authentication auth) {[m
+[32m+[m[32m        return userService.findById(id, isAdmin(auth));[m
+     }[m
+ [m
+     @PostMapping[m
+[31m-    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest req) {[m
+[31m-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(req));[m
+[32m+[m[32m    public ResponseEntity<UserResponse> create(@Valid @RequestBody UserCreateRequest req, Authentication auth) {[m
+[32m+[m[32m        return ResponseEntity.status(HttpStatus.CREATED).body(userService.create(req, isAdmin(auth)));[m
+     }[m
+ [m
+     @PutMapping("/{id}")[m
+     public UserResponse update(@PathVariable UUID id, @Valid @RequestBody UserUpdateRequest req, Authentication auth) {[m
+[31m-        return userService.update(id, req, (UUID) auth.getPrincipal());[m
+[32m+[m[32m        return userService.update(id, req, (UUID) auth.getPrincipal(), isAdmin(auth));[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    private static boolean isAdmin(Authentication auth) {[m
+[32m+[m[32m        return auth.getAuthorities().stream().anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));[m
+     }[m
+ }[m
+[1mdiff --git a/src/main/java/com/equiflow/dto/RegisterRequest.java b/src/main/java/com/equiflow/dto/RegisterRequest.java[m
+[1mindex 4a97906..306814a 100644[m
+[1m--- a/src/main/java/com/equiflow/dto/RegisterRequest.java[m
+[1m+++ b/src/main/java/com/equiflow/dto/RegisterRequest.java[m
+[36m@@ -5,7 +5,7 @@[m [mimport jakarta.validation.constraints.*;[m
+ public record RegisterRequest([m
+         @NotBlank(message = "Vui lòng nhập họ và tên") @Size(max = 100, message = "Họ và tên tối đa 100 ký tự") String name,[m
+         @NotBlank(message = "Vui lòng nhập số điện thoại")[m
+[31m-        @Pattern(regexp = "^(0|\\+84)\\d{9,10}$", message = "Số điện thoại không hợp lệ") String phone,[m
+[32m+[m[32m        @Pattern(regexp = "^0[0-9]{9}$", message = "Số điện thoại phải gồm đúng 10 chữ số và bắt đầu bằng 0") String phone,[m
+         @NotBlank(message = "Vui lòng nhập email") @Email(message = "Email không hợp lệ") @Size(max = 255) String email,[m
+         @NotBlank(message = "Vui lòng nhập tên trang trại / tổ chức") @Size(max = 150, message = "Tối đa 150 ký tự") String organizationName,[m
+         @NotBlank(message = "Vui lòng nhập mật khẩu") @Size(min = 8, max = 72, message = "Mật khẩu tối thiểu 8 ký tự") String password,[m
+[1mdiff --git a/src/main/java/com/equiflow/exception/GlobalExceptionHandler.java b/src/main/java/com/equiflow/exception/GlobalExceptionHandler.java[m
+[1mindex e6eb96b..95acffb 100644[m
+[1m--- a/src/main/java/com/equiflow/exception/GlobalExceptionHandler.java[m
+[1m+++ b/src/main/java/com/equiflow/exception/GlobalExceptionHandler.java[m
+[36m@@ -1,5 +1,7 @@[m
+ package com.equiflow.exception;[m
+ [m
+[32m+[m[32mimport org.slf4j.Logger;[m
+[32m+[m[32mimport org.slf4j.LoggerFactory;[m
+ import org.springframework.http.HttpStatus;[m
+ import org.springframework.http.ResponseEntity;[m
+ import org.springframework.http.converter.HttpMessageNotReadableException;[m
+[36m@@ -18,6 +20,8 @@[m [mimport java.util.Map;[m
+ @RestControllerAdvice[m
+ public class GlobalExceptionHandler {[m
+ [m
+[32m+[m[32m    private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);[m
+[32m+[m
+     @ExceptionHandler(ApiException.class)[m
+     public ResponseEntity<Map<String, Object>> handleApi(ApiException ex) {[m
+         return ResponseEntity.status(ex.getStatus()).body(Map.of("message", ex.getMessage()));[m
+[36m@@ -70,7 +74,7 @@[m [mpublic class GlobalExceptionHandler {[m
+ [m
+     @ExceptionHandler(Exception.class)[m
+     public ResponseEntity<Map<String, Object>> handleOther(Exception ex) {[m
+[31m-        ex.printStackTrace();[m
+[32m+[m[32m        logger.error("Unhandled request exception", ex);[m
+         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)[m
+                 .body(Map.of("message", "Lỗi hệ thống, vui lòng thử lại sau"));[m
+     }[m
+[1mdiff --git a/src/main/java/com/equiflow/security/SecurityConfig.java b/src/main/java/com/equiflow/security/SecurityConfig.java[m
+[1mindex c39f20e..840ad0c 100644[m
+[1m--- a/src/main/java/com/equiflow/security/SecurityConfig.java[m
+[1m+++ b/src/main/java/com/equiflow/security/SecurityConfig.java[m
+[36m@@ -62,8 +62,9 @@[m [mpublic class SecurityConfig {[m
+     .requestMatchers(HttpMethod.DELETE, "/api/horses/*").hasAnyRole([m
+         "ADMIN", "LOGISTICS_MANAGER")[m
+ [m
+[31m-    // Tài khoản & vai trò: chỉ ADMIN[m
+[31m-    .requestMatchers("/api/users", "/api/users/*", "/api/roles", "/api/roles/*").hasAnyRole("ADMIN", "CUSTOMER", "LOGISTICS_MANAGER")[m
+[32m+[m[32m    // Quản lý tài khoản chỉ dành cho ADMIN/LOGISTICS_MANAGER; danh sách role không chứa dữ liệu cá nhân.[m
+[32m+[m[32m    .requestMatchers("/api/users", "/api/users/*").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")[m
+[32m+[m[32m    .requestMatchers("/api/roles", "/api/roles/*").hasRole("ADMIN")[m
+ [m
+     // Địa điểm: GET cho mọi tài khoản đã đăng nhập (khách chọn điểm đi/đến); POST/PUT chỉ nhân viên[m
+     .requestMatchers(HttpMethod.POST, "/api/locations").hasAnyRole([m
+[36m@@ -78,7 +79,35 @@[m [mpublic class SecurityConfig {[m
+     .requestMatchers(HttpMethod.GET, "/api/transport-requests", "/api/transport-requests/*").hasAnyRole([m
+         "CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR")[m
+     .requestMatchers(HttpMethod.PATCH, "/api/transport-requests/*/approve", "/api/transport-requests/*/reject")[m
+[31m-        .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "CUSTOMER")[m
+[32m+[m[32m        .hasRole("LOGISTICS_MANAGER")[m
+[32m+[m
+[32m+[m[32m    // Chỉ chuyên viên thủ tục được tạo và cập nhật bản ghi kiểm định.[m
+[32m+[m[32m    .requestMatchers(HttpMethod.POST, "/api/inspections").hasRole("TRANSPORT_SPECIALIST")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.PATCH, "/api/inspections/*/status").hasRole("TRANSPORT_SPECIALIST")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.GET, "/api/inspections", "/api/inspections/*", "/api/inspections/request/*")[m
+[32m+[m[32m        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR")[m
+[32m+[m
+[32m+[m[32m    // Driver/Escort bị chặn ở các API đọc kế hoạch và lịch sử cho đến khi backend lọc theo phân công.[m
+[32m+[m[32m    .requestMatchers(HttpMethod.GET, "/api/transport-plans", "/api/transport-plans/*",[m
+[32m+[m[32m        "/api/transport-requests/*/plan", "/api/transport-plans/*/stops", "/api/route-stops/*",[m
+[32m+[m[32m        "/api/transport-plans/*/tracking", "/api/transport-plans/*/tracking/latest",[m
+[32m+[m[32m        "/api/transport-plans/*/health-logs", "/api/horses/*/health-logs", "/api/health-logs/*",[m
+[32m+[m[32m        "/api/incidents", "/api/incidents/*", "/api/transport-plans/*/incidents",[m
+[32m+[m[32m        "/api/deliveries/*", "/api/transport-plans/*/delivery")[m
+[32m+[m[32m        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.POST, "/api/transport-plans").hasRole("FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.PUT, "/api/transport-plans/*").hasRole("FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.PATCH, "/api/transport-plans/*/status").hasRole("FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.POST, "/api/transport-plans/*/stops").hasRole("FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.PUT, "/api/route-stops/*").hasRole("FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.DELETE, "/api/route-stops/*").hasRole("FLEET_COORDINATOR")[m
+[32m+[m
+[32m+[m[32m    // Phương tiện do điều phối đội xe quản lý; quản lý logistics chỉ đọc.[m
+[32m+[m[32m    .requestMatchers(HttpMethod.GET, "/api/transport-assets", "/api/transport-assets/*")[m
+[32m+[m[32m        .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.POST, "/api/transport-assets").hasRole("FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.PUT, "/api/transport-assets/*").hasRole("FLEET_COORDINATOR")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.DELETE, "/api/transport-assets/*").hasRole("FLEET_COORDINATOR")[m
+     [m
+     // Horse documents: CUSTOMER chỉ thao tác trên ngựa của mình (kiểm tra trong HorseDocumentService).[m
+     // Nhân viên thủ tục/quản lý được thêm-sửa; chỉ đọc cho điều phối viên và tài xế. Xóa: customer (có điều kiện) + nhân viên thủ tục.[m
+[36m@@ -92,24 +121,18 @@[m [mpublic class SecurityConfig {[m
+     .requestMatchers(HttpMethod.DELETE, "/api/documents/*").hasAnyRole([m
+         "CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST")[m
+         [m
+[31m-    // Tracking: chỉ tài xế/người đi kèm (DRIVER_ESCORT) ghi hành trình - phải thuộc phân công của kế hoạch (kiểm tra trong TrackingService).[m
+[31m-    // Xem lịch sử / vị trí mới nhất: mọi vai trò; CUSTOMER chỉ xem kế hoạch của yêu cầu của mình (kiểm tra trong TrackingService).[m
+[32m+[m[32m    // Tracking: tài xế ghi hành trình; quyền xem của tài xế tạm khóa đến khi có lọc theo phân công.[m
+[32m+[m[32m    // Khách hàng chỉ xem kế hoạch của yêu cầu của mình (kiểm tra trong TrackingService).[m
+     .requestMatchers(HttpMethod.POST, "/api/tracking").hasRole("DRIVER_ESCORT")[m
+[31m-    .requestMatchers(HttpMethod.GET, "/api/transport-plans/*/tracking", "/api/transport-plans/*/tracking/latest")[m
+[31m-        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")[m
+ [m
+[31m-    // Health logs: chỉ DRIVER_ESCORT ghi (phải thuộc phân công của kế hoạch - kiểm tra trong HealthLogService).[m
+[31m-    // Xem: mọi vai trò; CUSTOMER chỉ xem ngựa/kế hoạch của mình (kiểm tra trong HealthLogService).[m
+[32m+[m[32m    // Health logs: tài xế ghi theo phân công; quyền đọc của tài xế tạm khóa đến khi có lọc theo assignment.[m
+[32m+[m[32m    // CUSTOMER chỉ xem ngựa/kế hoạch của mình (kiểm tra trong HealthLogService).[m
+     .requestMatchers(HttpMethod.POST, "/api/health-logs").hasAnyRole("DRIVER_ESCORT","CUSTOMER")[m
+[31m-    .requestMatchers(HttpMethod.GET, "/api/transport-plans/*/health-logs", "/api/horses/*/health-logs", "/api/health-logs/*")[m
+[31m-        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")[m
+     [m
+     // Incidents: DRIVER_ESCORT báo cáo/cập nhật/đánh dấu đã xử lý sự cố của chuyến mình (kiểm tra phân công trong IncidentService).[m
+     // Quản lý, điều phối viên cập nhật/xử lý mọi chuyến; chỉ ADMIN/LOGISTICS_MANAGER duyệt chi phí phát sinh.[m
+[31m-    // Xem: mọi vai trò; CUSTOMER chỉ thấy sự cố thuộc yêu cầu của mình (kiểm tra trong IncidentService).[m
+[32m+[m[32m    // CUSTOMER chỉ thấy sự cố thuộc yêu cầu của mình; tài xế chỉ được ghi/cập nhật theo assignment.[m
+     .requestMatchers(HttpMethod.POST, "/api/incidents").hasRole("DRIVER_ESCORT")[m
+[31m-    .requestMatchers(HttpMethod.GET, "/api/incidents", "/api/incidents/*", "/api/transport-plans/*/incidents")[m
+[31m-        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")[m
+     .requestMatchers(HttpMethod.PATCH, "/api/incidents/*/approve-cost").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")[m
+     .requestMatchers(HttpMethod.PATCH, "/api/incidents/*", "/api/incidents/*/resolve")[m
+         .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "FLEET_COORDINATOR", "DRIVER_ESCORT")[m
+[36m@@ -123,16 +146,14 @@[m [mpublic class SecurityConfig {[m
+     .requestMatchers(HttpMethod.PATCH, "/api/invoices/*/payment-status").hasAnyRole("ADMIN", "LOGISTICS_MANAGER")[m
+ [m
+     // Deliveries: chỉ DRIVER_ESCORT ghi nhận bàn giao (phải thuộc phân công của kế hoạch - kiểm tra trong DeliveryService).[m
+[31m-    // Hoàn tất chuyến: tài xế được phân công hoặc quản lý/điều phối viên. Xem: mọi vai trò; CUSTOMER chỉ xem chuyến của mình.[m
+[32m+[m[32m    // Hoàn tất chuyến: tài xế được phân công hoặc quản lý/điều phối viên. Driver chưa được phép đọc do thiếu scope ở GET.[m
+     .requestMatchers(HttpMethod.POST, "/api/deliveries").hasRole("DRIVER_ESCORT")[m
+[31m-    .requestMatchers(HttpMethod.GET, "/api/deliveries/*", "/api/transport-plans/*/delivery")[m
+[31m-        .hasAnyRole("CUSTOMER", "ADMIN", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT")[m
+     .requestMatchers(HttpMethod.PATCH, "/api/transport-plans/*/complete")[m
+         .hasAnyRole("ADMIN", "LOGISTICS_MANAGER", "FLEET_COORDINATOR", "DRIVER_ESCORT")[m
+ [m
+     [m
+     // Audit logs: chỉ ADMIN được xem nhật ký hệ thống.[m
+[31m-    .requestMatchers(HttpMethod.GET, "/api/audit-logs", "/api/audit-logs/*").hasRole("LOGISTICS_MANAGER")[m
+[32m+[m[32m    .requestMatchers(HttpMethod.GET, "/api/audit-logs", "/api/audit-logs/*").hasRole("ADMIN")[m
+     // Các API còn lại phải đăng nhập[m
+     .anyRequest().authenticated())[m
+             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);[m
+[1mdiff --git a/src/main/java/com/equiflow/service/UserService.java b/src/main/java/com/equiflow/service/UserService.java[m
+[1mindex 2ffae0e..c289b56 100644[m
+[1m--- a/src/main/java/com/equiflow/service/UserService.java[m
+[1m+++ b/src/main/java/com/equiflow/service/UserService.java[m
+[36m@@ -16,12 +16,16 @@[m [mimport org.springframework.stereotype.Service;[m
+ import java.util.List;[m
+ import java.util.Locale;[m
+ import java.util.Map;[m
+[32m+[m[32mimport java.util.Set;[m
+ import java.util.UUID;[m
+ import java.util.stream.Collectors;[m
+ [m
+ @Service[m
+ public class UserService {[m
+ [m
+[32m+[m[32m    private static final Set<String> INTERNAL_STAFF_ROLES = Set.of([m
+[32m+[m[32m            "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR", "DRIVER_ESCORT");[m
+[32m+[m
+     private final UserRepository userRepository;[m
+     private final RoleRepository roleRepository;[m
+     private final PasswordEncoder passwordEncoder;[m
+[36m@@ -33,22 +37,26 @@[m [mpublic class UserService {[m
+     }[m
+ [m
+     // ================= READ =================[m
+[31m-    public List<UserResponse> findAll() {[m
+[32m+[m[32m    public List<UserResponse> findAll(boolean administrator) {[m
+         Map<String, String> roleNames = roleNames();[m
+         return userRepository.findAllByOrderByCreatedAtDesc().stream()[m
+[32m+[m[32m                .filter(u -> administrator || INTERNAL_STAFF_ROLES.contains(u.getRoleId()))[m
+                 .map(u -> toResponse(u, roleNames.get(u.getRoleId())))[m
+                 .toList();[m
+     }[m
+ [m
+[31m-    public UserResponse findById(UUID id) {[m
+[31m-        return toResponse(getOrThrow(id));[m
+[32m+[m[32m    public UserResponse findById(UUID id, boolean administrator) {[m
+[32m+[m[32m        User user = getOrThrow(id);[m
+[32m+[m[32m        ensureManageableRole(user.getRoleId(), administrator);[m
+[32m+[m[32m        return toResponse(user);[m
+     }[m
+ [m
+     // ================= CREATE =================[m
+[31m-    public UserResponse create(UserCreateRequest req) {[m
+[32m+[m[32m    public UserResponse create(UserCreateRequest req, boolean administrator) {[m
+         String email = req.email().trim().toLowerCase();[m
+         String phone = req.phone().trim();[m
+         Role role = requireRole(req.roleId());[m
+[32m+[m[32m        ensureManageableRole(role.getRoleId(), administrator);[m
+ [m
+         if (userRepository.existsByEmail(email)) {[m
+             throw new ApiException(HttpStatus.CONFLICT, "Email đã được sử dụng");[m
+[36m@@ -68,11 +76,13 @@[m [mpublic class UserService {[m
+     }[m
+ [m
+     // ================= UPDATE =================[m
+[31m-    public UserResponse update(UUID id, UserUpdateRequest req, UUID currentUserId) {[m
+[32m+[m[32m    public UserResponse update(UUID id, UserUpdateRequest req, UUID currentUserId, boolean administrator) {[m
+         User user = getOrThrow(id);[m
+         String email = req.email().trim().toLowerCase();[m
+         String phone = req.phone().trim();[m
+         Role role = requireRole(req.roleId());[m
+[32m+[m[32m        ensureManageableRole(user.getRoleId(), administrator);[m
+[32m+[m[32m        ensureManageableRole(role.getRoleId(), administrator);[m
+ [m
+         if (userRepository.existsByEmailAndUserIdNot(email, id)) {[m
+             throw new ApiException(HttpStatus.CONFLICT, "Email đã được sử dụng");[m
+[36m@@ -108,6 +118,12 @@[m [mpublic class UserService {[m
+                 .orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "Vai trò không tồn tại"));[m
+     }[m
+ [m
+[32m+[m[32m    private static void ensureManageableRole(String roleId, boolean administrator) {[m
+[32m+[m[32m        if (!administrator && !INTERNAL_STAFF_ROLES.contains(roleId)) {[m
+[32m+[m[32m            throw new ApiException(HttpStatus.FORBIDDEN, "Quản lý Logistics chỉ được quản lý tài khoản nhân sự nội bộ");[m
+[32m+[m[32m        }[m
+[32m+[m[32m    }[m
+[32m+[m
+     private User save(User user) {[m
+         try {[m
+             return userRepository.saveAndFlush(user);[m

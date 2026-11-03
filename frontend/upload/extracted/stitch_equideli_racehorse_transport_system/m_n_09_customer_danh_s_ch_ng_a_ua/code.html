@@ -1,0 +1,571 @@
+<!DOCTYPE html><html lang="vi" style=""><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { colors: { "on-surface": "#191c1e", "on-primary-fixed": "#001c3b", "surface-tint": "#465f86", "on-surface-variant": "#43474e", "surface-container-highest": "#e1e2e4", "surface-container-lowest": "#ffffff", "secondary-container": "#ffc974", "secondary-fixed-dim": "#f3be6a", "surface-variant": "#e1e2e4", "on-tertiary": "#ffffff", "primary-container": "#1f3a5f", "primary-fixed": "#d5e3ff", "on-background": "#191c1e", "on-tertiary-fixed-variant": "#5f410c", "inverse-surface": "#2e3132", "surface-container-low": "#f3f4f6", "error": "#ba1a1a", "on-tertiary-container": "#c69d60", "surface-container-high": "#e7e8ea", "inverse-on-surface": "#f0f1f3", "on-primary-fixed-variant": "#2d476d", "on-secondary-fixed-variant": "#614000", "primary": "#032448", "surface-bright": "#f8f9fb", "primary-fixed-dim": "#aec8f4", "background": "#f8f9fb", "error-container": "#ffdad6", "on-primary": "#ffffff", "surface-container": "#edeef0", "on-secondary": "#ffffff", "secondary": "#7e5708", "on-secondary-container": "#795203", "surface": "#f8f9fb", "on-error-container": "#93000a", "outline": "#74777f", "tertiary-fixed": "#ffddb0", "secondary-fixed": "#ffddaf", "tertiary": "#342000", "on-primary-container": "#8ba4cf", "on-error": "#ffffff", "tertiary-container": "#503400", "surface-dim": "#d9dadc", "inverse-primary": "#aec8f4", "on-tertiary-fixed": "#281800", "outline-variant": "#c4c6cf", "tertiary-fixed-dim": "#ecbf7f", "on-secondary-fixed": "#281800" }, borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, spacing: { "space-lg": "1.25rem", "space-xl": "1.5rem", "gutter": "1.5rem", "space-xs": "0.25rem", "space-md": "1rem", "margin": "1.5rem", "space-sm": "0.5rem" }, fontFamily: { "headline-card": ["Be Vietnam Pro"], "display-lg": ["Be Vietnam Pro"], "body-medium": ["Be Vietnam Pro"], "body-semibold": ["Be Vietnam Pro"], "badge-label": ["Be Vietnam Pro"], "headline-page": ["Be Vietnam Pro"], "body-default": ["Be Vietnam Pro"], "code-mono": ["JetBrains Mono"], "headline-section": ["Be Vietnam Pro"], "caption": ["Be Vietnam Pro"] }, fontSize: { "headline-card": ["16px", { lineHeight: "24px", fontWeight: "600" }], "display-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.02em", fontWeight: "700" }], "body-medium": ["14px", { lineHeight: "20px", fontWeight: "500" }], "body-semibold": ["14px", { lineHeight: "20px", fontWeight: "600" }], "badge-label": ["12px", { lineHeight: "16px", fontWeight: "600" }], "headline-page": ["24px", { lineHeight: "32px", letterSpacing: "-0.01em", fontWeight: "700" }], "body-default": ["14px", { lineHeight: "20px", fontWeight: "400" }], "code-mono": ["13px", { lineHeight: "18px", fontWeight: "500" }], "headline-section": ["20px", { lineHeight: "28px", fontWeight: "600" }], "caption": ["12px", { lineHeight: "16px", fontWeight: "400" }] } } } }</script></head><body class="bg-surface font-body-default text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest border-r border-[#E5E7EB] z-50 flex flex-col justify-between select-none"><div class="flex flex-col"><div class="h-16 px-space-md border-b border-[#E5E7EB] flex items-center gap-space-sm"><img alt="EQUIFLOW" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UGikK8NXS9M4JgxmlSjtXa6LBSbd6Y2QP8z7tWNi09dvyuT3XXfKfKDX8Q2MdO5lCiDUMIjH-BC8CSj8J_XbBxrst0OF2VXVtzoDy2aqzbR1uNGjpUXCJA0ulgPxwYcukU39NRgET6W8K9hPVA7AHpJNp7Pa3JMlbQZaFm50cqO_mwdbzk6PI7qXErXvtG6lA6nWqRwmJfxwqGFP_RJH6QcWEZ0I1am8ET2uzYhZBkRO6mmjM1LJLWGtg"><div class="flex flex-col"></div></div><div class="px-space-md py-space-sm"><span class="font-caption text-caption text-outline uppercase font-semibold tracking-wider text-[11px]">Menu Khách Hàng</span></div><nav class="flex flex-col gap-1 px-space-sm" data-active-classes="bg-primary-container text-on-primary font-body-semibold rounded-lg shadow-sm"><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium" data-path="trang-tong-quan" href="#"><span class="material-symbols-outlined text-[20px]">dashboard</span><span class="">Trang tổng quan</span></a><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg bg-primary-container text-on-primary font-body-semibold shadow-sm transition-all" data-path="ngua-dua" href="#"><span class="material-symbols-outlined text-[20px]">pets</span><span class="">Ngựa đua</span></a><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium" data-path="lich-thi-dau" href="#"><span class="material-symbols-outlined text-[20px]">event_available</span><span class="">Lịch thi đấu</span></a><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium" data-path="tao-yeu-cau" href="#"><span class="material-symbols-outlined text-[20px]">add_circle</span><span class="">Tạo yêu cầu</span></a><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium" data-path="don-van-chuyen" href="#"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span class="">Đơn vận chuyển</span></a><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium" data-path="giay-to" href="#"><span class="material-symbols-outlined text-[20px]">folder_shared</span><span class="">Giấy tờ</span></a><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium" data-path="thong-bao" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="">Thông báo</span></div><span class="px-2 py-0.5 rounded-full bg-error text-on-error font-badge-label text-badge-label leading-tight">3</span></a><a class="flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium" data-path="tai-khoan" href="#"><span class="material-symbols-outlined text-[20px]">person_outline</span><span class="">Tài khoản</span></a></nav></div><div class="p-space-md m-space-sm rounded-lg bg-surface-container-low border border-[#E5E7EB]"><div class="font-caption text-caption text-secondary font-semibold uppercase tracking-wider mb-space-xs flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">verified</span>Tham chiếu vận hành</div><div class="flex flex-col gap-1.5 font-caption text-caption text-on-surface-variant text-[11px] leading-tight"><div class="flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-primary shrink-0">flight_takeoff</span><span class="">IATA Live Animals Regulations (LAR)</span></div><div class="flex items-start gap-1"><span class="material-symbols-outlined text-[14px] text-secondary shrink-0">assignment_turned_in</span><span class="">FEI – Hộ chiếu ngựa thể thao toàn cầu</span></div></div></div></aside><div class="pl-64 flex flex-col min-h-screen bg-[#F5F6F8]"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest border-b border-[#E5E7EB] z-40 px-space-gutter flex items-center justify-between gap-space-md"><div class="flex items-center gap-space-md flex-1 max-w-xl"><div class="relative w-full"><span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span><input class="w-full h-10 pl-10 pr-space-md rounded-lg bg-surface border border-[#D1D5DB] font-body-default text-body-default text-on-surface placeholder:text-outline focus:outline-none focus:border-primary-container focus:ring-2 focus:ring-primary-container/20 transition-all" placeholder="Tìm mã ngựa, mã đơn, mã chuyến, giải đấu..." type="text"></div></div><div class="flex items-center gap-space-md"><button aria-label="Xem thông báo" class="relative w-10 h-10 rounded-lg flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error ring-2 ring-surface-container-lowest"></span></button><div class="h-8 w-px bg-[#E5E7EB]"></div><div class="flex items-center gap-space-sm"><div class="flex flex-col text-right hidden sm:flex"><span class="font-body-semibold text-body-semibold text-on-surface leading-snug">Nguyễn Minh Khang</span><span class="font-caption text-caption text-on-surface-variant leading-snug text-[11px]">Chủ trại Củ Chi Stable • Customer</span></div><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"><span class="material-symbols-outlined text-on-primary text-[18px]">person</span></div></div></div></header><main class="w-full pt-16 bg-[#F5F6F8] flex-1 px-space-gutter py-space-lg"><div class="flex flex-col w-full">
+<!-- Dynamic Route Script for Active Sidebar Synchronization -->
+<script>
+    (function syncActiveNav() {
+      const links = document.querySelectorAll('aside nav a');
+      links.forEach(el => {
+        if (el.getAttribute('data-path') === 'ngua-dua') {
+          el.className = 'flex items-center gap-space-sm px-space-md py-2.5 rounded-lg bg-primary-container text-on-primary font-body-semibold shadow-sm transition-all';
+        } else {
+          el.className = 'flex items-center gap-space-sm px-space-md py-2.5 rounded-lg text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors font-body-medium text-body-medium';
+        }
+      });
+    })();
+  </script>
+<!-- Top Page Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-xl">
+<div class="flex flex-col gap-1 max-w-3xl">
+<div class="flex items-center gap-2">
+<span class="px-2.5 py-0.5 rounded-full bg-secondary-container/40 text-secondary font-badge-label text-badge-label uppercase tracking-wider">Trang trại chủ sở hữu</span>
+<span class="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
+<span class="font-code-mono text-code-mono text-outline">STABLE-CC-088</span>
+</div>
+<h1 class="font-headline-page text-headline-page text-primary tracking-tight font-bold">Danh sách ngựa đua</h1>
+<p class="font-body-default text-body-default text-on-surface-variant">Quản lý hồ sơ định danh, trạng thái sức khỏe và kế hoạch tham dự giải đấu của các chiến mã thuộc Củ Chi Stable.</p>
+</div>
+<!-- Quick Actions -->
+<div class="flex items-center gap-3 shrink-0">
+<button class="h-10 px-4 rounded-lg bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container-high transition-colors font-body-semibold text-body-semibold shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">file_download</span>
+<span class="">Xuất dữ liệu FEI</span>
+</button>
+<button class="h-10 px-4 rounded-lg bg-primary-container text-on-primary hover:bg-primary transition-all font-body-semibold text-body-semibold shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px]">add</span>
+<span class="">+ Thêm ngựa mới</span>
+</button>
+</div>
+</div>
+<!-- Key Metrics Bento Row -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-xl">
+<!-- Stat 1 -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="absolute -right-4 -bottom-4 w-24 h-24 bg-surface-container-low rounded-full pointer-events-none"></div>
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant font-medium">Tổng đàn thi đấu</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[18px]">pets</span>
+</div>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg text-primary font-bold">04</span>
+<span class="font-caption text-caption text-secondary font-semibold">100% Thuần chủng</span>
+</div>
+<div class="mt-2 text-on-surface-variant font-caption text-caption flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-[#065F46]">verified</span>
+<span class="">Hộ chiếu FEI hợp lệ toàn cầu</span>
+</div>
+</div>
+<!-- Stat 2 -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant font-medium">Chiến mã sẵn sàng bay</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-[#065F46]">
+<span class="material-symbols-outlined text-[18px]">flight_takeoff</span>
+</div>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg text-[#065F46] font-bold">01</span>
+<span class="font-caption text-caption text-on-surface-variant">Golden Wind (H002)</span>
+</div>
+<div class="mt-2 text-on-surface-variant font-caption text-caption">Chuyến bay Abu Dhabi Cargo 28/03</div>
+</div>
+<!-- Stat 3: Countdown highlight widget -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between relative overflow-hidden border-l-4 border-secondary">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-secondary font-semibold uppercase tracking-wider">Cảnh báo bay khẩn</span>
+<span class="material-symbols-outlined text-[18px] text-secondary">warning</span>
+</div>
+<div class="mt-2 flex items-baseline gap-1.5">
+<span class="font-display-lg text-display-lg text-secondary font-bold font-code-mono">48:12</span>
+<span class="font-caption text-caption text-secondary font-medium">giờ còn lại</span>
+</div>
+<div class="mt-2 text-[#9A3412] font-caption text-caption font-semibold flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-[#9A3412] animate-ping"></span>
+<span class="">H001: Dubai Racing Cup</span>
+</div>
+</div>
+<!-- Stat 4 -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-caption text-caption text-on-surface-variant font-medium">Chưa xếp chuyến</span>
+<div class="w-8 h-8 rounded-lg bg-surface-container-low flex items-center justify-center text-outline">
+<span class="material-symbols-outlined text-[18px]">pending_actions</span>
+</div>
+</div>
+<div class="mt-3 flex items-baseline gap-2">
+<span class="font-display-lg text-display-lg text-primary font-bold">02</span>
+<span class="font-caption text-caption text-outline">H003 &amp; H004</span>
+</div>
+<div class="mt-2 text-on-surface-variant font-caption text-caption">Dự kiến chặng Qatar &amp; Dubai</div>
+</div>
+</div>
+<!-- Filter & Search Toolbar Card -->
+<div class="bg-surface-container-lowest p-space-md rounded-xl shadow-sm mb-space-md">
+<div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-space-md">
+<!-- Search Input -->
+<div class="relative flex-1 min-w-[280px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]">search</span>
+<input class="w-full h-10 pl-10 pr-space-md rounded-lg bg-surface-container-low font-body-default text-body-default text-on-surface placeholder:text-outline focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 transition-all" id="searchInput" placeholder="Tìm theo tên ngựa, mã Hxxx, mã RFID..." type="text">
+</div>
+<!-- Dropdown Selectors Group -->
+<div class="flex flex-wrap items-center gap-space-sm"><!-- Filter 1: Kích thước -->
+<div class="relative">
+<select class="h-10 pl-3 pr-8 rounded-lg bg-surface-container-low font-body-medium text-body-medium text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer transition-colors hover:bg-surface-container">
+<option>Kích thước (Tất cả)</option>
+<option>Nhóm M - Tiêu chuẩn</option>
+<option>Nhóm L - Lớn</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+</div>
+<!-- Filter 2: Tính khí -->
+<div class="relative">
+<select class="h-10 pl-3 pr-8 rounded-lg bg-surface-container-low font-body-medium text-body-medium text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer transition-colors hover:bg-surface-container">
+<option>Tính khí (Tất cả)</option>
+<option>Điềm tĩnh</option>
+<option>Bình thường</option>
+<option>Dễ căng thẳng</option>
+<option>Khó kiểm soát</option>
+<option>Hung dữ</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+</div>
+<!-- Filter 3: Trạng thái vận chuyển -->
+<div class="relative">
+<select class="h-10 pl-3 pr-8 rounded-lg bg-surface-container-low font-body-medium text-body-medium text-on-surface appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer transition-colors hover:bg-surface-container" id="statusFilter">
+<option value="all">Trạng thái vận chuyển (Tất cả)</option>
+<option value="risk">Có nguy cơ trễ</option>
+<option value="on-track">Đúng kế hoạch</option>
+<option value="pending">Chưa có đơn vận chuyển</option>
+</select>
+<span class="material-symbols-outlined pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-outline text-[18px]">expand_more</span>
+</div>
+<!-- Filter Quick Checkboxes / Toggles -->
+<div class="flex items-center gap-1.5 bg-surface-container-low p-1 rounded-lg border border-[#E5E7EB]">
+<button type="button" class="px-2.5 py-1.5 rounded text-[12px] font-body-medium text-on-surface-variant hover:text-primary hover:bg-surface-container-lowest transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-secondary">history</span>
+<span class="">Có lịch sử vận chuyển</span>
+</button>
+<button type="button" class="px-2.5 py-1.5 rounded text-[12px] font-body-medium text-on-surface-variant hover:text-primary hover:bg-surface-container-lowest transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">emoji_events</span>
+<span class="">Có giải đấu</span>
+</button>
+<button type="button" class="px-2.5 py-1.5 rounded text-[12px] font-body-medium text-on-surface-variant hover:text-primary hover:bg-surface-container-lowest transition-all flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-[#065F46]">local_shipping</span>
+<span class="">Có đơn vận chuyển</span>
+</button>
+</div>
+<!-- Reset Filter Button -->
+<button class="h-10 px-3.5 rounded-lg bg-surface-container text-on-surface-variant hover:text-error hover:bg-error-container/20 transition-all font-body-semibold text-body-semibold flex items-center gap-1.5 shrink-0" id="btnReset" title="Đặt lại bộ lọc về mặc định">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+<span class="">Đặt lại</span>
+</button></div>
+</div>
+</div>
+<!-- Primary Horse Management Table Container -->
+<div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<!-- Desktop Table View -->
+<div class="overflow-x-auto w-full">
+<table class="w-full text-left border-collapse min-w-[980px]">
+<thead>
+<tr class="bg-surface-container-low/70"><th class="py-3.5 px-5 font-caption text-caption font-semibold text-outline uppercase tracking-wider">MÃ &amp; CHIẾN MÃ</th>
+<th class="py-3.5 px-5 font-caption text-caption font-semibold text-outline uppercase tracking-wider">THÔNG SỐ &amp; KÍCH THƯỚC</th>
+<th class="py-3.5 px-5 font-caption text-caption font-semibold text-outline uppercase tracking-wider">TÍNH KHÍ</th>
+<th class="py-3.5 px-5 font-caption text-caption font-semibold text-outline uppercase tracking-wider">LỊCH SỬ VẬN CHUYỂN</th>
+<th class="py-3.5 px-5 font-caption text-caption font-semibold text-outline uppercase tracking-wider">GIẢI ĐẤU TIẾP THEO</th>
+<th class="py-3.5 px-5 font-caption text-caption font-semibold text-outline uppercase tracking-wider">TRẠNG THÁI &amp; ĐƠN</th>
+<th class="py-3.5 px-5 font-caption text-caption font-semibold text-outline uppercase tracking-wider text-right">THAO TÁC</th></tr>
+</thead>
+<tbody class="font-body-default text-body-default text-on-surface" id="horseTableBody"><!-- Row 1: H001 Silver Star -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group border-b border-[#E5E7EB]">
+<td class="py-4 px-5 align-top">
+<div class="flex items-start gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden shrink-0 shadow-xs relative bg-surface-container mt-0.5">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Silver Star portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBO4xhPpeVwk_M6u1WDO2Qkl-WX8MBcvCjPDm_O3LfD6qFWfXijHhd77QV7bCZdMu-jDvr4VW9yV-KD8v5hv3YH_0i4Kj41t2i7ontciVYAPM9siVYSMsMxwfnFlJRhdWDjs-iYC-f-uwJ37Kl277MAlhKaxEeH0JnIVvV_REnY9Nri5A6h1lioRQlWmQYMcXxB5AU7J2pup90njAmJq8kK6XSz5eBJxVVPGWa0b1yJ1E_8a4xqEX9h">
+</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5">
+<span class="font-code-mono text-code-mono font-bold text-primary px-1.5 py-0.5 rounded bg-surface-container-low text-[12px]">H001</span>
+<span class="font-body-semibold text-body-semibold text-primary">Silver Star</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Thoroughbred • 5 tuổi</span>
+<span class="font-caption text-caption text-outline text-[11px]">Ngựa đực • FEI: VN-2021-992</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-body-semibold text-body-semibold text-on-surface">510 kg</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-medium text-body-medium text-on-surface">16.2 hh (168 cm)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-low text-primary text-[11px] font-caption font-semibold w-fit">
+<span class="material-symbols-outlined text-[13px] text-secondary">straighten</span>
+<span class="">Nhóm L (Dài 2.4m, Rộng ngực 76cm)</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-badge-label text-badge-label w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#065F46]"></span>
+<span class="">Điềm tĩnh</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-secondary">info</span>
+<span class="">Nhạy cảm khi ghép chuồng</span>
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top max-w-[220px]">
+<div class="flex flex-col gap-1">
+<span class="font-body-medium text-body-medium text-on-surface font-semibold">Đã đi 4 chuyến</span>
+<p class="font-caption text-caption text-on-surface-variant text-[11px] leading-snug bg-surface-container-low p-1.5 rounded">
+1 lần căng thẳng khi ghép chuồng, ổn định chuồng riêng
+</p>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-0.5">
+<span class="font-body-semibold text-body-semibold text-on-surface">Dubai Racing Cup</span>
+<span class="font-caption text-caption text-secondary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">calendar_today</span> 25/03/2026
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FFF7ED] text-[#9A3412] font-badge-label text-badge-label shadow-xs w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#9A3412]"></span>
+<span class="">Có nguy cơ trễ</span>
+</div>
+<span class="font-code-mono text-code-mono text-[11px] text-on-surface-variant pl-0.5">Đơn: ORD-2026-001</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top text-right">
+<button class="h-9 px-3.5 rounded-lg bg-surface-container text-primary hover:bg-primary hover:text-on-primary font-body-semibold text-body-semibold transition-all shadow-xs inline-flex items-center gap-1">
+<span class="">Xem chi tiết</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr>
+
+<!-- Row 2: H002 Golden Wind -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group border-b border-[#E5E7EB]">
+<td class="py-4 px-5 align-top">
+<div class="flex items-start gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden shrink-0 shadow-xs relative bg-surface-container mt-0.5">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Golden Wind portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuADYtfsWz2z0LOTJ_UauWFurPsq9wn7wMQly2HXFq3ezHK9C9PQBBdplr-mjFx28j3RLTSDLmtq9rBNBycIUDrDFBvukNtJBJjpTWYYfRFWJU_3vLooCkLWk5Riq98D-P68DUApS-sj9949TBUFmDch8Ks6sbZFQ1WdRvC-FcaRKcHX_K-fsAiwQzS9eutWyjCxTJPfHrYriDSkn_D2xd9-1rKwYPGirAFExmcYalu10MbehMQSUZgf">
+</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5">
+<span class="font-code-mono text-code-mono font-bold text-primary px-1.5 py-0.5 rounded bg-surface-container-low text-[12px]">H002</span>
+<span class="font-body-semibold text-body-semibold text-primary">Golden Wind</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Thoroughbred • 4 tuổi</span>
+<span class="font-caption text-caption text-outline text-[11px]">Ngựa cái • FEI: VN-2022-314</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-body-semibold text-body-semibold text-on-surface">495 kg</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-medium text-body-medium text-on-surface">16.0 hh (163 cm)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-low text-primary text-[11px] font-caption font-semibold w-fit">
+<span class="material-symbols-outlined text-[13px] text-secondary">straighten</span>
+<span class="">Nhóm M (Dài 2.2m, Rộng ngực 72cm)</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-badge-label text-badge-label w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#065F46]"></span>
+<span class="">Bình thường</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-[#065F46]">check_circle</span>
+<span class="">Thích nghi tốt khoang bay</span>
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top max-w-[220px]">
+<div class="flex flex-col gap-1">
+<span class="font-body-medium text-body-medium text-on-surface font-semibold">Đã đi 6 chuyến</span>
+<p class="font-caption text-caption text-on-surface-variant text-[11px] leading-snug bg-surface-container-low p-1.5 rounded">
+Không có biến cố, hồi phục nhịp tim nhanh sau chuyến bay
+</p>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-0.5">
+<span class="font-body-semibold text-body-semibold text-on-surface">Abu Dhabi Cup</span>
+<span class="font-caption text-caption text-secondary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">calendar_today</span> 28/03/2026
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-badge-label text-badge-label shadow-xs w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#065F46]"></span>
+<span class="">Đúng kế hoạch</span>
+</div>
+<span class="font-code-mono text-code-mono text-[11px] text-on-surface-variant pl-0.5">Đơn: ORD-2026-002</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top text-right">
+<button class="h-9 px-3.5 rounded-lg bg-surface-container text-primary hover:bg-primary hover:text-on-primary font-body-semibold text-body-semibold transition-all shadow-xs inline-flex items-center gap-1">
+<span class="">Xem chi tiết</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr>
+
+<!-- Row 3: H003 Desert King -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group border-b border-[#E5E7EB]">
+<td class="py-4 px-5 align-top">
+<div class="flex items-start gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden shrink-0 shadow-xs relative bg-surface-container mt-0.5">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Desert King portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDjTWJ7QCKj_cpYDTHZxNMnWoKpG3Xuyn6SmkDmY8fPsOc3EilAtRlgBVdZ1V6atMKWKUZkWxQ1y7nu1nuGcJY9769tyg5HsFHJmwT8MI146wXHNEv6NrOyIWZ9j_zWysvOms4E3za7fSupmaEcdVv8EHcGEyA8IxlWKOQaJGkS6fm3S55NFVhgJxVleKdx161ZLeq0zqCkvhDsTRfG_mB-FpgYT1nLNvL09iCF41kCjQYWx6sIKkKV">
+</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5">
+<span class="font-code-mono text-code-mono font-bold text-primary px-1.5 py-0.5 rounded bg-surface-container-low text-[12px]">H003</span>
+<span class="font-body-semibold text-body-semibold text-primary">Desert King</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Arabian Warmblood • 6 tuổi</span>
+<span class="font-caption text-caption text-outline text-[11px]">Ngựa thiến • FEI: VN-2020-511</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-body-semibold text-body-semibold text-on-surface">530 kg</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-medium text-body-medium text-on-surface">16.3 hh (170 cm)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-low text-primary text-[11px] font-caption font-semibold w-fit">
+<span class="material-symbols-outlined text-[13px] text-secondary">straighten</span>
+<span class="">Nhóm L (Dài 2.45m, Rộng ngực 78cm)</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#FFF7ED] text-[#9A3412] font-badge-label text-badge-label w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#9A3412]"></span>
+<span class="">Dễ căng thẳng</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-secondary">warning</span>
+<span class="">Cần nệm chống ồn &amp; groom đi kèm</span>
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top max-w-[220px]">
+<div class="flex flex-col gap-1">
+<span class="font-body-medium text-body-medium text-on-surface font-semibold">Đã đi 2 chuyến</span>
+<p class="font-caption text-caption text-on-surface-variant text-[11px] leading-snug bg-surface-container-low p-1.5 rounded">
+Cần bác sĩ theo dõi huyết áp lúc cất cánh &amp; hạ cánh
+</p>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-0.5">
+<span class="font-body-semibold text-body-semibold text-on-surface">Qatar Racing Championship</span>
+<span class="font-caption text-caption text-secondary font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">calendar_today</span> 05/04/2026
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F3F4F6] text-[#374151] font-badge-label text-badge-label shadow-xs w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#6B7280]"></span>
+<span class="">Chưa có đơn vận chuyển</span>
+</div>
+<span class="font-caption text-caption text-outline text-[11px] pl-0.5">Đang chờ xác nhận bay</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top text-right">
+<button class="h-9 px-3.5 rounded-lg bg-surface-container text-primary hover:bg-primary hover:text-on-primary font-body-semibold text-body-semibold transition-all shadow-xs inline-flex items-center gap-1">
+<span class="">Xem chi tiết</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr>
+
+<!-- Row 4: H004 Royal Storm -->
+<tr class="hover:bg-surface-container-low/40 transition-colors group">
+<td class="py-4 px-5 align-top">
+<div class="flex items-start gap-3">
+<div class="w-11 h-11 rounded-lg overflow-hidden shrink-0 shadow-xs relative bg-surface-container mt-0.5">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Royal Storm portrait" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCu5KUDEyz-Nvmc8q5rX6O9DowoF6290_wCQIQVzldzycEOJLYkBjWG1_VBMhEjtKMoTby5mVqKW5VAUotnOBRxcrZQfHbmW5S7PkGxnr44o1GwY9bcklOYL1V_jpmpgRygmKU-PKTZgI_ndCRXV0w_0YiABWpqlJci-ECtd-WYBYZ-32bpEdDtpj5MlFlExRDZtbMQU29N1S0_5WvTsy8VaV3Fjo9m95XTBqKeT7IeDPE-vldzkYbE">
+</div>
+<div class="flex flex-col gap-0.5">
+<div class="flex items-center gap-1.5">
+<span class="font-code-mono text-code-mono font-bold text-primary px-1.5 py-0.5 rounded bg-surface-container-low text-[12px]">H004</span>
+<span class="font-body-semibold text-body-semibold text-primary">Royal Storm</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Thoroughbred • 4 tuổi</span>
+<span class="font-caption text-caption text-outline text-[11px]">Ngựa đực • FEI: VN-2023-118</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="flex items-center gap-2">
+<span class="font-body-semibold text-body-semibold text-on-surface">505 kg</span>
+<span class="text-outline text-[12px]">•</span>
+<span class="font-body-medium text-body-medium text-on-surface">16.1 hh (165 cm)</span>
+</div>
+<div class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-surface-container-low text-primary text-[11px] font-caption font-semibold w-fit">
+<span class="material-symbols-outlined text-[13px] text-secondary">straighten</span>
+<span class="">Nhóm M (Dài 2.25m, Rộng ngực 74cm)</span>
+</div>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-badge-label text-badge-label w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#065F46]"></span>
+<span class="">Điềm tĩnh</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant text-[11px] flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px] text-[#065F46]">check_circle</span>
+<span class="">Thuần tính, ngoan ngoãn khi xếp chuồng</span>
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top max-w-[220px]">
+<div class="flex flex-col gap-1">
+<span class="font-body-medium text-body-medium text-on-surface font-semibold">Chưa có chuyến bay</span>
+<p class="font-caption text-caption text-on-surface-variant text-[11px] leading-snug bg-surface-container-low p-1.5 rounded">
+Đã hoàn thành tập huấn chuồng mô phỏng hàng không
+</p>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-0.5">
+<span class="font-body-semibold text-body-semibold text-on-surface">Dự bị cho Dubai</span>
+<span class="font-caption text-caption text-outline font-medium flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">hourglass_empty</span> Sẵn sàng đăng ký
+</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top">
+<div class="flex flex-col gap-1">
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#F3F4F6] text-[#374151] font-badge-label text-badge-label shadow-xs w-fit">
+<span class="w-1.5 h-1.5 rounded-full bg-[#6B7280]"></span>
+<span class="">Chưa có đơn vận chuyển</span>
+</div>
+<span class="font-caption text-caption text-outline text-[11px] pl-0.5">Chờ chỉ định lịch thi đấu</span>
+</div>
+</td>
+<td class="py-4 px-5 align-top text-right">
+<button class="h-9 px-3.5 rounded-lg bg-surface-container text-primary hover:bg-primary hover:text-on-primary font-body-semibold text-body-semibold transition-all shadow-xs inline-flex items-center gap-1">
+<span class="">Xem chi tiết</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</td>
+</tr></tbody>
+</table>
+</div>
+<!-- Table Pagination Footer -->
+<div class="p-space-md bg-surface-container-low/40 flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="font-body-default text-body-default text-on-surface-variant flex items-center gap-1">
+<span class="">Hiển thị</span>
+<span class="font-body-semibold text-body-semibold text-primary">1-4</span>
+<span class="">trên</span>
+<span class="font-body-semibold text-body-semibold text-primary">4</span>
+<span class="">ngựa</span>
+</div>
+<div class="flex items-center gap-1.5">
+<button class="w-9 h-9 rounded-lg bg-surface-container-low text-outline flex items-center justify-center cursor-not-allowed opacity-60" disabled="">
+<span class="material-symbols-outlined text-[18px]">first_page</span>
+</button>
+<button class="w-9 h-9 rounded-lg bg-surface-container-low text-outline flex items-center justify-center cursor-not-allowed opacity-60" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_left</span>
+</button>
+<button class="w-9 h-9 rounded-lg bg-primary-container text-on-primary font-body-semibold text-body-semibold flex items-center justify-center shadow-xs">
+          1
+        </button>
+<button class="w-9 h-9 rounded-lg bg-surface-container-low text-outline flex items-center justify-center cursor-not-allowed opacity-60" disabled="">
+<span class="material-symbols-outlined text-[18px]">chevron_right</span>
+</button>
+<button class="w-9 h-9 rounded-lg bg-surface-container-low text-outline flex items-center justify-center cursor-not-allowed opacity-60" disabled="">
+<span class="material-symbols-outlined text-[18px]">last_page</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Operational Compliance Note Card -->
+<div class="mt-space-md p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex items-start gap-space-md">
+<div class="w-9 h-9 rounded-lg bg-secondary-container/30 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+</div>
+<div class="flex flex-col gap-0.5">
+<span class="font-body-semibold text-body-semibold text-primary">Tiêu chuẩn kiểm soát thú y IATA LAR &amp; FEI</span>
+<p class="font-body-default text-body-default text-on-surface-variant">
+        Tất cả hồ sơ ngựa được đồng bộ hóa với hệ thống quản lý mã chip RFID và cơ sở dữ liệu kiểm dịch thú y IATA LAR. Mọi sửa đổi thông tin định danh y tế cần tối thiểu 24 giờ để hoàn tất quy trình xác thực hải quan quốc tế.
+      </p>
+</div>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchInput = document.getElementById('searchInput');
+      const statusFilter = document.getElementById('statusFilter');
+      const btnReset = document.getElementById('btnReset');
+      const rows = document.querySelectorAll('#horseTableBody tr');
+
+      function filterTable() {
+        const query = (searchInput.value || '').toLowerCase().trim();
+        const status = statusFilter.value;
+
+        rows.forEach(row => {
+          const text = row.innerText.toLowerCase();
+          const matchesQuery = !query || text.includes(query);
+
+          let matchesStatus = true;
+          if (status === 'risk') {
+            matchesStatus = text.includes('có nguy cơ trễ');
+          } else if (status === 'on-track') {
+            matchesStatus = text.includes('đúng kế hoạch');
+          } else if (status === 'pending') {
+            matchesStatus = text.includes('chưa có đơn vận chuyển');
+          }
+
+          if (matchesQuery && matchesStatus) {
+            row.style.display = '';
+          } else {
+            row.style.display = 'none';
+          }
+        });
+      }
+
+      if (searchInput) searchInput.addEventListener('input', filterTable);
+      if (statusFilter) statusFilter.addEventListener('change', filterTable);
+
+      if (btnReset) {
+        btnReset.addEventListener('click', () => {
+          if (searchInput) searchInput.value = '';
+          if (statusFilter) statusFilter.value = 'all';
+          rows.forEach(row => row.style.display = '');
+        });
+      }
+    });
+  </script>
+</div></main></div>
+
+
+
+
+
+</body></html>
