@@ -193,7 +193,7 @@ export function InvoiceList() {
     <div className="space-y-6">
       <PageHeader
         title="Hóa đơn & Thanh toán"
-        description={isManager ? "Quản lý hóa đơn và theo dõi trạng thái thanh toán" : "Hóa đơn và trạng thái thanh toán của các yêu cầu của bạn"}
+        description={isManager ? "Quản lý hóa đơn và theo dõi trạng thái đối soát (thanh toán bên ngoài app)" : "Hóa đơn và trạng thái đối soát của các yêu cầu vận chuyển (thanh toán bên ngoài app)"}
         icon={<Receipt className="h-5 w-5" />}
         actions={
           <div className="flex items-center gap-2">

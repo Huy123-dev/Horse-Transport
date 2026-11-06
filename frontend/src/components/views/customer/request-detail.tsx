@@ -416,7 +416,7 @@ export function RequestDetail() {
 
       {/* Info cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Khách hàng</p><p className="mt-1 text-sm font-semibold">{request.customerName || user?.name || "Chưa rõ"}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Khách hàng</p><p className="mt-1 text-sm font-semibold text-[var(--role-customer)]">{request.customerName || user?.name || "Chưa rõ"}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Tuyến</p><p className="mt-1 text-sm font-semibold leading-tight">{request.origin?.name || "Chưa xác định"}</p><p className="text-xs text-muted-foreground">→ {request.destination?.name || "Chưa xác định"}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Khởi hành</p><p className="mt-1 text-sm font-semibold">{formatDate(request.scheduledDepartureDate)}</p><p className="text-xs text-muted-foreground">Đến dự kiến: {formatDate(request.scheduledArrivalDate)}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-xs text-muted-foreground">Tổng dự kiến</p><p className="mt-1 text-lg font-bold text-primary">{request.estimatedAmount != null ? (request.currency ? formatMoney(request.estimatedAmount, request.currency) : `${request.estimatedAmount} (chưa rõ tiền tệ)`) : "Chưa chốt"}</p></CardContent></Card>
@@ -467,7 +467,7 @@ export function RequestDetail() {
                           <span className="text-xs text-amber-600 font-medium">Chờ duyệt</span>
                         )}
                       </div>
-                      <p className="mt-2 text-sm font-medium">{request.approvedByName ? `Người duyệt: ${request.approvedByName}` : "Chưa phê duyệt"}</p>
+                      <p className="mt-2 text-sm font-medium">{request.approvedByName ? <span>Người duyệt: <strong className="text-[var(--role-manager)]">{request.approvedByName}</strong></span> : "Chưa phê duyệt"}</p>
                       {request.approvedAt && <p className="text-xs text-muted-foreground mt-0.5">Thời gian: {formatDateTime(request.approvedAt)}</p>}
                     </div>
 
@@ -652,8 +652,8 @@ export function RequestDetail() {
           )}
 
           {canSpecialistApprove && (
-            <Card className="border-blue-500/30 bg-blue-500/10">
-              <CardHeader><CardTitle className="text-base text-blue-700 flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Thẩm định hồ sơ & Phê duyệt cấp 2 (Chuyên viên vận tải)</CardTitle></CardHeader>
+            <Card className="border-[var(--role-specialist-border)] bg-[var(--role-specialist-bg)]">
+              <CardHeader><CardTitle className="text-base text-[var(--role-specialist)] flex items-center gap-2"><ShieldCheck className="h-5 w-5" /> Thẩm định hồ sơ & Phê duyệt cấp 2 (Chuyên viên vận tải)</CardTitle></CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-muted-foreground">
                   Yêu cầu đã được Quản lý Logistics chốt báo giá. Chuyên viên kiểm tra hồ sơ kiểm dịch, tính khả thi và bấm phê duyệt để cho phép Điều phối viên lập kế hoạch lộ trình.

@@ -19,21 +19,24 @@ class SecurityPasswordEncoderTest {
     }
 
     @Test
-    void matchesPlainTextFallback() {
-        assertTrue(encoder.matches("equideli123", "equideli123"));
+    void rejectsPlainTextWithoutBcryptHash() {
+        // Plain text must NEVER match directly - backdoor is closed
+        assertFalse(encoder.matches("equideli123", "equideli123"));
+        assertFalse(encoder.matches("Password123!", "Password123!"));
     }
 
     @Test
-    void matchesTruncatedOrPlaceholderHashes() {
-        assertTrue(encoder.matches("equideli123", ".yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m"));
-        assertTrue(encoder.matches("equideli123", "$2a$hash_customer"));
-        assertTrue(encoder.matches("Password123!", "$2a$hash_admin"));
+    void rejectsMalformedOrPlaceholderHashes() {
+        assertFalse(encoder.matches("equideli123", ".yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m"));
+        assertFalse(encoder.matches("equideli123", "$2a$hash_customer"));
+        assertFalse(encoder.matches("Password123!", "$2a$hash_admin"));
     }
 
     @Test
-    void handlesMalformedHashesSafelyWithoutException() {
-        assertFalse(encoder.matches("other_pass", "not_a_valid_hash_at_all"));
-        assertFalse(encoder.matches("other_pass", null));
-        assertFalse(encoder.matches(null, "$2a$10$JqkaB7iCcWYfyl0ZL8M7s.yHRWoPcg3QPD.qznJNf7Y2.Qr4I3C2m"));
+    void encodesAndMatchesDynamically() {
+        String raw = "MySecurePassword2026!";
+        String encoded = encoder.encode(raw);
+        assertTrue(encoder.matches(raw, encoded));
+        assertFalse(encoder.matches("WrongPassword", encoded));
     }
 }

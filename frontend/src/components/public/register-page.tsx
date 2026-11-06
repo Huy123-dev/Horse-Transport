@@ -10,9 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Loader2, UserPlus, CheckCircle2, Mail, Lock, User, Phone, Building2 } from "lucide-react";
+import { GoogleSignInButton } from "@/components/views/google-sign-in-button";
 
 export function RegisterPage() {
-  const { navigatePublic } = useAppStore();
+  const { navigatePublic, setUser } = useAppStore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -23,6 +24,34 @@ export function RegisterPage() {
   });
   const phoneIsValid = /^0[0-9]{9}$/.test(form.phone);
 
+    const handleGoogleCredential = async (idToken: string) => {
+    setLoading(true);
+    try {
+      const data = await apiPost<{
+        accessToken: string;
+        user: {
+          userId: string;
+          email: string;
+          name: string;
+          phoneNumber: string | null;
+          organizationName: string | null;
+          roleId: string;
+          staffType?: "DRIVER" | "ESCORT" | null;
+        };
+      }>("/auth/google", { idToken });
+      localStorage.setItem("token", data.accessToken);
+      setUser({ ...data.user, roleName: data.user.roleId, staffType: data.user.staffType ?? null });
+      toast({ title: "Đăng ký thành công bằng Google", description: `Chào mừng, ${data.user.name}!` });
+    } catch (err: unknown) {
+      toast({
+        title: "Đăng nhập Google thất bại",
+        description: err instanceof Error ? err.message : "Đã xảy ra lỗi khi đăng ký bằng Google.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPhoneTouched(true);
@@ -165,6 +194,18 @@ export function RegisterPage() {
         <Button type="submit" disabled={loading} className="w-full h-11 text-sm font-semibold gap-2" size="lg">
           {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Đang đăng ký...</> : <><UserPlus className="h-4 w-4" /> Đăng ký</>}
         </Button>
+
+                <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-border" />
+          <span className="text-xs text-muted-foreground uppercase tracking-wider">hoặc</span>
+          <div className="h-px flex-1 bg-border" />
+        </div>
+
+        <GoogleSignInButton
+          onCredential={handleGoogleCredential}
+          onError={(msg) => toast({ title: "Đăng nhập Google thất bại", description: msg, variant: "destructive" })}
+          disabled={loading}
+        />
 
         <p className="text-center text-sm text-muted-foreground">
           Đã có tài khoản?{" "}

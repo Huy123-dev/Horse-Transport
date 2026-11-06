@@ -26,7 +26,8 @@ export type ViewKey =
   | "invoice-detail"
   | "claims-management"
   | "feedback-management"
-  | "recovery-dashboard";
+  | "recovery-dashboard"
+  | "audit-logs";
 
 
 export type PublicView =

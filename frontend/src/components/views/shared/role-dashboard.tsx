@@ -256,7 +256,7 @@ function RequestQueue({ requests, onOpen }: { requests: TransportRequest[]; onOp
         {recent.length === 0 ? <EmptyState title="Chưa có yêu cầu" /> : recent.map((request) => (
           <button key={request.requestId} onClick={() => onOpen(request.requestId)} className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left hover:border-primary/40">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{requestCode(request.requestId)} · {request.customerName}</p>
+              <p className="truncate text-sm font-semibold">{requestCode(request.requestId)} · <span className="text-[var(--role-customer)]">{request.customerName}</span></p>
               <p className="mt-1 text-xs text-muted-foreground">{request.origin?.name || "Chưa xác định"} → {request.destination?.name || "Chưa xác định"} · {formatDate(request.scheduledDepartureDate)}</p>
             </div>
             <StatusBadge status={transportRequestStatusLabel(request.status)} />

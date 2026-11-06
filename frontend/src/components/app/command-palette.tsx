@@ -4,7 +4,6 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useAppStore, type ViewKey } from "@/store/app-store";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Search, LayoutDashboard, Heart, FileText, Receipt, Bell, Truck, Users, Route, ShieldCheck, ClipboardCheck, Stethoscope, PackageCheck, Plus, Sun, CornerDownLeft, type LucideIcon } from "lucide-react";
-import { useTheme } from "@/components/theme-provider";
 import { ROLE_LABELS } from "@/lib/constants";
 
 type CommandItem = {
@@ -19,7 +18,6 @@ type CommandItem = {
 
 export function CommandPalette() {
   const { user, navigate } = useAppStore();
-  const { toggleTheme } = useTheme();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -99,16 +97,6 @@ export function CommandPalette() {
       action: () => { navigate("request-create"); handleOpenChange(false); },
     });
   }
-  commands.push({
-    id: "action-toggle-theme",
-    label: "Đổi giao diện sáng/tối",
-    description: "Chuyển đổi giữa light mode và dark mode",
-    icon: Sun,
-    group: "Thao tác",
-    action: () => { toggleTheme(); handleOpenChange(false); },
-    keywords: "dark light theme theme",
-  });
-
   const filteredCommands = query.trim().length < 2
     ? commands
     : commands.filter((c) => c.label.toLowerCase().includes(query.trim().toLowerCase()) || c.keywords?.toLowerCase().includes(query.trim().toLowerCase()));

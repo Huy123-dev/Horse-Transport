@@ -37,108 +37,174 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Equestrian Dark Surface Palette */
+  --color-surface-dark-bay: var(--surface-dark-bay);
+  --color-surface-chestnut: var(--surface-chestnut);
+  --color-surface-leather: var(--surface-leather);
+  --color-surface-sand: var(--surface-sand);
+
+  /* Thoroughbred Brand Colors */
+  --color-coat-black: var(--coat-black);
+  --color-coat-dark-bay: var(--coat-dark-bay);
+  --color-coat-chestnut: var(--coat-chestnut);
+  --color-coat-gray: var(--coat-gray);
+  --color-coat-palomino: var(--coat-palomino);
+  --color-copper-light: var(--copper-light);
+  --color-champagne-gold: var(--champagne-gold);
+
+  /* High-Contrast Typography & Highlight Colors */
+  --color-text-primary: var(--text-primary);
+  --color-text-body: var(--text-body);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-placeholder: var(--text-placeholder);
+  --color-text-accent: var(--text-accent);
+  --color-text-link: var(--text-link);
+  --color-text-purple: var(--text-purple);
+  --color-text-cyan: var(--text-cyan);
+  --color-text-pink: var(--text-pink);
+
+  /* Role Identity Colors */
+  --color-role-customer: var(--role-customer);
+  --color-role-manager: var(--role-manager);
+  --color-role-specialist: var(--role-specialist);
+  --color-role-coordinator: var(--role-coordinator);
+  --color-role-driver: var(--role-driver);
+  --color-role-escort: var(--role-escort);
+
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* EQUIDELI Design System — Horse-racing theme
-   Chestnut, Dark Bay, Copper/Saddle, Cream, Ivory, Sand */
-:root {
+/* ==========================================================================
+   EQUIDELI GLOBAL DESIGN SYSTEM — DARK MODE ONLY
+   Equestrian Background + High-Contrast User Interface
+   Role Identity Colors + Semantic Business Colors
+   WCAG 2.2 AA & AAA Compliant
+   ========================================================================== */
+
+:root,
+.dark {
   --font-be-vietnam: "Be Vietnam Pro", sans-serif;
   --radius: 0.625rem;
 
-  /* Brand palette */
-  --chestnut: #7B4935;      /* Primary brand */
-  --dark-bay: #35241F;      /* Sidebar / header dark */
-  --copper: #B8895B;        /* Accent / selected */
+  /* 2.1 Bảng màu nền chính (Equestrian Dark Theme) */
+  --background: #1F1612;          /* Nền chính, màu ngựa đen */
+  --surface-dark-bay: #241713;    /* Nền khu vực tối, panels */
+  --surface-chestnut: #35241F;    /* Nền phụ, sidebar, secondary surface */
+  --surface-leather: #3D2B22;     /* Nền khu vực phân cấp, cards nổi bật */
+  --card: #2B201A;                /* Card nội dung chính */
+  --popover: #30231D;             /* Dropdown, Menu, Popover */
+  --sidebar: #150E0B;             /* Thanh điều hướng */
+  --surface-sand: #47372C;        /* Khu vực nhấn mạnh nhẹ */
+  --border: #5A4238;              /* Viền thành phần */
+  --input: #30231D;               /* Ô nhập dữ liệu (khác biệt với Card #2B201A) */
+
+  /* Thoroughbred Brand Colors */
+  --coat-black: #171311;
+  --coat-dark-bay: #241713;
+  --coat-chestnut: #713F2C;
+  --coat-gray: #99918A;
+  --coat-palomino: #B8895B;
   --copper-light: #D4AB82;
-  --cream: hsl(38 40% 93%); /* Latte beige website background */
-  --ivory: #FFFEFC;         /* Cards */
-  --sand: #E7D7C3;          /* Dividers / secondary surfaces */
-  --sand-dark: #D9C4A8;
-  --ink: hsl(24 16% 14%);   /* High-contrast charcoal text */
-  --ink-soft: #76685E;      /* Secondary text */
-  --success: #47744F;       /* Completed / eligible */
-  --warning: #B77722;       /* Attention / risk */
-  --danger: hsl(4 67% 34%); /* Error / incident */
+  --champagne-gold: #F0C477;
 
-  /* Semantic tokens mapped to brand palette */
-  --background: hsl(38 40% 93%);
-  --foreground: hsl(24 16% 14%);
-  --card: #FFFEFC;
-  --card-foreground: #2B2724;
-  --popover: #FFFEFC;
-  --popover-foreground: #2B2724;
-  --primary: #7B4935;
-  --primary-foreground: #FFFEFC;
-  --secondary: #E7D7C3;
-  --secondary-foreground: #35241F;
-  --muted: #EFE6D6;
-  --muted-foreground: #5C5048;  /* Darkened for WCAG 4.5:1 contrast on cream */
-  --accent: #B8895B;
-  --accent-foreground: #FFFEFC;
-  --destructive: hsl(4 67% 34%);
-  --destructive-foreground: hsl(40 100% 99%);
-  --border: #D9C4A8;            /* Slightly darker for better separation */
-  --input: #D9C4A8;
-  --ring: #7B4935;              /* Focus ring uses chestnut for clear visibility */
-  --chart-1: #7B4935;
-  --chart-2: #B8895B;
-  --chart-3: #47744F;
-  --chart-4: #B77722;
-  --chart-5: #A53D35;
-
-  /* Sidebar follows the selected light theme while retaining the brand colors. */
-  --sidebar: #FFFEFC;
-  --sidebar-foreground: #2B2724;
-  --sidebar-primary: #7B4935;
-  --sidebar-primary-foreground: #FFFEFC;
-  --sidebar-accent: #EFE6D6;
-  --sidebar-accent-foreground: #35241F;
-  --sidebar-border: #D9C4A8;
-  --sidebar-ring: #7B4935;
-
-  --success-bg: #E8F0E9;
-  --success-fg: #47744F;
-  --warning-bg: #F7EDDB;
-  --warning-fg: #8C5A14;
-  --danger-bg: hsl(5 55% 94%);
-  --danger-fg: hsl(4 66% 31%);
-  --info-bg: #ECE6DD;
-  --info-fg: #5C4A3A;
-}
-
-.dark {
-  --background: #1F1612;
-  --foreground: #F7F3EB;
-  --card: #2B201A;
-  --card-foreground: #F7F3EB;
-  --popover: #2B201A;
-  --popover-foreground: #F7F3EB;
-  --primary: #B8895B;
-  --primary-foreground: #1F1612;
-  --secondary: #3D2D24;
-  --secondary-foreground: #F7F3EB;
-  --muted: #3D2D24;
-  --muted-foreground: #D4C4A8;  /* Lightened for dark mode contrast */
-  --accent: #7B4935;
-  --accent-foreground: #F7F3EB;
-  --destructive: #C95048;
-  --destructive-foreground: #FFFEFC;
-  --border: #5A4238;
-  --input: #5A4238;
-  --ring: #B8895B;
-
-  --sidebar: #150E0B;
-  --sidebar-foreground: #F7F3EB;
+  /* Surface & Component Semantic Tokens */
+  --foreground: #FFF8EE;          /* Warm Ivory */
+  --card-foreground: #FFF8EE;
+  --popover-foreground: #FFF8EE;
+  --sidebar-foreground: #FFF8EE;
   --sidebar-primary: #B8895B;
-  --sidebar-primary-foreground: #150E0B;
+  --sidebar-primary-foreground: #171311;
   --sidebar-accent: #2B201A;
-  --sidebar-accent-foreground: #F7F3EB;
-  --sidebar-border: #2B201A;
-  --sidebar-ring: #B8895B;
+  --sidebar-accent-foreground: #FFF8EE;
+  --sidebar-border: #3D2B22;
+  --sidebar-ring: #7DD3FC;
+
+  --primary: #B8895B;             /* Nút chính Antique Copper */
+  --primary-foreground: #171311;  /* Chữ trên nút chính (7.44:1 AAA) */
+  --secondary: #35241F;           /* Nút phụ / Nền phụ */
+  --secondary-foreground: #FFF8EE;
+  --muted: #382A23;               /* Vùng thông tin phụ */
+  --muted-foreground: #C9B8A8;
+  --accent: #713F2C;
+  --accent-foreground: #FFF8EE;
+  --destructive: #A53D35;
+  --destructive-foreground: #FFF8EE;
+  --ring: #7DD3FC;                /* Focus ring xanh nổi bật (9.51:1 AAA) */
+
+  /* 3.1 Bảng màu Typography (Ưu tiên khả năng đọc & Điểm nhấn) */
+  --text-primary: #FFF8EE;        /* Tiêu đề chính (Warm Ivory - 15.04:1 AAA) */
+  --text-body: #E6D8C8;           /* Nội dung thông thường (Cream Coat - 11.34:1 AAA) */
+  --text-secondary: #C9B8A8;      /* Nội dung phụ (Silver Gray - 8.24:1 AAA) */
+  --text-placeholder: #AA9786;    /* Placeholder (Warm Taupe - 5.65:1 AA) */
+  --text-accent: #D4AB82;         /* Text Accent (Champagne Mane - 7.51:1 AAA) */
+  --text-link: #7DD3FC;           /* Link (Xanh dương sáng - 9.51:1 AAA) */
+  --text-purple: #C4B5FD;         /* Highlight Purple (Tím sáng - 8.59:1 AAA) */
+  --text-cyan: #5EEAD4;           /* Highlight Cyan (Xanh ngọc - 10.72:1 AAA) */
+  --text-pink: #F9A8D4;           /* Highlight Pink (Hồng sáng - 8.74:1 AAA) */
+
+  /* 4. Role Identity Colors (Màu nhận diện chức vụ) */
+  --role-customer: #E9A8FF;       /* Khách hàng - Tím hồng phấn (8.69:1 AAA) */
+  --role-customer-bg: rgba(233, 168, 255, 0.12);
+  --role-customer-border: rgba(233, 168, 255, 0.35);
+
+  --role-manager: #FF9F80;        /* Quản lý Logistics - Cam san hô (7.95:1 AAA) */
+  --role-manager-bg: rgba(255, 159, 128, 0.12);
+  --role-manager-border: rgba(255, 159, 128, 0.35);
+
+  --role-specialist: #7DD3FC;     /* Chuyên viên vận tải & hồ sơ - Xanh da trời (9.51:1 AAA) */
+  --role-specialist-bg: rgba(125, 211, 252, 0.12);
+  --role-specialist-border: rgba(125, 211, 252, 0.35);
+
+  --role-coordinator: #C4B5FD;    /* Điều phối viên Đội xe & Lộ trình - Tím Lavender (8.59:1 AAA) */
+  --role-coordinator-bg: rgba(196, 181, 253, 0.12);
+  --role-coordinator-border: rgba(196, 181, 253, 0.35);
+
+  --role-driver: #5EEAD4;         /* Tài xế - Xanh ngọc Turquoise (10.72:1 AAA) */
+  --role-driver-bg: rgba(94, 234, 212, 0.12);
+  --role-driver-border: rgba(94, 234, 212, 0.35);
+
+  --role-escort: #F9A8D4;         /* Nhân viên đi kèm - Hồng Flamingo (8.74:1 AAA) */
+  --role-escort-bg: rgba(249, 168, 212, 0.12);
+  --role-escort-border: rgba(249, 168, 212, 0.35);
+
+  /* 5. Semantic Colors (Màu trạng thái nghiệp vụ - Độc lập với Role) */
+  --success-bg: #26352A;
+  --success-fg: #9CC49B;
+  --success-border: #47744F;
+
+  --warning-bg: #3B2B1C;
+  --warning-fg: #F0C477;
+  --warning-border: #A87936;
+
+  --danger-bg: #3B211F;
+  --danger-fg: #E58B82;
+  --danger-border: #A53D35;
+
+  --info-bg: #302821;
+  --info-fg: #C4B8AC;
+  --info-border: #766454;
+
+  /* 8. Recharts Analytics Palette */
+  --chart-1: #713F2C;             /* Chestnut */
+  --chart-2: #B8895B;             /* Antique Copper */
+  --chart-3: #47744F;             /* Racing Green */
+  --chart-4: #7DD3FC;             /* Cyan/Sky */
+  --chart-5: #A53D35;             /* Danger Red */
+
+  /* Backward Compatibility Aliases */
+  --chestnut: #713F2C;
+  --dark-bay: #241713;
+  --copper: #B8895B;
+  --sand: #35241F;
+  --sand-dark: #5A4238;
+  --ivory: #FFF8EE;
+  --cream: #1F1612;
+  --ink: #FFF8EE;
+  --ink-soft: #C9B8A8;
 }
 
 @layer base {
@@ -148,11 +214,41 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "cv11", "ss01";
+    color: var(--text-body);
+    background-color: var(--background);
   }
-  /* Selection color — chestnut */
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+  }
+  a {
+    color: var(--text-link);
+    text-underline-offset: 4px;
+    transition: color 0.15s ease, filter 0.15s ease;
+  }
+  a:hover {
+    filter: brightness(1.15);
+  }
   ::selection {
-    background-color: var(--chestnut);
-    color: var(--ivory);
+    background-color: var(--coat-palomino);
+    color: var(--coat-black);
+  }
+}
+
+/* Form inputs & controls */
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    background-color: var(--input) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-body) !important;
+    border-radius: var(--radius);
+  }
+  input::placeholder, textarea::placeholder {
+    color: var(--text-placeholder) !important;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--copper-light) !important;
+    box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.3) !important;
+    outline: none !important;
   }
 }
 
@@ -181,7 +277,7 @@
 
   /* Skeleton shimmer */
   .skeleton-shimmer {
-    background: linear-gradient(90deg, var(--muted) 0%, var(--sand) 50%, var(--muted) 100%);
+    background: linear-gradient(90deg, #2B201A 0%, #382A23 50%, #2B201A 100%);
     background-size: 1000px 100%;
     animation: shimmer 2s infinite linear;
   }
@@ -192,7 +288,8 @@
   }
   .card-hover:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px -8px rgba(53, 36, 31, 0.15);
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    border-color: var(--copper-light);
   }
 
   /* Button press effect */
@@ -203,15 +300,15 @@
     transform: scale(0.97);
   }
 
-  /* Badge subtle pulse for active status */
+  /* Badge subtle pulse */
   .badge-pulse::before {
     content: "";
     animation: pulse-soft 2s ease-in-out infinite;
   }
 
-  /* Gradient text — chestnut to copper */
+  /* Gradient text */
   .text-gradient-brand {
-    background: linear-gradient(135deg, var(--chestnut) 0%, var(--copper) 100%);
+    background: linear-gradient(135deg, var(--copper-light) 0%, var(--coat-palomino) 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -224,10 +321,10 @@
     transition: box-shadow 0.15s ease;
   }
   .focus-ring:focus-visible {
-    box-shadow: 0 0 0 3px rgba(184, 137, 91, 0.35);
+    box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.35);
   }
 
-  /* Decorative divider with diamond */
+  /* Decorative divider */
   .divider-diamond {
     position: relative;
     text-align: center;
@@ -244,7 +341,7 @@
   .divider-diamond::before { left: 0; }
   .divider-diamond::after { right: 0; }
 
-  /* Gradient accent border for cards */
+  /* Gradient accent border */
   .gradient-accent-border {
     position: relative;
   }
@@ -254,38 +351,25 @@
     inset: 0;
     border-radius: inherit;
     padding: 1px;
-    background: linear-gradient(135deg, var(--chestnut), var(--copper), transparent);
+    background: linear-gradient(135deg, var(--coat-chestnut), var(--coat-palomino), transparent);
     -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
     pointer-events: none;
   }
 
-  /* Button hierarchy — standardized across all roles/screens */
-  /* Primary: chestnut bg, ivory text — for main actions (save, submit, confirm) */
-  /* Secondary: sand bg, dark-bay text — for alternative actions */
-  /* Outline: transparent bg, chestnut text/border — for cancel/back */
-  /* Danger: red bg, white text — for delete/reject only */
-  /* Disabled: muted bg, muted-foreground text — clearly unavailable but readable */
   .btn-disabled-readable:disabled {
-    opacity: 0.55;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 
-  /* Focus ring — clear keyboard focus using chestnut */
   *:focus-visible {
     outline: 2px solid var(--ring);
     outline-offset: 2px;
   }
-
-  /* Input focus — clear border change + ring */
-  input:focus, select:focus, textarea:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(123, 73, 53, 0.15);
-  }
 }
 
-/* Print styles for invoices */
+/* Print styles */
 @media print {
   body * { visibility: hidden; }
   .print-area, .print-area * { visibility: visible; }
@@ -295,53 +379,96 @@
   @page { margin: 1.5cm; }
 }
 
-/* Custom scrollbar — leather tone */
+/* Custom scrollbar — Dark Saddle Leather tone */
 @layer utilities {
   .scrollbar-equideli {
     scrollbar-width: thin;
-    scrollbar-color: var(--copper) transparent;
+    scrollbar-color: var(--border) var(--background);
   }
   .scrollbar-equideli::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
   .scrollbar-equideli::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--background);
   }
   .scrollbar-equideli::-webkit-scrollbar-thumb {
-    background-color: var(--sand-dark);
+    background-color: var(--border);
     border-radius: 9999px;
   }
   .scrollbar-equideli::-webkit-scrollbar-thumb:hover {
-    background-color: var(--copper);
+    background-color: var(--coat-palomino);
   }
 
   /* Subtle leather texture pattern for sidebar */
   .leather-texture {
     background-image:
-      radial-gradient(circle at 20% 30%, rgba(184, 137, 91, 0.04) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, rgba(123, 73, 53, 0.06) 0%, transparent 50%);
+      radial-gradient(circle at 20% 30%, rgba(184, 137, 91, 0.05) 0%, transparent 60%),
+      radial-gradient(circle at 80% 70%, rgba(113, 63, 44, 0.08) 0%, transparent 60%);
   }
 
   .text-balance {
     text-wrap: balance;
   }
 
-  /* Status pill helpers */
+  /* Status badge helpers */
   .status-success {
-    background-color: var(--success-bg);
-    color: var(--success-fg);
+    background-color: var(--success-bg) !important;
+    color: var(--success-fg) !important;
+    border: 1px solid var(--success-border) !important;
   }
   .status-warning {
-    background-color: var(--warning-bg);
-    color: var(--warning-fg);
+    background-color: var(--warning-bg) !important;
+    color: var(--warning-fg) !important;
+    border: 1px solid var(--warning-border) !important;
   }
   .status-danger {
-    background-color: var(--danger-bg);
-    color: var(--danger-fg);
+    background-color: var(--danger-bg) !important;
+    color: var(--danger-fg) !important;
+    border: 1px solid var(--danger-border) !important;
   }
   .status-info {
-    background-color: var(--info-bg);
-    color: var(--info-fg);
+    background-color: var(--info-bg) !important;
+    color: var(--info-fg) !important;
+    border: 1px solid var(--info-border) !important;
   }
+
+  /* Role Badge helpers */
+  .role-badge-customer {
+    background-color: var(--role-customer-bg);
+    color: var(--role-customer);
+    border: 1px solid var(--role-customer-border);
+  }
+  .role-badge-manager {
+    background-color: var(--role-manager-bg);
+    color: var(--role-manager);
+    border: 1px solid var(--role-manager-border);
+  }
+  .role-badge-specialist {
+    background-color: var(--role-specialist-bg);
+    color: var(--role-specialist);
+    border: 1px solid var(--role-specialist-border);
+  }
+  .role-badge-coordinator {
+    background-color: var(--role-coordinator-bg);
+    color: var(--role-coordinator);
+    border: 1px solid var(--role-coordinator-border);
+  }
+  .role-badge-driver {
+    background-color: var(--role-driver-bg);
+    color: var(--role-driver);
+    border: 1px solid var(--role-driver-border);
+  }
+  .role-badge-escort {
+    background-color: var(--role-escort-bg);
+    color: var(--role-escort);
+    border: 1px solid var(--role-escort-border);
+  }
+
+  /* Highlight text utility classes */
+  .text-link { color: var(--text-link); }
+  .text-purple { color: var(--text-purple); }
+  .text-cyan { color: var(--text-cyan); }
+  .text-pink { color: var(--text-pink); }
+  .text-accent { color: var(--text-accent); }
 }

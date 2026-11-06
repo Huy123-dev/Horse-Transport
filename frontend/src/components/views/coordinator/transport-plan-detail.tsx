@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ClipboardCheck, HeartPulse, MapPin, PackageCheck, Plus, Route, ShieldAlert, Trash2 } from "lucide-react";
+import { ArrowLeft, ClipboardCheck, HeartPulse, MapPin, PackageCheck, Plus, Route, ShieldAlert, Trash2, Truck, HeartHandshake } from "lucide-react";
 import { assetStatusLabel, formatDateTime, formatRouteDetails, incidentStatusLabel, planCode, requestCode, STOP_TYPES, transportPlanStatusLabel } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 
@@ -426,9 +426,21 @@ export function TransportPlanDetail() {
             <div key={assignment.assignmentId} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium">{assignment.assetName || "Chưa có phương tiện"}{assignment.assetType ? ` · ${assignment.assetType}` : ""}</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Tài xế: {assignment.driverName || "—"} · Người đi kèm: {assignment.attendantName || "—"}
-                </p>
+                <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+                  {assignment.driverName && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 role-badge-driver text-xs font-semibold">
+                      <Truck className="h-3 w-3" /> Tài xế: {assignment.driverName}
+                    </span>
+                  )}
+                  {assignment.attendantName && (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 role-badge-escort text-xs font-semibold">
+                      <HeartHandshake className="h-3 w-3" /> Người đi kèm: {assignment.attendantName}
+                    </span>
+                  )}
+                  {!assignment.driverName && !assignment.attendantName && (
+                    <span className="text-xs text-muted-foreground">Chưa chỉ định nhân sự</span>
+                  )}
+                </div>
                 <p className="mt-1 text-xs text-muted-foreground">Phân công lúc {formatDateTime(assignment.assignedAt)}</p>
               </div>
               {canManageAssignments && (

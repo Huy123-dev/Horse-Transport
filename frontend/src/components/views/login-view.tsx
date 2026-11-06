@@ -139,6 +139,20 @@ export function LoginView() {
                 {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Đang đăng nhập...</> : "Đăng nhập"}
               </Button>
 
+<<<<<<< Updated upstream
+=======
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-xs text-muted-foreground uppercase tracking-wider">hoặc</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <GoogleSignInButton
+                onCredential={handleGoogleCredential}
+                onError={handleGoogleError}
+                disabled={loading}
+              />
+
+>>>>>>> Stashed changes
               <div className="text-center">
                 <p className="text-sm text-muted-foreground">
                   Chưa có tài khoản?{" "}

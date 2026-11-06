@@ -377,7 +377,7 @@ export function DriverPlanDetail() {
                     return (
                       <div key={stop.stopId} className="rounded-lg border border-border p-4 space-y-3 bg-card">
                         <div className="flex items-start gap-3">
-                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${isStopFinished ? "bg-emerald-500/10 text-emerald-600" : isPendingDeparture ? "bg-amber-500/10 text-amber-600" : "bg-primary/10 text-primary"}`}>
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${isStopFinished ? "bg-[var(--success-bg)] text-[var(--success-fg)] border border-[var(--success-border)]" : isPendingDeparture ? "bg-[var(--warning-bg)] text-[var(--warning-fg)] border border-[var(--warning-border)]" : "bg-primary/10 text-primary"}`}>
                             {stop.sequenceNo}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -385,12 +385,12 @@ export function DriverPlanDetail() {
                               <p className="font-semibold text-foreground">{stop.stopName}</p>
                               <Badge variant="outline">{stop.stopType}</Badge>
                               {isStopFinished && (
-                                <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 bg-emerald-500/10 gap-1 text-[11px] py-0.5">
+                                <Badge variant="outline" className="border-[var(--success-border)] text-[var(--success-fg)] bg-[var(--success-bg)] gap-1 text-[11px] py-0.5">
                                   <CheckCircle2 className="h-3 w-3" /> Đã hoàn thành
                                 </Badge>
                               )}
                               {isPendingDeparture && (
-                                <Badge variant="outline" className="border-amber-500/40 text-amber-600 bg-amber-500/10 gap-1 text-[11px] py-0.5">
+                                <Badge variant="outline" className="border-[var(--warning-border)] text-[var(--warning-fg)] bg-[var(--warning-bg)] gap-1 text-[11px] py-0.5">
                                   <Clock className="h-3 w-3" /> Đang dừng tại trạm
                                 </Badge>
                               )}

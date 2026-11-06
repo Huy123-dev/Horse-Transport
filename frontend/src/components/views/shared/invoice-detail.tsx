@@ -15,7 +15,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Receipt, Calendar, CreditCard, CheckCircle2, Plus, Download, FileText, Printer } from "lucide-react";
+import { ArrowLeft, Receipt, Calendar, CreditCard, CheckCircle2, Plus, Download, FileText, Printer, Info } from "lucide-react";
 import { formatDate, formatDateTime, formatMoney, invoiceCode, requestCode } from "@/lib/constants";
 import { exportToCSV } from "@/lib/csv-export";
 

@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useCallback } from "react";
 
-type Theme = "light" | "dark";
+type Theme = "dark";
 
 interface ThemeContextValue {
   theme: Theme;
@@ -12,33 +12,35 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
+/**
+ * EQUIDELI Design System — Enforced Dark Mode Only
+ * Luxury Equestrian / Thoroughbred Racing Theme
+ */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === "undefined") return "light";
-    const stored = localStorage.getItem("equideli-theme") as Theme | null;
-    if (stored === "dark" || stored === "light") return stored;
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
-  });
-
-
   useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") root.classList.add("dark");
-    else root.classList.remove("dark");
-    localStorage.setItem("equideli-theme", theme);
-  }, [theme]);
-
-  const toggleTheme = useCallback(() => {
-    setThemeState((prev) => (prev === "dark" ? "light" : "dark"));
+    if (typeof window !== "undefined") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("equideli-theme", "dark");
+    }
   }, []);
 
-  const setTheme = useCallback((t: Theme) => {
-    setThemeState(t);
+  // Safe no-ops that guarantee Dark Mode is maintained permanently
+  const toggleTheme = useCallback(() => {
+    if (typeof window !== "undefined") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("equideli-theme", "dark");
+    }
+  }, []);
+
+  const setTheme = useCallback((_t: Theme) => {
+    if (typeof window !== "undefined") {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("equideli-theme", "dark");
+    }
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={{ theme: "dark", toggleTheme, setTheme }}>
       {children}
     </ThemeContext.Provider>
   );

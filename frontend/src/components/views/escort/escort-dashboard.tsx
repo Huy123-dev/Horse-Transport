@@ -130,13 +130,13 @@ export function EscortDashboard() {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Điều phối viên: {primaryTrip.coordinatorName || "Đang phân công"}
+                Điều phối viên: <strong className="text-[var(--role-coordinator)]">{primaryTrip.coordinatorName || "Đang phân công"}</strong>
               </p>
             </div>
             <Button
               size="sm"
               onClick={() => navigate("trip-detail", { id: primaryTrip.planId })}
-              className="gap-1.5 self-start sm:self-auto bg-rose-600 hover:bg-rose-700 text-white"
+              className="gap-1.5 self-start sm:self-auto"
             >
               Mở sổ theo dõi sức khỏe <ArrowRight className="h-4 w-4" />
             </Button>
@@ -221,7 +221,7 @@ export function EscortDashboard() {
                     className="flex w-full flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 text-left transition-all hover:border-primary/40 hover:shadow-sm"
                   >
                     <div className="flex items-start gap-3 min-w-0">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-500/10 text-rose-500 mt-0.5 sm:mt-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--role-escort-bg)] text-[var(--role-escort)] border border-[var(--role-escort-border)] mt-0.5 sm:mt-0">
                         <Heart className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">

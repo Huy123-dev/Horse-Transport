@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ApiError, apiGet, apiPost, apiPostFormData } from "@/lib/api-client";
 import { useAppStore } from "@/store/app-store";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,8 @@ import {
   Truck,
   Upload,
   X,
+  Info,
+  Sparkles,
 } from "lucide-react";
 import { formatDate, formatMoney, transportRequestStatusLabel } from "@/lib/constants";
 import {
@@ -103,6 +105,25 @@ interface PricingSelection {
   packageCode: string;
   serviceCodes: string[];
 }
+
+interface ConflictRule {
+  conflictsWith: string[];
+  conflictNames: string[];
+  reason: string;
+}
+
+const CONFLICT_RULES: Record<string, ConflictRule> = {
+  DEDICATED_STALL: {
+    conflictsWith: ["SHARED_STALL"],
+    conflictNames: ["Chuồng ghép (Shared Stall)"],
+    reason: "Không thể chọn đồng thời Chuồng riêng và Chuồng ghép trong cùng một chuyến vận chuyển",
+  },
+  SHARED_STALL: {
+    conflictsWith: ["DEDICATED_STALL"],
+    conflictNames: ["Chuồng riêng (Dedicated Stall)"],
+    reason: "Không thể chọn đồng thời Chuồng riêng và Chuồng ghép trong cùng một chuyến vận chuyển",
+  },
+};
 
 const STALL_RANK: Record<StallSize, number> = {
   SMALL: 1,
@@ -238,11 +259,15 @@ export function RequestCreateWizard() {
     void Promise.resolve().then(loadChoices);
   }, [loadChoices]);
 
-  // Load quote preview when arriving at step 6 (Báo giá)
+  const packageItems = pricingCatalog.filter((item) => item.category === "PACKAGE");
+  const serviceItems = pricingCatalog.filter((item) => item.category === "SERVICE");
+  const selectedPackage = packageItems.find((item) => item.code === packageCode);
+
+  // Load quote preview when package is chosen and horses are selected (for steps >= 4)
   useEffect(() => {
     let active = true;
     void Promise.resolve().then(async () => {
-      if (step !== 6 || !packageCode || selectedHorseIds.length === 0) {
+      if (!packageCode || selectedHorseIds.length === 0 || step < 4) {
         if (active) {
           setQuotePreview(null);
           setQuoteError("");
@@ -254,9 +279,12 @@ export function RequestCreateWizard() {
       setQuoteError("");
       try {
         const stallSizes = selectedHorseIds.map((id) => stallConfigurations[id]?.size || "MEDIUM");
+        const sanitizedServiceCodes = selectedServiceCodes.filter(
+          (code) => !selectedPackage?.includedServiceCodes.includes(code)
+        );
         const quote = await apiPost<PricingQuote>("/pricing/quote-preview", {
           packageCode,
-          serviceCodes: selectedServiceCodes,
+          serviceCodes: sanitizedServiceCodes,
           horseCount: selectedHorseIds.length,
           stallSizes,
         });
@@ -270,7 +298,7 @@ export function RequestCreateWizard() {
     return () => {
       active = false;
     };
-  }, [step, packageCode, selectedServiceCodes, selectedHorseIds, stallConfigurations]);
+  }, [step, packageCode, selectedServiceCodes, selectedHorseIds, stallConfigurations, selectedPackage]);
 
   const selectedHorses = horses.filter((horse) => selectedHorseIds.includes(horse.horseId));
   const selectedOrigin = locations.find((location) => location.locationId === originLocationId);
@@ -441,7 +469,7 @@ export function RequestCreateWizard() {
             currency,
             pricingSelection: {
               packageCode,
-              serviceCodes: selectedServiceCodes,
+              serviceCodes: effectiveSelectedAddons,
             } satisfies PricingSelection,
             stallConfigurations: selectedHorseIds.map((horseId) => ({
               horseId,
@@ -511,14 +539,97 @@ export function RequestCreateWizard() {
     }
   };
 
-  const packageItems = pricingCatalog.filter((item) => item.category === "PACKAGE");
-  const serviceItems = pricingCatalog.filter((item) => item.category === "SERVICE");
-  const selectedPackage = packageItems.find((item) => item.code === packageCode);
+
+  const handleSelectPackage = (code: string) => {
+    setPackageCode(code);
+    setStepError("");
+    const pkg = packageItems.find((p) => p.code === code);
+    if (pkg) {
+      // Bỏ các dịch vụ đã được bao gồm trong gói mới và dịch vụ xung đột với gói
+      setSelectedServiceCodes((prev) => {
+        let next = prev.filter((c) => !pkg.includedServiceCodes.includes(c));
+        for (const incCode of pkg.includedServiceCodes) {
+          const rule = CONFLICT_RULES[incCode];
+          if (rule) {
+            next = next.filter((c) => !rule.conflictsWith.includes(c));
+          }
+        }
+        return next;
+      });
+    }
+  };
+
+  // Danh sách dịch vụ bổ sung thực tế khách hàng chọn (loại bỏ dịch vụ đã có trong gói)
+  const effectiveSelectedAddons = useMemo(() => {
+    const includedCodes = selectedPackage?.includedServiceCodes ?? [];
+    return selectedServiceCodes.filter((code) => !includedCodes.includes(code));
+  }, [selectedServiceCodes, selectedPackage]);
+
+  // Tính tổng chi phí các dịch vụ bổ sung đã chọn
+  const totalAddonCost = useMemo(() => {
+    if (quotePreview?.lines) {
+      return quotePreview.lines
+        .filter(
+          (line) =>
+            line.category === "SERVICE" &&
+            !line.includedInPackage &&
+            !line.code.startsWith("STALL_") &&
+            effectiveSelectedAddons.includes(line.code)
+        )
+        .reduce((sum, line) => sum + (line.lineTotalUsd || 0), 0);
+    }
+    return effectiveSelectedAddons.reduce((sum, code) => {
+      const item = serviceItems.find((s) => s.code === code);
+      if (!item || item.priceUsd == null) return sum;
+      const qty = item.unitType === "PER_HORSE" ? selectedHorseIds.length : 1;
+      return sum + item.priceUsd * qty;
+    }, 0);
+  }, [quotePreview, effectiveSelectedAddons, serviceItems, selectedHorseIds.length]);
 
   const toggleService = (serviceCode: string) => {
-    setSelectedServiceCodes((codes) =>
-      codes.includes(serviceCode) ? codes.filter((code) => code !== serviceCode) : [...codes, serviceCode],
-    );
+    if (formLocked || submitting) return;
+
+    // Dịch vụ đã được bao gồm trong gói thì không cho phép click sửa
+    const isIncluded = selectedPackage?.includedServiceCodes?.includes(serviceCode);
+    if (isIncluded) return;
+
+    // Kiểm tra nếu dịch vụ này xung đột với dịch vụ đã được bao gồm sẵn trong gói
+    const rule = CONFLICT_RULES[serviceCode];
+    if (rule && rule.conflictsWith.some((code) => selectedPackage?.includedServiceCodes?.includes(code))) {
+      toast({
+        title: "Dịch vụ không khả dụng",
+        description: `Gói vận chuyển đã bao gồm ${rule.conflictNames.join(", ")}. Không thể chọn đồng thời dịch vụ này.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setSelectedServiceCodes((currentCodes) => {
+      const isCurrentlySelected = currentCodes.includes(serviceCode);
+      if (isCurrentlySelected) {
+        // Bỏ chọn dịch vụ
+        return currentCodes.filter((code) => code !== serviceCode);
+      } else {
+        // Chọn mới dịch vụ
+        let nextCodes = [...currentCodes];
+        // Nếu dịch vụ có quy tắc xung đột (vd: Chuồng riêng vs Chuồng ghép)
+        if (rule) {
+          const removedConflicts = nextCodes.filter((code) => rule.conflictsWith.includes(code));
+          if (removedConflicts.length > 0) {
+            nextCodes = nextCodes.filter((code) => !rule.conflictsWith.includes(code));
+            const removedNames = removedConflicts
+              .map((code) => serviceItems.find((s) => s.code === code)?.name || code)
+              .join(", ");
+            toast({
+              title: "Đã cập nhật lựa chọn",
+              description: `Đã chọn ${serviceItems.find((s) => s.code === serviceCode)?.name} và tự động bỏ chọn ${removedNames} do xung đột cấu hình.`,
+            });
+          }
+        }
+        nextCodes.push(serviceCode);
+        return nextCodes;
+      }
+    });
   };
 
   const getStallOptionInfo = (size: StallSize) => {
@@ -981,10 +1092,7 @@ export function RequestCreateWizard() {
                     key={item.code}
                     type="button"
                     aria-pressed={packageCode === item.code}
-                    onClick={() => {
-                      setPackageCode(item.code);
-                      setStepError("");
-                    }}
+                    onClick={() => handleSelectPackage(item.code)}
                     disabled={formLocked || submitting}
                     className={cn(
                       "rounded-xl text-left transition-colors",
@@ -1151,42 +1259,221 @@ export function RequestCreateWizard() {
                 </p>
               </div>
 
-              {/* Dịch vụ tùy chọn */}
-              <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-foreground">Dịch vụ tùy chọn</h4>
+              {/* Dịch vụ tùy chọn (Optional Add-ons) */}
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">
+                      Dịch vụ tùy chọn (Optional Add-ons)
+                    </h4>
+                    <p className="text-xs text-muted-foreground">
+                      Có thể chọn một hoặc nhiều dịch vụ độc lập cùng lúc. Dịch vụ đã nằm trong gói sẽ hiển thị &quot;Đã gồm trong gói&quot; và không tính thêm phí.
+                    </p>
+                  </div>
+                  {effectiveSelectedAddons.length > 0 && (
+                    <Badge variant="outline" className="border-primary/40 bg-primary/10 text-primary">
+                      Đã chọn {effectiveSelectedAddons.length} dịch vụ bổ sung
+                    </Badge>
+                  )}
+                </div>
+
                 <div className="grid gap-3 sm:grid-cols-2">
                   {serviceItems.map((item) => {
-                    const included = selectedPackage?.includedServiceCodes.includes(item.code) ?? false;
-                    const checked = included || item.required || selectedServiceCodes.includes(item.code);
+                    const isIncluded = selectedPackage?.includedServiceCodes.includes(item.code) ?? false;
+                    const isSelected = effectiveSelectedAddons.includes(item.code);
+                    const isRequired = item.required;
+                    const isChecked = isIncluded || isRequired || isSelected;
+
+                    const conflictRule = CONFLICT_RULES[item.code];
+                    const conflictsWithPackage = conflictRule
+                      ? conflictRule.conflictsWith.some((code) => selectedPackage?.includedServiceCodes.includes(code))
+                      : false;
+                    const isConflictedWithSelected = conflictRule
+                      ? conflictRule.conflictsWith.some((code) => effectiveSelectedAddons.includes(code))
+                      : false;
+
+                    const isDisabled = formLocked || submitting || isRequired || isIncluded || conflictsWithPackage;
+
+                    let statusReason = "";
+                    if (isIncluded) {
+                      statusReason = "Đã bao gồm sẵn trong gói vận chuyển (không tính thêm phí)";
+                    } else if (conflictsWithPackage) {
+                      statusReason = `Không khả dụng: Gói vận chuyển đã bao gồm ${conflictRule?.conflictNames.join(", ")}`;
+                    } else if (isConflictedWithSelected) {
+                      statusReason = `Xung đột với ${conflictRule?.conflictNames.join(", ")} đang chọn (chọn sẽ thay thế)`;
+                    }
+
                     return (
-                      <Card key={item.code}>
-                        <CardContent className="flex items-start gap-3 p-4">
-                          <Checkbox
-                            checked={checked}
-                            onCheckedChange={() => toggleService(item.code)}
-                            disabled={formLocked || submitting || item.required || included}
-                            aria-label={`Chọn dịch vụ ${item.name}`}
-                          />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <p className="text-sm font-semibold">{item.name}</p>
-                              {item.required && <Badge variant="secondary">Bắt buộc</Badge>}
-                              {included && <Badge variant="outline">Đã gồm trong gói</Badge>}
+                      <div
+                        key={item.code}
+                        role="checkbox"
+                        aria-checked={isChecked}
+                        aria-disabled={isDisabled}
+                        tabIndex={isDisabled ? -1 : 0}
+                        onClick={() => {
+                          if (!isDisabled) toggleService(item.code);
+                        }}
+                        onKeyDown={(e) => {
+                          if ((e.key === " " || e.key === "Enter") && !isDisabled) {
+                            e.preventDefault();
+                            toggleService(item.code);
+                          }
+                        }}
+                        className={cn(
+                          "relative rounded-xl border p-4 transition-all duration-200 select-none flex flex-col justify-between",
+                          isDisabled && "cursor-not-allowed opacity-60 bg-muted/20 border-border/50",
+                          !isDisabled && "cursor-pointer hover:shadow-md",
+                          isIncluded && "border-primary/40 bg-primary/5 cursor-default opacity-90",
+                          isSelected && !isIncluded && "border-primary bg-primary/10 ring-2 ring-primary shadow-sm",
+                          !isSelected && !isIncluded && !isDisabled && "border-border bg-card hover:border-primary/50 hover:bg-muted/30"
+                        )}
+                      >
+                        <div>
+                          <div className="flex items-start gap-3">
+                            <Checkbox
+                              checked={isChecked}
+                              onCheckedChange={() => {
+                                if (!isDisabled) toggleService(item.code);
+                              }}
+                              disabled={isDisabled}
+                              onClick={(e) => e.stopPropagation()}
+                              aria-label={`Chọn dịch vụ ${item.name}`}
+                              className={cn(
+                                "mt-0.5 h-4 w-4 shrink-0 transition-transform",
+                                isSelected && "border-primary bg-primary text-primary-foreground"
+                              )}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-1.5">
+                                <p className="text-sm font-semibold text-foreground">{item.name}</p>
+                                {isIncluded && (
+                                  <Badge variant="outline" className="border-primary/50 text-primary bg-primary/10 text-[11px]">
+                                    Đã gồm trong gói
+                                  </Badge>
+                                )}
+                                {isSelected && !isIncluded && (
+                                  <Badge className="bg-primary text-primary-foreground text-[11px] font-semibold">
+                                    Đã chọn
+                                  </Badge>
+                                )}
+                                {isRequired && <Badge variant="secondary" className="text-[11px]">Bắt buộc</Badge>}
+                                {conflictsWithPackage && (
+                                  <Badge variant="destructive" className="text-[10px]">
+                                    Không khả dụng
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                                {item.benefits || "Quyền lợi chưa được cấu hình."}
+                              </p>
                             </div>
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {item.benefits || "Quyền lợi chưa được cấu hình."}
-                            </p>
-                            <p className="mt-2 text-sm font-medium text-primary">
-                              {included
-                                ? "Đã bao gồm trong giá gói"
-                                : `${item.priceUsd === null ? "Chưa có" : formatMoney(item.priceUsd, "USD")} / ${pricingUnitLabel(item.unitType)}`}
-                            </p>
                           </div>
-                        </CardContent>
-                      </Card>
+                        </div>
+
+                        <div className="mt-3 border-t border-border/40 pt-2 flex flex-wrap items-center justify-between gap-1">
+                          <div>
+                            {isIncluded ? (
+                              <p className="text-xs font-semibold text-primary flex items-center gap-1">
+                                <CheckCircle2 className="h-3.5 w-3.5" /> Miễn phí trong gói ($0)
+                              </p>
+                            ) : (
+                              <div className="text-xs">
+                                <span className="font-bold text-primary">
+                                  {item.priceUsd === null ? "Chưa có" : formatMoney(item.priceUsd, "USD")}
+                                </span>
+                                <span className="text-muted-foreground font-medium">
+                                  {" / "}{pricingUnitLabel(item.unitType)}
+                                </span>
+                                {item.unitType === "PER_HORSE" && selectedHorseIds.length > 1 && item.priceUsd !== null && (
+                                  <span className="text-[11px] text-muted-foreground ml-1">
+                                    (= {formatMoney(item.priceUsd * selectedHorseIds.length, "USD")} cho {selectedHorseIds.length} ngựa)
+                                  </span>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {statusReason && !isIncluded && (
+                            <p className={cn(
+                              "text-[11px] flex items-center gap-1",
+                              conflictsWithPackage ? "text-rose-400" : "text-amber-400/90"
+                            )}>
+                              {conflictsWithPackage ? <AlertTriangle className="h-3 w-3 shrink-0" /> : <Info className="h-3 w-3 shrink-0" />}
+                              {statusReason}
+                            </p>
+                          )}
+                        </div>
+                      </div>
                     );
                   })}
                 </div>
+
+                {/* Bảng tóm tắt Dịch vụ Bổ sung đã chọn */}
+                <Card className="border-primary/30 bg-primary/5 overflow-hidden">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/60 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-primary" />
+                        <h4 className="text-sm font-bold text-foreground">
+                          Dịch vụ bổ sung đã chọn ({effectiveSelectedAddons.length})
+                        </h4>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-xs text-muted-foreground mr-1.5">Phí dịch vụ bổ sung:</span>
+                        <span className="text-sm font-extrabold text-primary">
+                          {formatMoney(totalAddonCost, "USD")}
+                        </span>
+                      </div>
+                    </div>
+
+                    {effectiveSelectedAddons.length === 0 ? (
+                      <p className="text-xs text-muted-foreground italic">
+                        Chưa chọn dịch vụ bổ sung nào. Bạn có thể chọn nhiều dịch vụ tùy chọn phù hợp ở trên để chăm sóc tốt nhất cho ngựa.
+                      </p>
+                    ) : (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {effectiveSelectedAddons.map((code) => {
+                          const s = serviceItems.find((item) => item.code === code);
+                          const line = quotePreview?.lines.find((l) => l.code === code);
+                          const itemCost = line?.lineTotalUsd ?? (s?.priceUsd ? s.priceUsd * (s.unitType === "PER_HORSE" ? selectedHorseIds.length : 1) : 0);
+                          return (
+                            <div
+                              key={code}
+                              className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-card px-2.5 py-1 text-xs shadow-sm"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="font-medium text-foreground">{s?.name || code}</span>
+                              <span className="text-muted-foreground">·</span>
+                              <span className="font-semibold text-primary">{formatMoney(itemCost, "USD")}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleService(code);
+                                }}
+                                className="ml-1 rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+                                title="Bỏ chọn dịch vụ"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {quotePreview?.totalAmount != null && (
+                      <div className="flex items-center justify-between border-t border-border/40 pt-2 text-xs">
+                        <span className="text-muted-foreground">
+                          Tổng tạm tính toàn bộ đơn (Gói + Chuồng + Dịch vụ bổ sung):
+                        </span>
+                        <span className="font-bold text-foreground">
+                          {formatMoney(quotePreview.totalAmount, "USD")}
+                        </span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </div>
 
               {/* Ô nhập Yêu cầu đặc biệt khác */}
@@ -1306,22 +1593,53 @@ export function RequestCreateWizard() {
                     </Card>
 
                     <Card>
-                      <CardContent className="p-3.5 space-y-1">
+                      <CardContent className="p-3.5 space-y-2">
                         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
                           Gói và dịch vụ
                         </p>
-                        <p className="text-sm font-semibold">{selectedPackage?.name || "Chưa chọn gói"}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {selectedServiceCodes.length
-                            ? selectedServiceCodes
+                        <div>
+                          <p className="text-sm font-semibold">{selectedPackage?.name || "Chưa chọn gói"}</p>
+                          {selectedPackage?.includedServiceCodes && selectedPackage.includedServiceCodes.length > 0 && (
+                            <p className="text-xs text-muted-foreground">
+                              Bao gồm sẵn:{" "}
+                              {selectedPackage.includedServiceCodes
                                 .map((code) => serviceItems.find((service) => service.code === code)?.name || code)
-                                .join(", ")
-                            : "Không chọn dịch vụ tùy chọn"}
-                        </p>
-                        <p className="mt-2 text-sm font-semibold text-primary">
-                          Tổng xem trước:{" "}
-                          {quotePreview?.totalAmount == null ? "Chưa có" : formatMoney(quotePreview.totalAmount, "USD")}
-                        </p>
+                                .join(", ")}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="border-t border-border pt-2">
+                          <p className="text-xs font-medium text-foreground">
+                            Dịch vụ bổ sung ({effectiveSelectedAddons.length}):
+                          </p>
+                          {effectiveSelectedAddons.length > 0 ? (
+                            <ul className="mt-1 space-y-1 text-xs text-muted-foreground">
+                              {effectiveSelectedAddons.map((code) => {
+                                const s = serviceItems.find((item) => item.code === code);
+                                const line = quotePreview?.lines.find((l) => l.code === code);
+                                const cost = line?.lineTotalUsd ?? (s?.priceUsd ? s.priceUsd * (s.unitType === "PER_HORSE" ? selectedHorseIds.length : 1) : null);
+                                return (
+                                  <li key={code} className="flex justify-between items-center">
+                                    <span>• {s?.name || code}</span>
+                                    <span className="font-semibold text-foreground">
+                                      {cost != null ? formatMoney(cost, "USD") : "—"}
+                                    </span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          ) : (
+                            <p className="text-xs text-muted-foreground italic">Không chọn dịch vụ tùy chọn</p>
+                          )}
+                        </div>
+
+                        <div className="border-t border-border pt-2 flex justify-between text-sm font-semibold">
+                          <span>Tổng xem trước:</span>
+                          <span className="text-primary">
+                            {quotePreview?.totalAmount == null ? "Chưa có" : formatMoney(quotePreview.totalAmount, "USD")}
+                          </span>
+                        </div>
                       </CardContent>
                     </Card>
 

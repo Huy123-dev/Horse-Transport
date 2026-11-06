@@ -55,6 +55,7 @@ function toDraft(item: PricingCatalogItem): CatalogDraft {
   };
 }
 
+
 function isPackageDraftDirty(original: PricingCatalogItem | undefined, draft: CatalogDraft | undefined): boolean {
   if (!original || !draft) return false;
   const originalDraft = toDraft(original);
@@ -65,6 +66,17 @@ function isPackageDraftDirty(original: PricingCatalogItem | undefined, draft: Ca
     draft.required !== originalDraft.required ||
     JSON.stringify([...draft.includedServiceCodes].sort()) !==
       JSON.stringify([...originalDraft.includedServiceCodes].sort())
+  );
+}
+
+function isServiceDraftDirty(original: PricingCatalogItem | undefined, draft: CatalogDraft | undefined): boolean {
+  if (!original || !draft) return false;
+  const originalDraft = toDraft(original);
+  return (
+    draft.unitType !== originalDraft.unitType ||
+    draft.priceUsd.trim() !== originalDraft.priceUsd.trim() ||
+    draft.benefits.trim() !== originalDraft.benefits.trim() ||
+    draft.required !== originalDraft.required
   );
 }
 
@@ -89,6 +101,7 @@ export function PricingCatalogView() {
     extraLargeWidthMeters: "3.65",
   });
   const [selectedPackageCode, setSelectedPackageCode] = useState<string>("BASIC_TRANSPORT");
+  const [selectedServiceCode, setSelectedServiceCode] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [savingCode, setSavingCode] = useState<string | null>(null);
@@ -102,7 +115,13 @@ export function PricingCatalogView() {
       setItems(catalog);
       setDrafts(Object.fromEntries(catalog.map((item) => [item.code, toDraft(item)])));
       const firstPkg = catalog.find((i) => i.category === "PACKAGE");
-      if (firstPkg) setSelectedPackageCode(firstPkg.code);
+      if (firstPkg) {
+        setSelectedPackageCode((prev) => (prev && catalog.some((i) => i.code === prev && i.category === "PACKAGE") ? prev : firstPkg.code));
+      }
+      const firstSvc = catalog.find((i) => i.category === "SERVICE");
+      if (firstSvc) {
+        setSelectedServiceCode((prev) => (prev && catalog.some((i) => i.code === prev && i.category === "SERVICE") ? prev : firstSvc.code));
+      }
 
       try {
         const stall = await apiGet<StallPricingConfig>("/pricing/stalls");
@@ -142,6 +161,7 @@ export function PricingCatalogView() {
     }));
   };
 
+  
   const handlePackageChange = (newCode: string) => {
     if (newCode === selectedPackageCode) return;
     const currentPkg = items.find((i) => i.code === selectedPackageCode);
@@ -156,6 +176,22 @@ export function PricingCatalogView() {
       }
     }
     setSelectedPackageCode(newCode);
+  };
+
+  const handleServiceChange = (newCode: string) => {
+    if (newCode === selectedServiceCode) return;
+    const currentSvc = items.find((i) => i.code === selectedServiceCode);
+    const currentDraft = drafts[selectedServiceCode];
+    if (isServiceDraftDirty(currentSvc, currentDraft)) {
+      const confirmSwitch = window.confirm(
+        "Dịch vụ hiện tại có thay đổi chưa lưu. Bạn có chắc muốn chuyển sang dịch vụ khác mà không lưu thay đổi?",
+      );
+      if (!confirmSwitch) return;
+      if (currentSvc) {
+        setDrafts((current) => ({ ...current, [currentSvc.code]: toDraft(currentSvc) }));
+      }
+    }
+    setSelectedServiceCode(newCode);
   };
 
   const saveCatalogItem = async (item: PricingCatalogItem) => {
@@ -249,6 +285,8 @@ export function PricingCatalogView() {
   const services = items.filter((item) => item.category === "SERVICE");
   const currentPackage = packages.find((item) => item.code === selectedPackageCode) || packages[0];
   const currentPackageDraft = currentPackage ? drafts[currentPackage.code] : undefined;
+  const currentService = services.find((item) => item.code === selectedServiceCode) || services[0];
+  const currentServiceDraft = currentService ? drafts[currentService.code] : undefined;
 
   // Live preview calculation for stall pricing
   const baseVal = Number(stallDraft.basePriceSmall) || 0;
@@ -419,93 +457,152 @@ export function PricingCatalogView() {
           </Card>
 
           {/* Section: Dịch vụ bổ sung */}
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-base font-bold text-foreground">Dịch vụ bổ sung</h3>
-              <p className="text-xs text-muted-foreground">Cấu hình giá và đơn vị tính cho các dịch vụ tùy chọn hoặc bắt buộc.</p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-2">
-              {services.map((service) => {
-                const draft = drafts[service.code];
-                if (!draft) return null;
-                return (
-                  <Card key={service.code}>
-                    <CardHeader className="pb-3">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <CardTitle className="text-base">{service.name}</CardTitle>
-                        <Badge variant={draft.required ? "default" : "secondary"}>
-                          {draft.required ? "Bắt buộc" : "Tùy chọn"}
-                        </Badge>
-                      </div>
-                      <p className="text-xs text-muted-foreground">{service.code}</p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <Label htmlFor={`svc-price-${service.code}`}>Giá (USD)</Label>
-                          <Input
-                            id={`svc-price-${service.code}`}
-                            inputMode="decimal"
-                            placeholder="Chưa có"
-                            value={draft.priceUsd}
-                            onChange={(e) => updateDraft(service.code, { priceUsd: e.target.value })}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`svc-unit-${service.code}`}>Đơn vị tính</Label>
-                          <select
-                            id={`svc-unit-${service.code}`}
-                            value={draft.unitType}
-                            onChange={(e) => updateDraft(service.code, { unitType: e.target.value as PricingUnit | "" })}
-                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
-                          >
-                            <option value="">Chưa có</option>
-                            <option value="PER_HORSE">Mỗi ngựa</option>
-                            <option value="PER_REQUEST">Mỗi yêu cầu</option>
-                            <option value="PER_TRIP">Mỗi chuyến</option>
-                          </select>
-                        </div>
-                      </div>
+          <Card>
+            <CardHeader className="pb-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Layers className="h-5 w-5 text-primary" /> Dịch vụ bổ sung
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Chọn dịch vụ cần điều chỉnh thông tin và đơn giá.
+                  </CardDescription>
+                </div>
+                <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
+                  <Label htmlFor="service-selector" className="whitespace-nowrap text-sm font-medium">
+                    Chọn dịch vụ cần điều chỉnh:
+                  </Label>
+                  <select
+                    id="service-selector"
+                    value={selectedServiceCode}
+                    onChange={(e) => handleServiceChange(e.target.value)}
+                    className="flex h-10 min-w-[260px] rounded-md border border-input bg-background px-3 text-sm font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-primary hover:border-primary/50 transition-colors"
+                  >
+                    {services.map((service) => (
+                      <option key={service.code} value={service.code}>
+                        {service.name} ({service.priceUsd != null ? `$${service.priceUsd}` : "Chưa có giá"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </CardHeader>
 
-                      <div className="space-y-1">
-                        <Label htmlFor={`svc-benefits-${service.code}`}>Quyền lợi / mô tả</Label>
-                        <Input
-                          id={`svc-benefits-${service.code}`}
-                          maxLength={2000}
-                          value={draft.benefits}
-                          onChange={(e) => updateDraft(service.code, { benefits: e.target.value })}
-                          placeholder="Mô tả dịch vụ..."
-                        />
-                      </div>
+            {currentService && currentServiceDraft ? (
+              <CardContent className="grid gap-4 border-t border-border pt-5 md:grid-cols-2">
+                {/* 1. Tên dịch vụ, 2. Mã dịch vụ & 3. Trạng thái */}
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/50 pb-3 md:col-span-2">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base font-bold text-foreground">{currentService.name}</h3>
+                      <Badge variant={currentServiceDraft.required ? "default" : "secondary"}>
+                        {currentServiceDraft.required ? "Bắt buộc" : "Tùy chọn"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Mã dịch vụ: <span className="font-mono font-semibold text-foreground">{currentService.code}</span> (Chỉ đọc)
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {currentService.priceConfigured && currentService.unitConfigured
+                      ? "✓ Đã đầy đủ giá và đơn vị tính"
+                      : "⚠ Chưa đủ giá hoặc đơn vị tính"}
+                  </span>
+                </div>
 
-                      <label className="flex items-center gap-2 pt-1 text-sm">
-                        <Checkbox
-                          checked={draft.required}
-                          onCheckedChange={(checked) => updateDraft(service.code, { required: checked === true })}
-                        />
-                        <span>Dịch vụ bắt buộc trong mọi yêu cầu</span>
-                      </label>
+                {/* 4. Giá dịch vụ (USD) */}
+                <div className="space-y-2">
+                  <Label htmlFor={`svc-price-${currentService.code}`}>Giá dịch vụ (USD) *</Label>
+                  <Input
+                    id={`svc-price-${currentService.code}`}
+                    inputMode="decimal"
+                    placeholder="Chưa có (nhập 0 để miễn phí)"
+                    value={currentServiceDraft.priceUsd}
+                    onChange={(event) => updateDraft(currentService.code, { priceUsd: event.target.value })}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    {currentServiceDraft.priceUsd.trim() === ""
+                      ? "Chưa có"
+                      : Number.isFinite(Number(currentServiceDraft.priceUsd))
+                        ? formatMoney(Number(currentServiceDraft.priceUsd), "USD")
+                        : "Giá chưa hợp lệ"}
+                  </p>
+                </div>
 
-                      <div className="flex items-center justify-between border-t border-border pt-3">
-                        <span className="text-xs text-muted-foreground">
-                          {service.priceConfigured && service.unitConfigured ? "✓ Đầy đủ" : "⚠ Thiếu giá/đơn vị"}
-                        </span>
-                        <Button
-                          size="sm"
-                          onClick={() => void saveCatalogItem(service)}
-                          disabled={savingCode !== null}
-                          className="gap-1.5"
-                        >
-                          <Save className="h-3.5 w-3.5" />
-                          {savingCode === service.code ? "Đang lưu..." : "Lưu"}
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
+                {/* 5. Đơn vị tính */}
+                <div className="space-y-2">
+                  <Label htmlFor={`svc-unit-${currentService.code}`}>Đơn vị tính *</Label>
+                  <select
+                    id={`svc-unit-${currentService.code}`}
+                    value={currentServiceDraft.unitType}
+                    onChange={(event) =>
+                      updateDraft(currentService.code, { unitType: event.target.value as PricingUnit | "" })
+                    }
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">Chưa có</option>
+                    <option value="PER_HORSE">Mỗi ngựa (PER_HORSE)</option>
+                    <option value="PER_REQUEST">Mỗi yêu cầu (PER_REQUEST)</option>
+                    <option value="PER_TRIP">Mỗi chuyến (PER_TRIP)</option>
+                  </select>
+                  <p className="text-xs text-muted-foreground">Hiện tại: {pricingUnitLabel(currentService.unitType)}</p>
+                </div>
+
+                {/* 6. Quyền lợi / Mô tả dịch vụ */}
+                <div className="space-y-2 md:col-span-2">
+                  <Label htmlFor={`svc-benefits-${currentService.code}`}>Quyền lợi / Mô tả dịch vụ</Label>
+                  <Textarea
+                    id={`svc-benefits-${currentService.code}`}
+                    maxLength={2000}
+                    rows={3}
+                    value={currentServiceDraft.benefits}
+                    onChange={(event) => updateDraft(currentService.code, { benefits: event.target.value })}
+                    placeholder="Nhập mô tả quyền lợi của dịch vụ..."
+                  />
+                </div>
+
+                {/* 7. Checkbox: Dịch vụ bắt buộc trong mọi yêu cầu */}
+                <div className="space-y-1 md:col-span-2">
+                  <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-border p-3 text-sm hover:bg-muted/40 transition-colors">
+                    <Checkbox
+                      id={`svc-required-${currentService.code}`}
+                      checked={currentServiceDraft.required}
+                      onCheckedChange={(checked) => updateDraft(currentService.code, { required: checked === true })}
+                    />
+                    <div>
+                      <span className="font-medium text-foreground">Dịch vụ bắt buộc trong mọi yêu cầu</span>
+                      <p className="text-xs text-muted-foreground">
+                        Nếu bật, khách hàng khi tạo yêu cầu vận chuyển sẽ bắt buộc phải sử dụng dịch vụ này.
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* 8. Nút Lưu thay đổi */}
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-4 md:col-span-2">
+                  <p className="text-xs text-muted-foreground">
+                    {isServiceDraftDirty(currentService, currentServiceDraft) ? (
+                      <span className="text-[var(--warning)] font-medium">● Có thay đổi chưa lưu</span>
+                    ) : (
+                      <span>Dữ liệu đã đồng bộ với máy chủ</span>
+                    )}
+                  </p>
+                  <Button
+                    onClick={() => void saveCatalogItem(currentService)}
+                    disabled={savingCode !== null}
+                    className="gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {savingCode === currentService.code ? "Đang lưu..." : "Lưu thay đổi"}
+                  </Button>
+                </div>
+              </CardContent>
+            ) : (
+              <CardContent className="border-t border-border py-8 text-center text-sm text-muted-foreground">
+                Vui lòng chọn một dịch vụ từ danh sách phía trên để bắt đầu điều chỉnh.
+              </CardContent>
+            )}
+          </Card>
         </TabsContent>
 
         {/* TAB 2: GIÁ KÍCH THƯỚC CHUỒNG */}

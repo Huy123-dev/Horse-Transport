@@ -16,7 +16,10 @@ import java.util.List;
  * Đảm bảo các tài khoản người dùng trong cơ sở dữ liệu luôn có mật khẩu chuẩn BCrypt
  * tương thích với mật khẩu mặc định 'equideli123'.
  */
+import org.springframework.context.annotation.Profile;
+
 @Component
+@Profile("!prod")
 public class DemoAccountPasswordInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DemoAccountPasswordInitializer.class);

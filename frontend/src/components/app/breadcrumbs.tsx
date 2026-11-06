@@ -28,6 +28,10 @@ const VIEW_LABELS: Record<string, string> = {
   invoices: "Hóa đơn & Thanh toán",
   "invoice-detail": "Chi tiết hóa đơn",
   "recovery-dashboard": "Theo dõi hồi phục",
+  "audit-logs": "Nhật ký kiểm toán",
+  "claims-management": "Khiếu nại & Bồi thường",
+  "feedback-management": "Đánh giá dịch vụ",
+  "pricing": "Bảng giá dịch vụ",
 };
 
 const VIEW_PARENTS: Record<string, string> = {

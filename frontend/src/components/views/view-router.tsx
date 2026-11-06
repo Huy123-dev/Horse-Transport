@@ -24,6 +24,8 @@ const InvoiceDetail = lazy(() => import("./shared/invoice-detail").then((module)
 const ClaimsManagementView = lazy(() => import("./manager/claims-management-view").then((module) => ({ default: module.ClaimsManagementView })));
 const FeedbackManagementView = lazy(() => import("./manager/feedback-management-view").then((module) => ({ default: module.FeedbackManagementView })));
 const RecoveryDashboard = lazy(() => import("./customer/recovery-dashboard").then((module) => ({ default: module.RecoveryDashboard })));
+const ComplianceView = lazy(() => import("./specialist/compliance-view").then((module) => ({ default: module.ComplianceView })));
+const AuditLogsView = lazy(() => import("./manager/audit-logs-view").then((module) => ({ default: module.AuditLogsView })));
 const BackendUnavailableView = lazy(() => import("./shared/backend-unavailable-view").then((module) => ({ default: module.BackendUnavailableView })));
 const ManagerDashboard = lazy(() => import("./manager/manager-dashboard").then((module) => ({ default: module.ManagerDashboard })));
 const CoordinatorDashboard = lazy(() => import("./coordinator/coordinator-dashboard").then((module) => ({ default: module.CoordinatorDashboard })));
@@ -95,7 +97,7 @@ function RoutedView() {
   if (view === "inspection-detail") return role === "TRANSPORT_SPECIALIST"
     ? <InspectionDetail />
     : <BackendUnavailableView title="Chi tiết kiểm định" endpoint="/api/inspections/{id}" description="Chỉ chuyên viên thủ tục và kiểm dịch được mở màn hình xử lý kiểm định." />;
-  if (view === "compliance") return role === "TRANSPORT_SPECIALIST" ? <InspectionList /> : <BackendUnavailableView title="Kiểm dịch & thông quan" endpoint="/api/inspections" description="Chỉ chuyên viên thủ tục và kiểm dịch được xem bản ghi kiểm định." />;
+  if (view === "compliance") return ["LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST"].includes(role) ? <ComplianceView /> : <BackendUnavailableView title="Kiểm dịch & thông quan" endpoint="/api/quarantine-reservations" description="Chỉ chuyên viên thủ tục kiểm dịch và Logistics Manager được xem kiểm dịch & thông quan." />;
 
   if (view === "approvals") return ["LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST"].includes(role) ? <ApprovalList /> : <BackendUnavailableView title="Phê duyệt yêu cầu" endpoint="/api/transport-requests" description="Chỉ Logistics Manager hoặc Chuyên viên vận tải được xử lý yêu cầu." />;
   if (view === "approval-detail") return ["LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST"].includes(role) ? <RequestDetail /> : <BackendUnavailableView title="Phê duyệt yêu cầu" endpoint="/api/transport-requests/{id}" description="Chỉ Logistics Manager hoặc Chuyên viên vận tải được xử lý yêu cầu." />;
@@ -120,6 +122,7 @@ function RoutedView() {
   if (view === "claims-management") return role === "LOGISTICS_MANAGER" ? <ClaimsManagementView /> : <BackendUnavailableView title="Quản lý bồi thường" endpoint="/api/compensation-claims" description="Chỉ Logistics Manager được quản lý các vụ việc bồi thường." />;
   if (view === "feedback-management") return role === "LOGISTICS_MANAGER" ? <FeedbackManagementView /> : <BackendUnavailableView title="Đánh giá dịch vụ" endpoint="/api/feedbacks" description="Chỉ Logistics Manager được xem tổng hợp đánh giá chất lượng dịch vụ." />;
 
+  if (view === "audit-logs") return role === "LOGISTICS_MANAGER" ? <AuditLogsView /> : <BackendUnavailableView title="Nhật ký kiểm toán" endpoint="/api/audit-logs" description="Chỉ Logistics Manager được xem nhật ký kiểm toán hệ thống." />;
   if (view === "recovery-dashboard") return <RecoveryDashboard />;
 
   navigate("dashboard");

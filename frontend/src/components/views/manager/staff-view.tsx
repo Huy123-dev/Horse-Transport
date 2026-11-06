@@ -28,6 +28,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/constants";
+import { RoleBadge, getRoleConfig } from "@/components/app/role-badge";
 
 interface StaffUser {
   userId: string;
@@ -376,9 +377,7 @@ export function StaffView() {
         <Card key={roleId}>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Badge variant="outline" className="bg-primary/5">
-                {ROLE_LABELS[roleId] || roleId}
-              </Badge>
+              <RoleBadge roleId={roleId} size="default" />
               <span className="text-sm text-muted-foreground">{list.length} nhân viên</span>
             </CardTitle>
           </CardHeader>
@@ -387,6 +386,7 @@ export function StaffView() {
               {list.map((u) => {
                 const isFieldStaff = FIELD_STAFF_ROLES.has(u.roleId);
                 const displayStaffType = u.staffType || (u.roleId === "DRIVER" ? "DRIVER" : u.roleId === "ESCORT" ? "ESCORT" : null);
+                const staffRole = getRoleConfig(u.roleId, displayStaffType);
 
                 return (
                   <div
@@ -396,8 +396,14 @@ export function StaffView() {
                     }`}
                   >
                     <div className="flex items-start gap-3">
-                      <Avatar className="h-10 w-10 border border-border">
-                        <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">
+                      <Avatar
+                        className="h-10 w-10 border-2 transition-all"
+                        style={{ borderColor: staffRole.color }}
+                      >
+                        <AvatarFallback
+                          className="text-xs font-bold"
+                          style={{ backgroundColor: staffRole.color + "20", color: staffRole.color }}
+                        >
                           {u.name
                             .split(" ")
                             .map((w: string) => w[0])
@@ -407,26 +413,9 @@ export function StaffView() {
                       </Avatar>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-semibold truncate text-foreground">{u.name}</p>
-                        <p className="text-xs text-muted-foreground">{ROLE_LABELS[u.roleId] || u.roleId}</p>
-
-                        {/* Badge loại nhiệm vụ cho nhân viên hiện trường */}
-                        {isFieldStaff && (
-                          <div className="mt-1">
-                            {displayStaffType === "DRIVER" ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 dark:text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-full">
-                                <Truck className="h-3 w-3" /> Nhiệm vụ: Tài xế
-                              </span>
-                            ) : displayStaffType === "ESCORT" ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                                <HeartHandshake className="h-3 w-3" /> Nhiệm vụ: Nhân viên đi kèm
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
-                                <AlertCircle className="h-3 w-3" /> Chưa phân loại nhiệm vụ
-                              </span>
-                            )}
-                          </div>
-                        )}
+                        <div className="mt-1">
+                          <RoleBadge roleId={u.roleId} staffType={displayStaffType} size="sm" />
+                        </div>
                       </div>
                       <Badge variant={u.active ? "default" : "secondary"} className="shrink-0 text-[11px]">
                         {u.active ? "Hoạt động" : "Vô hiệu"}

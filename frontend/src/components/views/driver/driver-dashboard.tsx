@@ -125,7 +125,7 @@ export function DriverDashboard() {
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
-                Điều phối viên: {primaryTrip.coordinatorName || "Đang phân công"}
+                Điều phối viên: <strong className="text-[var(--role-coordinator)]">{primaryTrip.coordinatorName || "Đang phân công"}</strong>
               </p>
             </div>
             <Button
