@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import {
+  ShieldAlert,
   ArrowLeft,
   ArrowRight,
   AlertTriangle,
@@ -202,6 +203,7 @@ export function RequestCreateWizard() {
   const [loadError, setLoadError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [stepError, setStepError] = useState("");
+  const [isRestricted, setIsRestricted] = useState(false);
   const [horses, setHorses] = useState<HorseOption[]>([]);
   const [locations, setLocations] = useState<LocationOption[]>([]);
   const [stallPricingConfig, setStallPricingConfig] = useState<StallPricingConfig | null>(null);
@@ -233,6 +235,14 @@ export function RequestCreateWizard() {
     setLoading(true);
     setLoadError("");
     try {
+      try {
+        const bl = await apiGet<{ restricted: boolean }>("/blacklist/my-status");
+        if (bl.restricted) {
+          setIsRestricted(true);
+          setLoading(false);
+          return;
+        }
+      } catch (e) { /* non-blocking */ }
       const [horseRecords, locationRecords, pricingItems] = await Promise.all([
         apiGet<HorseOption[]>("/horses/my-horses"),
         apiGet<LocationOption[]>("/locations"),

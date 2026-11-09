@@ -30,13 +30,24 @@ public class UserService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
-    public UserService(UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, RoleRepository roleRepository,
+                       PasswordEncoder passwordEncoder, AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
     }
 
+
+    public List<UserResponse> findCustomers() {
+        Map<String, String> roleNames = roleNames();
+        return userRepository.findAllByOrderByCreatedAtDesc().stream()
+                .filter(u -> "CUSTOMER".equals(u.getRoleId()))
+                .map(u -> toResponse(u, roleNames.get(u.getRoleId())))
+                .toList();
+    }
 
     public List<UserResponse> findAll() {
         Map<String, String> roleNames = roleNames();
@@ -74,7 +85,9 @@ public class UserService {
         user.setPasswordHash(passwordEncoder.encode(req.password()));
         user.setRoleId(role.getRoleId());
         user.setStaffType(blankToNull(req.staffType()));
-        return toResponse(save(user), role.getRoleName());
+        User saved = save(user);
+        auditLogService.record(null, "CREATE_USER", "Tạo tài khoản: " + saved.getEmail() + " (" + role.getRoleName() + ")", null);
+        return toResponse(saved, role.getRoleName());
     }
 
 
@@ -106,7 +119,9 @@ public class UserService {
         if (req.password() != null) {
             user.setPasswordHash(passwordEncoder.encode(req.password()));
         }
-        return toResponse(save(user), role.getRoleName());
+        User saved = save(user);
+        auditLogService.record(currentUserId, "UPDATE_USER", "Cập nhật tài khoản: " + saved.getEmail(), null);
+        return toResponse(saved, role.getRoleName());
     }
 
     public UserResponse setActive(UUID id, boolean active, UUID currentUserId) {
@@ -120,7 +135,9 @@ public class UserService {
             throw new ApiException(HttpStatus.CONFLICT, "Phải còn ít nhất một Logistics Manager đang hoạt động");
         }
         user.setActive(active);
-        return toResponse(save(user));
+        User saved = save(user);
+        auditLogService.record(currentUserId, active ? "ACTIVATE_USER" : "DEACTIVATE_USER", (active ? "Kích hoạt" : "Vô hiệu hóa") + " tài khoản: " + saved.getEmail(), null);
+        return toResponse(saved);
     }
 
 
@@ -136,7 +153,7 @@ public class UserService {
     }
 
     private static void ensureManageableRole(String roleId) {
-        if (!INTERNAL_STAFF_ROLES.contains(roleId)) {
+        if (!INTERNAL_STAFF_ROLES.contains(roleId) && !"CUSTOMER".equals(roleId)) {
             throw new ApiException(HttpStatus.FORBIDDEN, "Quản lý Logistics chỉ được quản lý tài khoản nhân sự nội bộ");
         }
     }
@@ -168,6 +185,7 @@ public class UserService {
 
     private static UserResponse toResponse(User u, String roleName) {
         return new UserResponse(u.getUserId(), u.getName(), u.getEmail(), u.getPhoneNumber(),
-                u.getOrganizationName(), u.getRoleId(), roleName, AuthService.resolveStaffType(u), u.isActive(), u.getCreatedAt(), u.getUpdatedAt());
+                u.getOrganizationName(), u.getRoleId(), roleName, AuthService.resolveStaffType(u),
+                u.getAvatarUrl(), u.isActive(), u.getCreatedAt(), u.getUpdatedAt());
     }
 }

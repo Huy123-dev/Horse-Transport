@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, apiDelete, apiGet, apiPost } from "@/lib/api-client";
+import { ApiError, apiDelete, apiGet, apiPost, apiPut } from "@/lib/api-client";
 import { useAppStore } from "@/store/app-store";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/app/status-badge";
@@ -12,7 +12,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ClipboardCheck, HeartPulse, MapPin, PackageCheck, Plus, Route, ShieldAlert, Trash2, Truck, HeartHandshake } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft, ClipboardCheck, HeartPulse, MapPin, PackageCheck, Plus, Route, ShieldAlert, Trash2, Truck, HeartHandshake, Pencil, AlertCircle } from "lucide-react";
 import { assetStatusLabel, formatDateTime, formatRouteDetails, incidentStatusLabel, planCode, requestCode, STOP_TYPES, transportPlanStatusLabel } from "@/lib/constants";
 import { useToast } from "@/hooks/use-toast";
 
@@ -96,6 +97,9 @@ interface AssignmentOption {
   id: string;
   label: string;
   status: string | null;
+  available?: boolean;
+  availabilityStatus?: string;
+  conflictReason?: string | null;
 }
 
 interface AssignmentOptions {
@@ -118,6 +122,9 @@ export function TransportPlanDetail() {
   const [assignmentOptions, setAssignmentOptions] = useState<AssignmentOptions | null>(null);
   const [assignmentForm, setAssignmentForm] = useState({ assetId: "", driverUserId: "", attendantUserId: "" });
   const [assignmentSaving, setAssignmentSaving] = useState(false);
+  const [editingAssignment, setEditingAssignment] = useState<AssignmentRecord | null>(null);
+  const [editForm, setEditForm] = useState({ assetId: "", driverUserId: "", attendantUserId: "" });
+  const [editSaving, setEditSaving] = useState(false);
   const [routeStopForm, setRouteStopForm] = useState({
     locationId: "",
     sequenceNo: "",
@@ -268,6 +275,35 @@ export function TransportPlanDetail() {
       });
     } finally {
       setAssignmentSaving(false);
+    }
+  }
+
+  async function handleUpdateAssignment(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!editingAssignment) return;
+    const { assetId, driverUserId, attendantUserId } = editForm;
+    if (!assetId && !driverUserId && !attendantUserId) {
+      toast({ title: "Thiếu phân công", description: "Chọn ít nhất một phương tiện hoặc nhân sự.", variant: "destructive" });
+      return;
+    }
+    setEditSaving(true);
+    try {
+      await apiPut(`/transport-assignments/${editingAssignment.assignmentId}`, {
+        assetId: assetId || null,
+        driverUserId: driverUserId || null,
+        attendantUserId: attendantUserId || null,
+      });
+      toast({ title: "Đã cập nhật phân công" });
+      setEditingAssignment(null);
+      await load();
+    } catch (assignmentError: unknown) {
+      toast({
+        title: "Xung đột lịch phân công",
+        description: assignmentError instanceof Error ? assignmentError.message : "Không thể cập nhật phân công.",
+        variant: "destructive",
+      });
+    } finally {
+      setEditSaving(false);
     }
   }
 
@@ -468,7 +504,20 @@ export function TransportPlanDetail() {
                 <SelectTrigger className="w-full"><SelectValue placeholder="Chọn tài xế (không bắt buộc)" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Không phân công tài xế</SelectItem>
-                  {assignmentOptions?.drivers.map((person) => <SelectItem key={person.id} value={person.id}>{person.label}</SelectItem>)}
+                  {assignmentOptions?.drivers.map((person) => {
+                    const isUnavail = person.available === false;
+                    const statusText = isUnavail ? (person.conflictReason || "Trùng lịch") : "Khả dụng";
+                    return (
+                      <SelectItem key={person.id} value={person.id} disabled={isUnavail}>
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{person.label}</span>
+                          <span className={`text-[11px] ${isUnavail ? "text-destructive font-medium" : "text-[var(--success-fg)]"}`}>
+                            · {statusText}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
               <Select value={assignmentForm.attendantUserId || "none"} onValueChange={(value) => setAssignmentForm((current) => ({ ...current, attendantUserId: value === "none" ? "" : value }))}>

@@ -1,5 +1,6 @@
 package com.equiflow.service;
 
+import com.equiflow.dto.HorseAvailabilityDto;
 import com.equiflow.dto.HorseRequest;
 import com.equiflow.dto.HorseResponse;
 import com.equiflow.dto.MessageResponse;
@@ -8,6 +9,7 @@ import com.equiflow.entity.User;
 import com.equiflow.exception.ApiException;
 import com.equiflow.repository.HorseRepository;
 import com.equiflow.repository.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,13 +31,26 @@ public class HorseService {
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
     private final CrewAssignmentAccessService crewAccess;
+    private final HorseReservationService horseReservationService;
 
-    public HorseService(HorseRepository horseRepository, UserRepository userRepository,
-                        FileStorageService fileStorageService, CrewAssignmentAccessService crewAccess) {
+    @Autowired
+    public HorseService(HorseRepository horseRepository,
+                        UserRepository userRepository,
+                        FileStorageService fileStorageService,
+                        CrewAssignmentAccessService crewAccess,
+                        @Autowired(required = false) HorseReservationService horseReservationService) {
         this.horseRepository = horseRepository;
         this.userRepository = userRepository;
         this.fileStorageService = fileStorageService;
         this.crewAccess = crewAccess;
+        this.horseReservationService = horseReservationService;
+    }
+
+    public HorseService(HorseRepository horseRepository,
+                        UserRepository userRepository,
+                        FileStorageService fileStorageService,
+                        CrewAssignmentAccessService crewAccess) {
+        this(horseRepository, userRepository, fileStorageService, crewAccess, null);
     }
 
     public HorseResponse create(HorseRequest req, UUID currentUserId, boolean customer) {
@@ -95,8 +110,39 @@ public class HorseService {
         return toResponse(horse);
     }
 
+    @Transactional(readOnly = true)
     public List<HorseResponse> findMine(UUID userId) {
         return toResponses(horseRepository.findByOwnerUserIdOrderByCreatedAtDesc(userId));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<UUID, HorseAvailabilityDto> checkAvailability(List<UUID> horseIds, UUID userId, boolean customer) {
+        if (horseIds == null || horseIds.isEmpty()) {
+            horseIds = customer
+                    ? horseRepository.findByOwnerUserIdOrderByCreatedAtDesc(userId).stream().map(Horse::getHorseId).toList()
+                    : horseRepository.findAllByOrderByCreatedAtDesc().stream().map(Horse::getHorseId).toList();
+        } else if (customer) {
+            Set<UUID> ownedHorseIds = horseRepository.findByOwnerUserIdOrderByCreatedAtDesc(userId).stream()
+                    .map(Horse::getHorseId)
+                    .collect(Collectors.toSet());
+            horseIds = horseIds.stream()
+                    .filter(ownedHorseIds::contains)
+                    .distinct()
+                    .toList();
+        }
+        return horseReservationService != null ? horseReservationService.getAvailabilityMap(horseIds) : Map.of();
+    }
+
+    @Transactional(readOnly = true)
+    public HorseAvailabilityDto getAvailability(UUID horseId, UUID userId, boolean customer) {
+        if (customer) {
+            Horse horse = getOrThrow(horseId);
+            if (!userId.equals(horse.getOwnerUserId())) {
+                throw notFound();
+            }
+        }
+        return horseReservationService != null ? horseReservationService.getAvailability(horseId)
+                : new HorseAvailabilityDto(horseId, true, "AVAILABLE", "Khả dụng", null, null, null, null);
     }
 
     public HorseResponse update(UUID id, HorseRequest req, UUID currentUserId, boolean customer) {
@@ -196,7 +242,8 @@ public class HorseService {
     private HorseResponse toResponse(Horse h) {
         String ownerName = h.getOwnerUserId() == null ? null
                 : userRepository.findById(h.getOwnerUserId()).map(User::getName).orElse(null);
-        return build(h, ownerName);
+        HorseAvailabilityDto avail = horseReservationService != null ? horseReservationService.getAvailability(h.getHorseId()) : null;
+        return build(h, ownerName, avail);
     }
 
     private List<HorseResponse> toResponses(List<Horse> horses) {
@@ -205,16 +252,26 @@ public class HorseService {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
         Map<UUID, String> names = userRepository.findAllById(ownerIds).stream()
-                .collect(Collectors.toMap(User::getUserId, User::getName));
+                .collect(Collectors.toMap(User::getUserId, User::getName, (first, ignored) -> first));
+        List<UUID> horseIds = horses.stream().map(Horse::getHorseId).toList();
+        Map<UUID, HorseAvailabilityDto> availMap = horseReservationService != null ? horseReservationService.getAvailabilityMap(horseIds) : Map.of();
+
         return horses.stream()
-                .map(h -> build(h, h.getOwnerUserId() == null ? null : names.get(h.getOwnerUserId())))
+                .map(h -> build(h, h.getOwnerUserId() == null ? null : names.get(h.getOwnerUserId()), availMap.get(h.getHorseId())))
                 .toList();
     }
 
-    private static HorseResponse build(Horse h, String ownerName) {
+    private static HorseResponse build(Horse h, String ownerName, HorseAvailabilityDto avail) {
+        boolean available = avail == null || avail.available();
+        String transportStatus = avail != null ? avail.status() : "AVAILABLE";
+        String transportStatusLabel = avail != null ? avail.statusLabel() : "Khả dụng";
+        UUID activeRequestId = avail != null ? avail.activeRequestId() : null;
+        String activeRequestStatus = avail != null ? avail.activeRequestStatus() : null;
+
         return new HorseResponse(h.getHorseId(), h.getMicrochipId(), h.getName(), h.getGender(),
                 h.getBreed(), h.getBirthYear(), h.getWeightKg(), h.getHeightCm(), h.getRecoveryDays(),
                 h.getPedigree(), h.getMedicalHistory(), h.getAllergies(), h.getTemperament(),
-                h.getOwnerUserId(), ownerName, h.getCreatedAt(), h.getImageUrl());
+                h.getOwnerUserId(), ownerName, h.getCreatedAt(), h.getImageUrl(),
+                available, transportStatus, transportStatusLabel, activeRequestId, activeRequestStatus);
     }
 }

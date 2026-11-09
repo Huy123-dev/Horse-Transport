@@ -164,6 +164,7 @@ public class GoogleAuthService {
 
     private static UserInfo toInfo(User u) {
         return new UserInfo(u.getUserId(), u.getName(), u.getEmail(), u.getPhoneNumber(),
-                u.getOrganizationName(), u.getRoleId(), AuthService.resolveStaffType(u));
+                u.getOrganizationName(), u.getRoleId(), AuthService.resolveStaffType(u), u.getAvatarUrl(),
+                u.isActive(), u.getCreatedAt());
     }
 }

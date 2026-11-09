@@ -26,6 +26,8 @@ const FeedbackManagementView = lazy(() => import("./manager/feedback-management-
 const RecoveryDashboard = lazy(() => import("./customer/recovery-dashboard").then((module) => ({ default: module.RecoveryDashboard })));
 const ComplianceView = lazy(() => import("./specialist/compliance-view").then((module) => ({ default: module.ComplianceView })));
 const AuditLogsView = lazy(() => import("./manager/audit-logs-view").then((module) => ({ default: module.AuditLogsView })));
+const BlacklistManagementView = lazy(() => import("./manager/blacklist-management-view").then((module) => ({ default: module.BlacklistManagementView })));
+const CustomerRestrictedView = lazy(() => import("./customer/customer-restricted-view").then((module) => ({ default: module.CustomerRestrictedView })));
 const BackendUnavailableView = lazy(() => import("./shared/backend-unavailable-view").then((module) => ({ default: module.BackendUnavailableView })));
 const ManagerDashboard = lazy(() => import("./manager/manager-dashboard").then((module) => ({ default: module.ManagerDashboard })));
 const CoordinatorDashboard = lazy(() => import("./coordinator/coordinator-dashboard").then((module) => ({ default: module.CoordinatorDashboard })));
@@ -123,6 +125,8 @@ function RoutedView() {
   if (view === "feedback-management") return role === "LOGISTICS_MANAGER" ? <FeedbackManagementView /> : <BackendUnavailableView title="Đánh giá dịch vụ" endpoint="/api/feedbacks" description="Chỉ Logistics Manager được xem tổng hợp đánh giá chất lượng dịch vụ." />;
 
   if (view === "audit-logs") return role === "LOGISTICS_MANAGER" ? <AuditLogsView /> : <BackendUnavailableView title="Nhật ký kiểm toán" endpoint="/api/audit-logs" description="Chỉ Logistics Manager được xem nhật ký kiểm toán hệ thống." />;
+  if (view === "blacklist") return role === "LOGISTICS_MANAGER" ? <BlacklistManagementView /> : <BackendUnavailableView title="Quản lý Blacklist" endpoint="/api/blacklist" description="Chỉ Logistics Manager có quyền quản lý danh sách khách hàng bị hạn chế." />;
+  if (view === "account-restricted") return <CustomerRestrictedView />;
   if (view === "recovery-dashboard") return <RecoveryDashboard />;
 
   navigate("dashboard");

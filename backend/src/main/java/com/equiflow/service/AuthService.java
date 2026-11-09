@@ -249,6 +249,7 @@ public class AuthService {
 
     private UserInfo toInfo(User u) {
         return new UserInfo(u.getUserId(), u.getName(), u.getEmail(), u.getPhoneNumber(),
-                u.getOrganizationName(), u.getRoleId(), resolveStaffType(u));
+                u.getOrganizationName(), u.getRoleId(), resolveStaffType(u), u.getAvatarUrl(),
+                u.isActive(), u.getCreatedAt());
     }
 }

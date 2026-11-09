@@ -1,3 +1,4 @@
+import { CustomerRestrictedBanner } from "@/components/views/customer/customer-restricted-banner";
 "use client";
 
 import { useEffect, useState } from "react";
@@ -62,12 +63,17 @@ export function RequestList() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RequestStatusGroup>("ALL");
+  const [isRestricted, setIsRestricted] = useState(false);
 
   useEffect(() => {
     (async () => {
       try {
         setLoading(true);
         setRequests(await apiGet<TransportRequest[]>("/transport-requests/my"));
+        try {
+          const bl = await apiGet<{ restricted: boolean }>("/blacklist/my-status");
+          setIsRestricted(bl.restricted);
+        } catch (e) { /* ignore */ }
       } catch (e) {
         setError(e instanceof Error ? e.message : "Không thể tải danh sách yêu cầu.");
       } finally { 
@@ -140,6 +146,7 @@ export function RequestList() {
 
   return (
     <div className="space-y-6">
+      <CustomerRestrictedBanner />
       <PageHeader
         title="Yêu cầu vận chuyển"
         description="Tạo và theo dõi đơn vận chuyển ngựa đua"
@@ -147,7 +154,7 @@ export function RequestList() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-1.5"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Xuất CSV</span></Button>
-            <Button onClick={() => navigate("request-create")} className="gap-2"><Plus className="h-4 w-4" /> Tạo yêu cầu</Button>
+            {!isRestricted && <Button onClick={() => navigate("request-create")} className="gap-2"><Plus className="h-4 w-4" /> Tạo yêu cầu</Button>}
           </div>
         }
       />

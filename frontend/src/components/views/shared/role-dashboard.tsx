@@ -1,5 +1,24 @@
 "use client";
 
+/**
+ * ============================================================================
+ * EQUIDELI — BẢNG ĐIỀU KHIỂN ĐA VAI TRÒ (ROLE DASHBOARD)
+ * ============================================================================
+ * Component dùng chung này hiển thị bảng điều khiển tổng quan được tùy biến
+ * theo từng vai trò quản trị & điều hành (`SupportedDashboardRole`):
+ * 1. `LOGISTICS_MANAGER` (Quản lý Logistics):
+ *    - Tải đồng thời: Yêu cầu vận chuyển (`/transport-requests`), Sự cố (`/incidents`),
+ *      Kế hoạch (`/transport-plans`) và Thống kê tổng hợp (`getDashboardStats()`).
+ *    - Hiển thị 4 thẻ `StatCard`: Tổng yêu cầu, Chuyến đang chạy, Chuyến đã hoàn thành
+ *      và Doanh thu hóa đơn đã thanh toán.
+ * 2. `FLEET_COORDINATOR` (Điều phối viên Đội xe & Lộ trình):
+ *    - Tải đồng thời: Kế hoạch lộ trình (`/transport-plans`) và Đội xe (`/transport-assets`).
+ *    - Hiển thị số lượng kế hoạch, chuyến đang chạy và tỷ lệ phương tiện sẵn sàng.
+ * 3. `TRANSPORT_SPECIALIST` (Chuyên viên Thủ tục & Kiểm dịch):
+ *    - Tải đồng thời: Yêu cầu vận chuyển và Hồ sơ kiểm định (`/inspections`).
+ * ============================================================================
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/api-client";
 import { useAppStore } from "@/store/app-store";
@@ -61,6 +80,7 @@ interface DashboardData {
 
 type SupportedDashboardRole = "LOGISTICS_MANAGER" | "TRANSPORT_SPECIALIST" | "FLEET_COORDINATOR";
 
+/** Chuẩn hóa chuỗi trạng thái để so sánh không phân biệt chữ hoa/thường và dấu gạch dưới */
 function normalized(status?: string | null): string {
   if (!status || typeof status !== "string") return "";
   return status.trim().toLowerCase().replaceAll("_", " ");
@@ -86,6 +106,7 @@ function emptyData(): DashboardData {
   return { requests: [], plans: [], assets: [], inspections: [], incidentCount: 0, stats: null };
 }
 
+/** Định dạng doanh thu đã thanh toán theo từng loại tiền tệ */
 function formatRevenueByCurrency(stats: DashboardStats): string {
   if (stats.paidRevenueByCurrency.length === 0) return formatMoney(0, "USD");
   return stats.paidRevenueByCurrency.map(({ amount, currency }) =>
@@ -99,6 +120,7 @@ export function RoleDashboard({ role }: { role: SupportedDashboardRole }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  /** Tải dữ liệu phù hợp với vai trò (`role`) được truyền vào */
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -170,6 +192,7 @@ export function RoleDashboard({ role }: { role: SupportedDashboardRole }) {
         }
       />
 
+      {/* Giao diện Bảng điều khiển dành cho Quản lý Logistics */}
       {role === "LOGISTICS_MANAGER" ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -205,6 +228,7 @@ export function RoleDashboard({ role }: { role: SupportedDashboardRole }) {
         </>
       ) : null}
 
+      {/* Giao diện Bảng điều khiển dành cho Điều phối viên Đội xe & Lộ trình */}
       {role === "FLEET_COORDINATOR" ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -221,6 +245,7 @@ export function RoleDashboard({ role }: { role: SupportedDashboardRole }) {
         </>
       ) : null}
 
+      {/* Giao diện Bảng điều khiển dành cho Chuyên viên vận tải */}
       {role === "TRANSPORT_SPECIALIST" ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -239,6 +264,7 @@ export function RoleDashboard({ role }: { role: SupportedDashboardRole }) {
   );
 }
 
+/** Đếm số lượng từng nhãn trạng thái để truyền vào biểu đồ tròn StatusPieChart */
 function statusCounts(statuses: string[]): { name: string; value: number }[] {
   const counts = statuses.reduce<Record<string, number>>((current, status) => {
     current[status] = (current[status] ?? 0) + 1;
@@ -247,6 +273,7 @@ function statusCounts(statuses: string[]): { name: string; value: number }[] {
   return Object.entries(counts).map(([name, value]) => ({ name, value }));
 }
 
+/** Hàng đợi 8 yêu cầu vận chuyển được cập nhật gần đây nhất */
 function RequestQueue({ requests, onOpen }: { requests: TransportRequest[]; onOpen: (id: string) => void }) {
   const recent = [...requests].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8);
   return (
@@ -267,6 +294,7 @@ function RequestQueue({ requests, onOpen }: { requests: TransportRequest[]; onOp
   );
 }
 
+/** Hàng đợi 8 kế hoạch vận chuyển gần đây nhất */
 function PlanQueue({ plans, onOpen }: { plans: TransportPlan[]; onOpen: (id: string) => void }) {
   const recent = [...plans].sort((a, b) => b.departureTime.localeCompare(a.departureTime)).slice(0, 8);
   return (
@@ -287,6 +315,7 @@ function PlanQueue({ plans, onOpen }: { plans: TransportPlan[]; onOpen: (id: str
   );
 }
 
+/** Hàng đợi 8 hồ sơ kiểm định gần đây nhất */
 function InspectionQueue({ inspections, onOpen }: { inspections: Inspection[]; onOpen: (id: string) => void }) {
   const recent = [...inspections].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 8);
   return (

@@ -18,12 +18,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.UUID;
+import com.equiflow.repository.TransportRequestRepository;
 
 import static com.equiflow.service.StatusSupport.blankToNull;
 
 @Service
 public class DeliveryService {
-
 
     private final DeliveryRepository deliveryRepository;
     private final TransportPlanRepository planRepository;
@@ -32,6 +32,15 @@ public class DeliveryService {
     private final TransportPlanService planService;
     private final RequestAccessService access;
     private final CrewAssignmentAccessService crewAccess;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private HorseReservationService horseReservationService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private TransportRequestRepository requestRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private InvoiceService invoiceService;
 
     public DeliveryService(DeliveryRepository deliveryRepository, TransportPlanRepository planRepository,
                            IncidentRepository incidentRepository, UserRepository userRepository,
@@ -123,6 +132,19 @@ public class DeliveryService {
 
         plan.setStatus(TransportPlanService.COMPLETED);
         planRepository.saveAndFlush(plan);
+
+        if (horseReservationService != null) {
+            try {
+                horseReservationService.releaseHorsesForRequest(plan.getRequestId(), "Hoàn tất chuyến vận chuyển " + plan.getPlanId());
+            } catch (Exception ignored) {}
+        }
+
+        if (invoiceService != null) {
+            try {
+                invoiceService.ensureInvoiceForCompletedTrip(plan.getRequestId(), plan.getPlanId());
+            } catch (Exception ignored) {}
+        }
+
         notifyCustomer(plan, "Chuyến vận chuyển đã hoàn tất",
                 "Chuyến vận chuyển của bạn đã hoàn tất và được nghiệm thu.");
         return planService.findById(planId, currentUserId, false);

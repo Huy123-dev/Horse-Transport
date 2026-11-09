@@ -21,13 +21,15 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserProfileDialog } from "@/components/app/user-profile-dialog";
 import { GlobalSearch } from "./global-search";
 import { HelpCircle } from "lucide-react";
 
 export function AppHeader() {
   const { user, setUser, navigate } = useAppStore();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [notificationState, setNotificationState] = useState<{
     userId: string;
     notifications: NotificationItem[];
@@ -246,45 +248,50 @@ export function AppHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Profile Dropdown with Role Color */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-muted transition-colors">
-              <Avatar
-                className="h-8 w-8 border-2 transition-all"
-                style={{ borderColor: roleConfig.color }}
-              >
-                <AvatarFallback
-                  className="text-xs font-bold"
-                  style={{ backgroundColor: roleConfig.color + "25", color: roleConfig.color }}
-                >
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
-              <div className="hidden text-left sm:block">
-                <p className="text-xs font-medium leading-tight text-foreground">{user.name}</p>
-                <p className="text-[10px] font-semibold leading-tight mt-0.5" style={{ color: roleConfig.color }}>
-                  {roleConfig.label}
-                </p>
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-60">
-            <DropdownMenuLabel>
-              <p className="font-semibold text-foreground">{user.name}</p>
-              <p className="text-xs font-normal text-muted-foreground">{user.email}</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <div className="px-2 py-1.5">
-              <RoleBadge roleId={user.roleId} staffType={user.staffType} size="sm" />
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="gap-2 text-[var(--danger-fg)] focus:text-[var(--danger-fg)] cursor-pointer">
-              <LogOut className="h-4 w-4" /> Đăng xuất
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Clickable Profile Area for All Roles */}
+        <button
+          type="button"
+          onClick={() => setProfileOpen(true)}
+          className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-muted/80 transition-colors border border-transparent hover:border-border/60 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+          title="Xem và chỉnh sửa hồ sơ cá nhân"
+          aria-label="Hồ sơ cá nhân"
+        >
+          <Avatar
+            className="h-8 w-8 border-2 transition-all shadow-xs"
+            style={{ borderColor: roleConfig.color }}
+          >
+            {user.avatarUrl ? (
+              <AvatarImage src={user.avatarUrl} alt={user.name} className="object-cover" />
+            ) : null}
+            <AvatarFallback
+              className="text-xs font-bold"
+              style={{ backgroundColor: roleConfig.color + "25", color: roleConfig.color }}
+            >
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="hidden text-left sm:block">
+            <p className="text-xs font-medium leading-tight text-foreground truncate max-w-[120px]">{user.name}</p>
+            <p className="text-[10px] font-semibold leading-tight mt-0.5" style={{ color: roleConfig.color }}>
+              {roleConfig.label}
+            </p>
+          </div>
+        </button>
+
+        {/* Quick Logout Button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
+          title="Đăng xuất"
+          aria-label="Đăng xuất"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
       </div>
+
+      {/* Unified User Profile Dialog for All 6 Roles */}
+      <UserProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </header>
   );
 }

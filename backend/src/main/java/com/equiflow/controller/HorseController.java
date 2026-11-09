@@ -1,5 +1,6 @@
 package com.equiflow.controller;
 
+import com.equiflow.dto.HorseAvailabilityDto;
 import com.equiflow.dto.HorseRequest;
 import com.equiflow.dto.HorseResponse;
 import com.equiflow.dto.MessageResponse;
@@ -11,7 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -42,6 +45,18 @@ public class HorseController {
     @GetMapping("/my-horses")
     public List<HorseResponse> myHorses(Authentication auth) {
         return horseService.findMine(userId(auth));
+    }
+
+    @GetMapping("/availability")
+    public Map<UUID, HorseAvailabilityDto> checkAvailability(
+            @RequestParam(required = false) List<UUID> horseIds,
+            Authentication auth) {
+        return horseService.checkAvailability(horseIds, userId(auth), isCustomer(auth));
+    }
+
+    @GetMapping("/{id}/availability")
+    public HorseAvailabilityDto getAvailability(@PathVariable UUID id, Authentication auth) {
+        return horseService.getAvailability(id, userId(auth), isCustomer(auth));
     }
 
     @GetMapping("/{id}")

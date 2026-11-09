@@ -34,7 +34,7 @@ public class InvoiceController {
         return ResponseEntity.status(HttpStatus.CREATED).body(service.create(req));
     }
 
-    /** Danh sách theo quyền (lọc tùy chọn ?paymentStatus=UNPAID|PAID|REFUNDED) */
+    /** Danh sách theo quyền (lọc tùy chọn ?paymentStatus=UNPAID|PARTIALLY_PAID|PAID|OVERDUE|REFUNDED) */
     @GetMapping("/invoices")
     public List<InvoiceDto.Response> getAll(@RequestParam(required = false) String paymentStatus,
                                             Authentication auth) {
@@ -55,15 +55,19 @@ public class InvoiceController {
     /** Cập nhật trạng thái thanh toán (LOGISTICS_MANAGER) */
     @PatchMapping("/invoices/{id}/payment-status")
     public InvoiceDto.Response updatePaymentStatus(@PathVariable UUID id,
-                                                   @Valid @RequestBody InvoiceDto.PaymentStatusRequest req) {
-        return service.updatePaymentStatus(id, req);
+                                                   @Valid @RequestBody InvoiceDto.PaymentStatusRequest req,
+                                                   Authentication auth) {
+        UUID uid = userId(auth);
+        return uid != null ? service.updatePaymentStatus(id, req, uid) : service.updatePaymentStatus(id, req);
     }
 
     /** Xác nhận khoản thanh toán thủ công đã nhận được (LOGISTICS_MANAGER) */
     @PutMapping("/invoices/{id}/pay")
     public InvoiceDto.Response markPaid(@PathVariable UUID id,
-                                        @Valid @RequestBody InvoiceDto.MarkPaidRequest req) {
-        return service.markPaid(id, req);
+                                        @Valid @RequestBody InvoiceDto.MarkPaidRequest req,
+                                        Authentication auth) {
+        UUID uid = userId(auth);
+        return uid != null ? service.markPaid(id, req, uid) : service.markPaid(id, req);
     }
 
     /** Customer xem hóa đơn của mình (lọc tùy chọn ?paymentStatus=...) */

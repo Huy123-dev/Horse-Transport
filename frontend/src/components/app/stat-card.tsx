@@ -4,6 +4,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { motion, useMotionValue, useTransform, animate } from "framer-motion";
 import { useEffect, useState } from "react";
 
+/**
+ * Thành phần phụ tạo hiệu ứng đếm số tăng dần (CountUp) từ 0 đến giá trị thực tế
+ * giúp các thẻ thống kê trên Bảng điều khiển (Dashboard) sinh động và trực quan hơn.
+ */
 function CountUp({ value, duration = 0.8 }: { value: number; duration?: number }) {
   const count = useMotionValue(0);
   const rounded = useTransform(count, (latest) => Math.round(latest).toLocaleString("vi-VN"));
@@ -12,12 +16,22 @@ function CountUp({ value, duration = 0.8 }: { value: number; duration?: number }
   useEffect(() => {
     const controls = animate(count, value, { duration, ease: "easeOut" });
     const unsub = rounded.on("change", (v) => setDisplay(v));
-    return () => { controls.stop(); unsub(); };
+    return () => {
+      controls.stop();
+      unsub();
+    };
   }, [value, count, rounded, duration]);
 
   return <>{display}</>;
 }
 
+/**
+ * Thành phần Thẻ thống kê chỉ số (StatCard) tái sử dụng trên toàn bộ Dashboard của các vai trò.
+ * - Nhận vào `label` (tên chỉ số), `value` (con số hoặc chuỗi tiền tệ), `icon` (biểu tượng)
+ *   và `tone` (màu sắc ngữ nghĩa: default, success, warning, danger, info).
+ * - Nếu `value` là kiểu số dương (`number`), thẻ sẽ tự động áp dụng hiệu ứng đếm số `CountUp`.
+ * - Nếu `value` là chuỗi định dạng sẵn (ví dụ doanh thu `"$8,250.00"`), thẻ sẽ hiển thị nguyên bản.
+ */
 export function StatCard({
   label,
   value,
@@ -37,6 +51,7 @@ export function StatCard({
   className?: string;
   delay?: number;
 }) {
+  // Màu nền và màu biểu tượng của hộp icon theo tông màu trạng thái
   const toneBg: Record<string, string> = {
     default: "bg-primary/10 text-primary",
     success: "bg-[var(--success-bg)] text-[var(--success-fg)]",
@@ -45,19 +60,21 @@ export function StatCard({
     info: "bg-[var(--info-bg)] text-[var(--info-fg)]",
   };
 
-  const numericValue = typeof value === "number" ? value : parseInt(String(value).replace(/[^\d]/g, ""), 10);
-  const isNumeric = !isNaN(numericValue) && numericValue > 0 && typeof value !== "string";
+  // Kiểm tra xem giá trị truyền vào có phải là kiểu số nguyên/thực dương để bật hiệu ứng đếm số
+  const isNumeric = typeof value === "number" && !Number.isNaN(value) && value > 0;
 
   const card = (
     <Card className="card-hover group overflow-hidden">
-      {/* Top accent bar */}
-      <div className={cn("h-1 w-full", {
-        "bg-primary": tone === "default",
-        "bg-[var(--success)]": tone === "success",
-        "bg-[var(--warning)]": tone === "warning",
-        "bg-[var(--danger)]": tone === "danger",
-        "bg-[var(--copper)]": tone === "info",
-      })} />
+      {/* Thanh viền màu nhấn phía trên đầu mỗi thẻ thống kê */}
+      <div
+        className={cn("h-1 w-full", {
+          "bg-primary": tone === "default",
+          "bg-[var(--success)]": tone === "success",
+          "bg-[var(--warning)]": tone === "warning",
+          "bg-[var(--danger)]": tone === "danger",
+          "bg-[var(--info)]": tone === "info",
+        })}
+      />
       <CardContent className="flex items-center gap-4 p-5">
         {icon && (
           <motion.div
@@ -69,11 +86,12 @@ export function StatCard({
           </motion.div>
         )}
         <div className="min-w-0">
-          <p className="text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-bold tracking-tight text-foreground">
-            {isNumeric ? <CountUp value={numericValue} /> : value}
+          {/* Nhãn chỉ số dùng màu chữ phụ (#D8C8B8), giá trị chính dùng màu chữ chính (#F5EDE3) */}
+          <p className="text-sm text-[var(--text-secondary)]">{label}</p>
+          <p className="text-2xl font-bold tracking-tight text-[var(--text-primary)]">
+            {isNumeric ? <CountUp value={value} /> : value}
           </p>
-          {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
+          {hint && <p className="mt-0.5 text-xs text-[var(--text-muted)]">{hint}</p>}
         </div>
       </CardContent>
     </Card>
@@ -97,7 +115,9 @@ export function StatCard({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-      ) : card}
+      ) : (
+        card
+      )}
     </motion.div>
   );
 }

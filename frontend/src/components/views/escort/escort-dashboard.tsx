@@ -1,5 +1,24 @@
 "use client";
 
+/**
+ * ============================================================================
+ * EQUIDELI — BẢNG ĐIỀU KHIỂN NHÂN VIÊN ĐI KÈM / HỘ TỐNG NGỰA (ESCORT DASHBOARD)
+ * ============================================================================
+ * Màn hình tổng quan dành riêng cho Nhân viên chăm sóc & hộ tống ngựa (`ESCORT`).
+ *
+ * Cơ chế hoạt động:
+ * 1. Gọi `getDriverPlans()` để lấy danh sách các chuyến vận chuyển mà nhân viên
+ *    được phân công tham gia đi kèm.
+ * 2. Phân loại chuyến đi:
+ *    - `inProgressPlans`: Các chuyến đang lăn bánh trên đường (`IN_PROGRESS`).
+ *    - `upcomingPlans`: Các chuyến sắp khởi hành (`READY`, `PLANNING`), sắp xếp
+ *      theo thời gian khởi hành tăng dần.
+ *    - `primaryTrip`: Chuyến đi ưu tiên hàng đầu cần mở sổ theo dõi sức khỏe ngay.
+ * 3. Hiển thị thống kê số lượng chuyến và tổng số cá thể ngựa phụ trách qua `StatCard`,
+ *    đồng thời hướng dẫn 3 nhiệm vụ trọng tâm của Nhân viên đi kèm.
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { useAppStore } from "@/store/app-store";
 import { getDriverPlans, type DriverTransportPlan } from "@/lib/driver-api";
@@ -36,6 +55,7 @@ export function EscortDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  /** Tải danh sách các kế hoạch vận chuyển được giao cho nhân viên hiện tại */
   const loadData = async () => {
     try {
       setLoading(true);
@@ -56,13 +76,16 @@ export function EscortDashboard() {
   if (loading) return <LoadingState />;
   if (error) return <ErrorState message={error} onRetry={() => void loadData()} />;
 
+  // Phân loại các chuyến đang vận hành và các chuyến sắp khởi hành
   const inProgressPlans = plans.filter((p) => p.status === "IN_PROGRESS");
   const upcomingPlans = plans
     .filter((p) => p.status === "READY" || p.status === "PLANNING")
     .sort((a, b) => new Date(a.departureTime).getTime() - new Date(b.departureTime).getTime());
-  const completedPlans = plans.filter((p) => p.status === "COMPLETED");
 
+  // Tính tổng số cá thể ngựa trong tất cả các chuyến được giao
   const totalAssignedHorses = plans.reduce((acc, p) => acc + (p.horses?.length || p.horseIds?.length || 0), 0);
+
+  // Xác định chuyến xe trọng tâm (ưu tiên chuyến đang chạy, nếu không có thì lấy chuyến sắp tới gần nhất)
   const primaryTrip = inProgressPlans[0] || upcomingPlans[0] || null;
 
   return (
@@ -73,7 +96,7 @@ export function EscortDashboard() {
         icon={<Stethoscope className="h-5 w-5" />}
       />
 
-      {/* Thẻ thống kê chỉ số */}
+      {/* 4 Thẻ thống kê chỉ số (StatCard) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Tổng chuyến tham gia"
@@ -108,16 +131,16 @@ export function EscortDashboard() {
         />
       </div>
 
-      {/* Chuyến xe trọng tâm cần chăm sóc */}
+      {/* Thẻ nổi bật: Chuyến xe trọng tâm cần chăm sóc */}
       {primaryTrip && (
-        <Card className="border-rose-500/30 bg-gradient-to-br from-card to-rose-500/5 shadow-sm">
+        <Card className="border-[var(--role-escort-border)] bg-gradient-to-br from-card to-[var(--role-escort-bg)] shadow-sm">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between pb-3 gap-2">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
                 <Badge variant={primaryTrip.status === "IN_PROGRESS" ? "default" : "secondary"} className="gap-1">
                   {primaryTrip.status === "IN_PROGRESS" ? (
                     <>
-                      <Stethoscope className="h-3.5 w-3.5 animate-pulse text-rose-500" /> Đang vận hành
+                      <Stethoscope className="h-3.5 w-3.5 animate-pulse text-[var(--role-escort)]" /> Đang vận hành
                     </>
                   ) : (
                     <>
@@ -125,11 +148,11 @@ export function EscortDashboard() {
                     </>
                   )}
                 </Badge>
-                <span className="text-base font-bold text-foreground">
+                <span className="text-base font-bold text-[var(--text-primary)]">
                   Kế hoạch {planCode(primaryTrip.planId)}
                 </span>
               </div>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-[var(--text-secondary)]">
                 Điều phối viên: <strong className="text-[var(--role-coordinator)]">{primaryTrip.coordinatorName || "Đang phân công"}</strong>
               </p>
             </div>
@@ -144,37 +167,37 @@ export function EscortDashboard() {
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4 rounded-lg border border-border/80 bg-background/80 p-3">
               <div>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Navigation className="h-3.5 w-3.5 text-rose-500" /> Lộ trình
+                <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                  <Navigation className="h-3.5 w-3.5 text-[var(--role-escort)]" /> Lộ trình
                 </span>
-                <p className="text-sm font-semibold mt-1 text-foreground">
+                <p className="text-sm font-semibold mt-1 text-[var(--text-primary)]">
                   {formatRouteDetails(primaryTrip.routeDetails)}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5 text-blue-500" /> Khởi hành
+                <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5 text-[var(--info-fg)]" /> Khởi hành
                 </span>
-                <p className="text-sm font-medium mt-1">
+                <p className="text-sm font-medium mt-1 text-[var(--text-primary)]">
                   {formatDateTime(primaryTrip.departureTime)}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5 text-emerald-500" /> Dự kiến đến
+                <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5 text-[var(--success-fg)]" /> Dự kiến đến
                 </span>
-                <p className="text-sm font-medium mt-1">
+                <p className="text-sm font-medium mt-1 text-[var(--text-primary)]">
                   {formatDateTime(primaryTrip.arrivalTime)}
                 </p>
               </div>
               <div>
-                <span className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Heart className="h-3.5 w-3.5 text-rose-500" /> Ngựa cần chăm sóc
+                <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
+                  <Heart className="h-3.5 w-3.5 text-[var(--role-escort)]" /> Ngựa cần chăm sóc
                 </span>
-                <p className="text-sm font-medium mt-1">
+                <p className="text-sm font-medium mt-1 text-[var(--text-primary)]">
                   {primaryTrip.horses?.length || primaryTrip.horseIds?.length || 0} chú ngựa
                   {primaryTrip.horses && primaryTrip.horses.length > 0 && (
-                    <span className="block text-xs text-muted-foreground truncate">
+                    <span className="block text-xs text-[var(--text-secondary)] truncate">
                       ({primaryTrip.horses.map((h) => h.name).join(", ")})
                     </span>
                   )}
@@ -194,13 +217,13 @@ export function EscortDashboard() {
                 <ClipboardList className="h-4 w-4 text-primary" />
                 Danh sách chuyến được phân công đi kèm
               </CardTitle>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
                 Nhấp vào chuyến để ghi nhận quan sát sức khỏe và nhật ký chăm sóc
               </p>
             </div>
             <button
               onClick={() => navigate("trips")}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="flex items-center gap-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
             >
               Xem tất cả ({plans.length}) <ChevronRight className="h-3 w-3" />
             </button>
@@ -225,19 +248,19 @@ export function EscortDashboard() {
                         <Heart className="h-5 w-5" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold">
+                        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
                           Kế hoạch {planCode(plan.planId)}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                        <p className="text-xs text-[var(--text-secondary)] mt-1 flex items-center gap-1">
                           <Navigation className="h-3 w-3 shrink-0 text-primary" />
                           <span className="truncate">{formatRouteDetails(plan.routeDetails)}</span>
                         </p>
-                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-[var(--text-secondary)]">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3 shrink-0" />
                             {formatDateTime(plan.departureTime)}
                           </span>
-                          <span className="flex items-center gap-1 text-rose-600 font-medium">
+                          <span className="flex items-center gap-1 text-[var(--role-escort)] font-medium">
                             <Heart className="h-3 w-3 shrink-0" />
                             {plan.horses?.length || plan.horseIds?.length || 0} con ngựa
                           </span>
@@ -246,7 +269,7 @@ export function EscortDashboard() {
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
                       <StatusBadge status={transportPlanStatusLabel(plan.status)} />
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />
                     </div>
                   </button>
                 ))}
@@ -260,34 +283,34 @@ export function EscortDashboard() {
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <Stethoscope className="h-4 w-4 text-rose-500" /> Nhiệm vụ của Nhân viên đi kèm
+                <Stethoscope className="h-4 w-4 text-[var(--role-escort)]" /> Nhiệm vụ của Nhân viên đi kèm
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-xs text-muted-foreground">
+            <CardContent className="space-y-3 text-xs text-[var(--text-secondary)]">
               <div className="flex items-start gap-2.5 rounded-md border border-border/60 bg-muted/30 p-2.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                <CheckCircle2 className="h-4 w-4 text-[var(--success-fg)] shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-foreground">1. Ghi nhận thể trạng từng con ngựa</p>
-                  <p className="text-muted-foreground mt-0.5">
+                  <p className="font-semibold text-[var(--text-primary)]">1. Ghi nhận thể trạng từng con ngựa</p>
+                  <p className="text-[var(--text-secondary)] mt-0.5">
                     Mở chi tiết chuyến để đo thân nhiệt, nhịp tim, mức căng thẳng và khả năng ăn uống.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5 rounded-md border border-border/60 bg-muted/30 p-2.5">
-                <Heart className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
+                <Heart className="h-4 w-4 text-[var(--role-escort)] shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-foreground">2. Ghi nhận sau khi hoàn thành chuyến</p>
-                  <p className="text-muted-foreground mt-0.5">
+                  <p className="font-semibold text-[var(--text-primary)]">2. Ghi nhận sau khi hoàn thành chuyến</p>
+                  <p className="text-[var(--text-secondary)] mt-0.5">
                     Hệ thống cho phép bổ sung nhật ký thể trạng ngay cả khi chuyến đã kết thúc để lưu hồ sơ theo dõi.
                   </p>
                 </div>
               </div>
               <div className="flex items-start gap-2.5 rounded-md border border-border/60 bg-muted/30 p-2.5">
-                <ClipboardList className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                <ClipboardList className="h-4 w-4 text-[var(--warning-fg)] shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-semibold text-foreground">3. Phối hợp báo sự cố khẩn cấp</p>
-                  <p className="text-muted-foreground mt-0.5">
-                    Kịp thời gửi thông báo SOS khi ngựa có dấu hiệu mệt mỏi bất thường hoặc cần hỗ trợ y tế.
+                  <p className="font-semibold text-[var(--text-primary)]">3. Phối hợp báo sự cố khẩn cấp</p>
+                  <p className="text-[var(--text-secondary)] mt-0.5">
+                    Kịp thời gửi thông báo khẩn cấp khi ngựa có dấu hiệu mệt mỏi bất thường hoặc cần hỗ trợ y tế.
                   </p>
                 </div>
               </div>
@@ -300,7 +323,7 @@ export function EscortDashboard() {
             </CardHeader>
             <CardContent>
               {plans.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-4">Chưa có dữ liệu chuyến</p>
+                <p className="text-xs text-[var(--text-secondary)] text-center py-4">Chưa có dữ liệu chuyến</p>
               ) : (
                 <StatusPieChart
                   data={countStatuses(plans.map((p) => transportPlanStatusLabel(p.status)))}
@@ -314,6 +337,7 @@ export function EscortDashboard() {
   );
 }
 
+/** Gom nhóm và đếm số lượng từng trạng thái chuyến đi để truyền vào biểu đồ tròn */
 function countStatuses(statuses: string[]): { name: string; value: number }[] {
   const counts = statuses.reduce<Record<string, number>>((current, status) => {
     current[status] = (current[status] ?? 0) + 1;

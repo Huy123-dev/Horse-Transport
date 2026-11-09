@@ -18,6 +18,7 @@ public interface TransportPlanRepository extends JpaRepository<TransportPlan, UU
     Optional<TransportPlan> findByIdForUpdate(@Param("planId") UUID planId);
 
     List<TransportPlan> findAllByOrderByDepartureTimeDesc();
+    List<TransportPlan> findByRequestId(UUID requestId);
     List<TransportPlan> findByRequestIdOrderByDepartureTimeDesc(UUID requestId);
     List<TransportPlan> findByRequestIdInOrderByDepartureTimeDesc(Collection<UUID> requestIds);
     List<TransportPlan> findByPlanIdInOrderByDepartureTimeDesc(Collection<UUID> planIds);

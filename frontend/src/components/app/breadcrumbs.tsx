@@ -32,6 +32,8 @@ const VIEW_LABELS: Record<string, string> = {
   "claims-management": "Khiếu nại & Bồi thường",
   "feedback-management": "Đánh giá dịch vụ",
   "pricing": "Bảng giá dịch vụ",
+  blacklist: "Quản lý Blacklist",
+  "account-restricted": "Tài khoản bị hạn chế",
 };
 
 const VIEW_PARENTS: Record<string, string> = {

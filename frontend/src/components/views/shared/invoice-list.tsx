@@ -1,5 +1,27 @@
 "use client";
 
+/**
+ * ============================================================================
+ * EQUIDELI — DANH SÁCH HÓA ĐƠN & QUẢN LÝ THANH TOÁN (INVOICE LIST)
+ * ============================================================================
+ * Màn hình này dùng chung cho 2 vai trò:
+ * - LOGISTICS_MANAGER: Xem toàn bộ hóa đơn, lọc theo trạng thái, phát hành hóa đơn
+ *   tự động / thủ công, xuất PDF chuẩn A4 và xuất báo cáo CSV.
+ * - CUSTOMER: Xem danh sách hóa đơn của các đơn vận chuyển thuộc về mình,
+ *   kiểm tra hạn thanh toán, số tiền còn phải trả và tải hóa đơn PDF chuẩn A4.
+ *
+ * Nguyên tắc nghiệp vụ quan trọng:
+ * - EQUIDELI chỉ quản lý hóa đơn và ghi nhận trạng thái thanh toán ngoại tuyến
+ *   (chuyển khoản ngân hàng, tiền mặt, bảo lãnh). Hệ thống KHÔNG tích hợp cổng
+ *   thanh toán trực tuyến.
+ * - 4 nhãn trạng thái chuẩn tiếng Việt:
+ *   + "Chưa thanh toán" (UNPAID)
+ *   + "Thanh toán một phần" (PARTIALLY_PAID)
+ *   + "Đã thanh toán" (PAID)
+ *   + "Quá hạn thanh toán" (OVERDUE)
+ * ============================================================================
+ */
+
 import { useEffect, useState } from "react";
 import { apiGet, apiPost } from "@/lib/api-client";
 import { useAppStore } from "@/store/app-store";
@@ -11,25 +33,125 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Receipt, Search, ChevronRight, Calendar, Clock, CreditCard, Plus, Loader2, Download } from "lucide-react";
-import { formatDate, formatMoney, invoiceCode, requestCode } from "@/lib/constants";
+import {
+  Receipt,
+  Search,
+  ChevronRight,
+  Calendar,
+  Clock,
+  Plus,
+  Loader2,
+  Download,
+  AlertTriangle,
+  ShieldCheck,
+  CheckCircle2,
+  FileDown,
+  MapPin,
+} from "lucide-react";
+import {
+  formatDate,
+  formatMoney,
+  invoiceCode,
+  requestCode,
+  normalizePaymentStatus,
+  paymentStatusLabel,
+} from "@/lib/constants";
 import { exportToCSV } from "@/lib/csv-export";
+import { exportInvoiceToA4Pdf } from "@/lib/invoice-pdf";
 import { ListStatsBar } from "@/components/app/list-stats-bar";
 
-interface InvoiceRecord {
+export { normalizePaymentStatus, paymentStatusLabel };
+
+/** Lịch sử một lần cập nhật trạng thái thanh toán của hóa đơn */
+export interface InvoicePaymentHistoryItem {
+  historyId: string;
+  oldStatus: string;
+  newStatus: string;
+  paidAmount: number;
+  remainingAmount: number;
+  paymentMethod: string | null;
+  notes: string | null;
+  updatedBy: string;
+  updatedByName: string;
+  createdAt: string;
+}
+
+/** Thông tin tóm tắt của từng cá thể ngựa trong hóa đơn */
+export interface InvoiceHorseSummary {
+  horseId: string;
+  name: string;
+  microchipId: string | null;
+  breed: string | null;
+  gender: string | null;
+  birthYear: number | null;
+}
+
+/** Thông tin chi tiết hành trình vận chuyển gắn với hóa đơn */
+export interface InvoiceTransportDetails {
+  requestId: string;
+  planId: string | null;
+  originName: string | null;
+  originCountry: string | null;
+  destinationName: string | null;
+  destinationCountry: string | null;
+  departureDate: string | null;
+  arrivalDate: string | null;
+  completedAt: string | null;
+  recipientName: string | null;
+  horseCount: number;
+  horses: InvoiceHorseSummary[];
+}
+
+/** Dòng hạng mục dịch vụ hiển thị trên bảng kê chi tiết hóa đơn A4 */
+export interface InvoiceLineItemRecord {
+  lineNo: number;
+  itemCode: string | null;
+  description: string;
+  category: string | null;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  amount: number;
+  includedInPackage: boolean;
+}
+
+/** Cấu trúc bản ghi Hóa đơn (Invoice) nhận từ API `/invoices` */
+export interface InvoiceRecord {
   invoiceId: string;
+  invoiceNumber?: string | null;
   requestId: string;
   amount: number;
+  paidAmount: number;
+  remainingAmount: number;
   currency: string;
   pdfUrl: string;
   paymentStatus: string;
   paymentMethod: string | null;
   issuedAt: string;
+  dueDate: string | null;
   paidAt: string | null;
+  updatedAt: string | null;
+  lastUpdatedBy: string | null;
+  lastUpdatedByName: string | null;
+  isOverdue: boolean;
+  daysUntilDue: number | null;
+  daysOverdue: number | null;
+  paymentHistory?: InvoicePaymentHistoryItem[];
   customerId?: string | null;
   customerName?: string | null;
+  customerEmail?: string | null;
+  customerPhone?: string | null;
+  customerOrganization?: string | null;
+  transportDetails?: InvoiceTransportDetails | null;
+  lineItems?: InvoiceLineItemRecord[];
+  subtotal?: number;
+  discountAmount?: number;
+  additionalFees?: number;
+  taxAmount?: number;
+  preparedByName?: string | null;
 }
 
+/** Thông tin tóm tắt của đơn vận chuyển đã phê duyệt để lập hóa đơn thủ công */
 interface ApprovedRequest {
   requestId: string;
   customerName: string;
@@ -37,29 +159,20 @@ interface ApprovedRequest {
   currency: string;
 }
 
-interface CurrencyTotals {
-  total: number;
-  paid: number;
-  unpaid: number;
-}
+/**
+ * Xác định nhãn tiếng Việt hiển thị cho một hóa đơn:
+ * - Nếu hóa đơn chưa thanh toán đủ (không phải PAID hoặc REFUNDED) mà cờ `isOverdue`
+ *   từ Backend trả về là `true` hoặc đã quá hạn `dueDate`, luôn ưu tiên hiển thị
+ *   "Quá hạn thanh toán" để cảnh báo kịp thời cho Quản lý và Khách hàng.
+ */
+export function resolveInvoiceStatusLabel(inv: Pick<InvoiceRecord, "paymentStatus" | "isOverdue" | "dueDate">): string {
+  const normalized = normalizePaymentStatus(inv.paymentStatus, inv.dueDate);
+  const isCompletedOrRefunded = normalized === "PAID" || normalized === "REFUNDED";
 
-export function normalizePaymentStatus(status: string | null | undefined): "PAID" | "UNPAID" | "REFUNDED" | "UNKNOWN" {
-  if (!status) return "UNKNOWN";
-  const s = status.trim().toLowerCase();
-  if (s === "paid" || s === "da thanh toan" || s === "đã thanh toán" || s === "completed") return "PAID";
-  if (s === "unpaid" || s === "chua thanh toan" || s === "chưa thanh toán" || s === "pending") return "UNPAID";
-  if (s === "refunded" || s === "da hoan tien" || s === "đã hoàn tiền") return "REFUNDED";
-  return "UNKNOWN";
-}
-
-function paymentStatusLabel(status: string): string {
-  const normalized = normalizePaymentStatus(status);
-  switch (normalized) {
-    case "UNPAID": return "Chưa thanh toán";
-    case "PAID": return "Đã thanh toán";
-    case "REFUNDED": return "Đã hoàn tiền";
-    default: return status;
+  if (!isCompletedOrRefunded && (inv.isOverdue || normalized === "OVERDUE")) {
+    return "Quá hạn thanh toán";
   }
+  return paymentStatusLabel(inv.paymentStatus, inv.dueDate);
 }
 
 export function InvoiceList() {
@@ -81,17 +194,27 @@ export function InvoiceList() {
   });
   const [approvedRequests, setApprovedRequests] = useState<ApprovedRequest[]>([]);
 
+  // Kiểm tra người dùng hiện tại có phải Quản lý Logistics hay không
   const isManager = user?.roleId === "LOGISTICS_MANAGER";
 
+  /** Tải danh sách hóa đơn từ API `/invoices` */
   const load = async () => {
-    try { setInvoices(await apiGet<InvoiceRecord[]>("/invoices")); }
-    catch (e) { setError(e instanceof Error ? e.message : "Không thể tải hóa đơn."); }
-    finally { setLoading(false); }
+    setLoading(true);
+    setError("");
+    try {
+      setInvoices(await apiGet<InvoiceRecord[]>("/invoices"));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Không thể tải danh sách hóa đơn.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  useEffect(() => { void Promise.resolve().then(load); }, []);
+  useEffect(() => {
+    void Promise.resolve().then(load);
+  }, []);
 
-
+  /** Khi Quản lý mở form Tạo hóa đơn mới, tải danh sách các đơn vận chuyển đã phê duyệt */
   useEffect(() => {
     if (showCreate && isManager) {
       apiGet<ApprovedRequest[]>("/transport-requests?status=APPROVED")
@@ -102,199 +225,481 @@ export function InvoiceList() {
     }
   }, [showCreate, isManager]);
 
+  /** Xử lý phát hành hóa đơn mới (chỉ dành cho Quản lý Logistics) */
   const handleCreate = async () => {
     const selectedRequest = approvedRequests.find((request) => request.requestId === createForm.requestId);
-    if (!createForm.requestId || !createForm.amount || !createForm.pdfUrl.trim()) {
-      toast({ title: "Thiếu thông tin", description: "Vui lòng chọn đơn, nhập số tiền và link PDF hóa đơn.", variant: "destructive" });
+    if (!createForm.requestId || !createForm.amount) {
+      toast({
+        title: "Thiếu thông tin",
+        description: "Vui lòng chọn đơn vận chuyển và kiểm tra số tiền hóa đơn.",
+        variant: "destructive",
+      });
       return;
     }
     if (selectedRequest?.currency !== "USD") {
       toast({
         title: "Không thể lập hóa đơn",
-        description: "Chỉ hỗ trợ yêu cầu có đơn vị USD. Hệ thống không tự quy đổi dữ liệu lịch sử.",
+        description: "Chỉ hỗ trợ yêu cầu có đơn vị tiền tệ USD. Hệ thống không tự quy đổi dữ liệu lịch sử.",
         variant: "destructive",
       });
       return;
     }
     if (createForm.pdfUrl.trim().length > 512) {
-      toast({ title: "Link PDF quá dài", description: "Đường dẫn PDF tối đa 512 ký tự.", variant: "destructive" });
+      toast({ title: "Đường dẫn PDF quá dài", description: "Đường dẫn tệp PDF tối đa 512 ký tự.", variant: "destructive" });
       return;
     }
     setCreateLoading(true);
     try {
+      const autoPdfUrl =
+        createForm.pdfUrl.trim() || `/invoices/auto-${createForm.requestId}.pdf`;
       await apiPost("/invoices", {
         requestId: createForm.requestId,
         amount: Number(createForm.amount),
         currency: createForm.currency,
-        pdfUrl: createForm.pdfUrl.trim(),
+        pdfUrl: autoPdfUrl,
         paymentMethod: createForm.paymentMethod,
       });
-      toast({ title: "Đã tạo hóa đơn" });
+      toast({
+        title: "Đã phát hành hóa đơn thành công",
+        description: "Hóa đơn dịch vụ chuẩn A4 đã sẵn sàng để xem trước và xuất tệp PDF.",
+      });
       setShowCreate(false);
       setCreateForm({ requestId: "", amount: "", currency: "USD", pdfUrl: "", paymentMethod: "Chuyển khoản thủ công" });
       load();
-    } catch (e) { toast({ title: "Lỗi", description: e instanceof Error ? e.message : "Không thể tạo hóa đơn.", variant: "destructive" }); }
-    finally { setCreateLoading(false); }
+    } catch (e) {
+      toast({ title: "Lỗi", description: e instanceof Error ? e.message : "Không thể tạo hóa đơn.", variant: "destructive" });
+    } finally {
+      setCreateLoading(false);
+    }
   };
 
   if (loading) return <LoadingState />;
-  if (error) return <ErrorState message={error} />;
+  if (error) return <ErrorState message={error} onRetry={() => void load()} />;
 
+  /**
+   * Lọc danh sách hóa đơn theo từ khóa tìm kiếm (số hóa đơn, mã UUID, mã đơn vận chuyển, tên khách hàng)
+   * kết hợp với bộ lọc trạng thái thanh toán tiếng Việt.
+   */
   const filtered = invoices.filter((inv) => {
-    const matchSearch = !search || inv.requestId.includes(search) || inv.invoiceId.includes(search) || (inv.customerName?.toLowerCase().includes(search.toLowerCase()) ?? false);
-    const matchStatus = statusFilter === "Tất cả" || paymentStatusLabel(inv.paymentStatus) === statusFilter;
+    const keyword = search.toLowerCase();
+    const matchSearch =
+      !search ||
+      inv.requestId.toLowerCase().includes(keyword) ||
+      inv.invoiceId.toLowerCase().includes(keyword) ||
+      (inv.invoiceNumber?.toLowerCase().includes(keyword) ?? false) ||
+      (inv.customerName?.toLowerCase().includes(keyword) ?? false);
+    const label = resolveInvoiceStatusLabel(inv);
+    const matchStatus = statusFilter === "Tất cả" || label === statusFilter;
     return matchSearch && matchStatus;
   });
 
+  /** Xuất danh sách hóa đơn đang lọc ra tệp CSV để phục vụ đối soát kế toán */
   const handleExportCSV = () => {
     const headers = [
-      "Invoice ID",
-      "Transport request ID",
-      "Amount",
-      "Currency",
-      "Payment status",
-      "Issued at (ISO 8601)",
-      "Paid at (ISO 8601)",
-      "Payment method",
-      "Invoice PDF URL",
+      "Số hóa đơn",
+      "Mã định danh (UUID)",
+      "Mã đơn vận chuyển",
+      "Khách hàng",
+      "Tổng số tiền (USD)",
+      "Đã thanh toán (USD)",
+      "Còn phải thu (USD)",
+      "Trạng thái thanh toán",
+      "Ngày phát hành",
+      "Hạn thanh toán",
+      "Ngày hoàn tất thanh toán",
+      "Phương thức thanh toán",
     ];
     const rows = filtered.map((inv) => [
+      inv.invoiceNumber || invoiceCode(inv.invoiceId),
       inv.invoiceId,
       inv.requestId,
+      inv.customerName || "",
       inv.amount,
-      inv.currency,
-      paymentStatusLabel(inv.paymentStatus),
+      inv.paidAmount ?? 0,
+      inv.remainingAmount ?? (inv.amount - (inv.paidAmount ?? 0)),
+      resolveInvoiceStatusLabel(inv),
       inv.issuedAt,
+      inv.dueDate ?? "",
       inv.paidAt ?? "",
       inv.paymentMethod || "",
-      inv.pdfUrl,
     ]);
     exportToCSV(`equideli-hoa-don-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
-    toast({ title: "Đã xuất CSV", description: `${rows.length} hóa đơn đã được tải xuống.` });
+    toast({ title: "Đã xuất tệp CSV", description: `${rows.length} hóa đơn đã được tải xuống.` });
   };
 
-  const totalsByCurrency = invoices.reduce<Record<string, CurrencyTotals>>((totals, invoice) => {
-    const currency = invoice.currency || "USD";
-    const currencyTotals = totals[currency] || { total: 0, paid: 0, unpaid: 0 };
-    const amount = Number(invoice.amount) || 0;
-    currencyTotals.total += amount;
-    const normalized = normalizePaymentStatus(invoice.paymentStatus);
-    if (normalized === "PAID") currencyTotals.paid += amount;
-    if (normalized === "UNPAID") currencyTotals.unpaid += amount;
-    totals[currency] = currencyTotals;
-    return totals;
-  }, {});
-  const formatCurrencyTotals = (getAmount: (totals: CurrencyTotals) => number) =>
-    Object.entries(totalsByCurrency)
-      .map(([currency, totals]) => formatMoney(getAmount(totals), currency))
-      .join(" · ") || formatMoney(0, "USD");
+  // Tính toán các chỉ số tổng hợp (KPI) trên toàn bộ danh sách hóa đơn
+  const totalInvoiced = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
+  const totalPaid = invoices.reduce((sum, inv) => {
+    if (normalizePaymentStatus(inv.paymentStatus, inv.dueDate) === "PAID") {
+      return sum + (Number(inv.amount) || 0);
+    }
+    return sum + (Number(inv.paidAmount) || 0);
+  }, 0);
+  const totalRemaining = Math.max(0, totalInvoiced - totalPaid);
+
+  // Đếm số lượng hóa đơn theo từng trạng thái chuẩn tiếng Việt
+  const overdueCount = invoices.filter((i) => resolveInvoiceStatusLabel(i) === "Quá hạn thanh toán").length;
+  const unpaidCount = invoices.filter((i) => resolveInvoiceStatusLabel(i) === "Chưa thanh toán").length;
+  const partiallyPaidCount = invoices.filter((i) => resolveInvoiceStatusLabel(i) === "Thanh toán một phần").length;
+  const paidCount = invoices.filter((i) => resolveInvoiceStatusLabel(i) === "Đã thanh toán").length;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Hóa đơn & Thanh toán"
-        description={isManager ? "Quản lý hóa đơn và theo dõi trạng thái đối soát (thanh toán bên ngoài app)" : "Hóa đơn và trạng thái đối soát của các yêu cầu vận chuyển (thanh toán bên ngoài app)"}
+        title="Hóa đơn & Quản lý thanh toán"
+        description={
+          isManager
+            ? "Quản lý chứng từ hóa đơn quốc tế chuẩn A4 sau khi hoàn tất chuyến và đối soát thanh toán ngoại tuyến."
+            : "Tra cứu hóa đơn dịch vụ chuẩn A4, tải chứng từ PDF và theo dõi tình trạng thanh toán ngoại tuyến."
+        }
         icon={<Receipt className="h-5 w-5" />}
         actions={
           <div className="flex items-center gap-2">
-            <div className="relative w-full sm:w-64"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" /><Input aria-label="Tìm kiếm" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Tìm kiếm" className="pl-9" /></div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-1.5"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Xuất CSV</span></Button>
-            {isManager && <Button onClick={() => setShowCreate(true)} className="gap-2 btn-press"><Plus className="h-4 w-4" /> Tạo hóa đơn</Button>}
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-muted)]" />
+              <Input
+                aria-label="Tìm kiếm"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tìm số HĐ, mã đơn, khách hàng..."
+                className="pl-9"
+              />
+            </div>
+            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-1.5">
+              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Xuất CSV</span>
+            </Button>
+            {isManager && (
+              <Button onClick={() => setShowCreate(true)} className="gap-2 btn-press font-semibold">
+                <Plus className="h-4 w-4" /> Phát hành hóa đơn
+              </Button>
+            )}
           </div>
         }
       />
 
-      {/* Create invoice modal */}
+      {/* Hộp thông báo giải thích quy trình thanh toán ngoại tuyến của EQUIDELI */}
+      <div className="rounded-xl border border-[#D6A15D]/35 bg-[#2B201A]/90 p-4 shadow-sm">
+        <div className="flex items-start gap-3">
+          <ShieldCheck className="h-5 w-5 shrink-0 text-[#D6A15D] mt-0.5" />
+          <div className="space-y-1">
+            <p className="font-semibold text-sm text-[#F5EDE3]">Phương thức thanh toán ngoại tuyến</p>
+            <p className="text-xs text-[#D8C8B8] leading-relaxed">
+              EQUIDELI chỉ quản lý hóa đơn, lưu trữ chứng từ và theo dõi trạng thái thanh toán. Các giao dịch thanh toán được thực hiện ngoại tuyến theo thỏa thuận giữa khách hàng và đơn vị vận chuyển. Website không tích hợp cổng thanh toán trực tuyến.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Biểu mẫu phát hành hóa đơn mới (chỉ hiển thị cho Quản lý Logistics) */}
       {showCreate && (
         <Card className="border-primary/30 animate-fade-in-up">
-          <CardHeader><CardTitle className="text-base flex items-center gap-2"><Plus className="h-4 w-4" /> Tạo hóa đơn mới</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2 text-[var(--text-primary)]">
+              <Plus className="h-4 w-4 text-primary" /> Phát hành hóa đơn dịch vụ mới
+            </CardTitle>
+          </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-2">
-              <Label>Đơn vận chuyển</Label>
-              <select value={createForm.requestId} onChange={(e) => {
-                const req = approvedRequests.find((r) => r.requestId === e.target.value);
-                setCreateForm({
-                  ...createForm,
-                  requestId: e.target.value,
-                  amount: req?.currency === "USD" && req.estimatedAmount != null ? String(req.estimatedAmount) : "",
-                  currency: "USD",
-                });
-              }} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm">
-                <option value="">— Chọn đơn đã phê duyệt —</option>
-                {approvedRequests.map((r) => <option key={r.requestId} value={r.requestId} disabled={r.currency !== "USD"}>{r.customerName || "Khách hàng"} — Đơn {requestCode(r.requestId)}{r.estimatedAmount != null ? ` (${formatMoney(r.estimatedAmount, r.currency)})` : ""}</option>)}
+              <Label>Đơn vận chuyển đã phê duyệt</Label>
+              <select
+                value={createForm.requestId}
+                onChange={(e) => {
+                  const req = approvedRequests.find((r) => r.requestId === e.target.value);
+                  setCreateForm({
+                    ...createForm,
+                    requestId: e.target.value,
+                    amount: req?.currency === "USD" && req.estimatedAmount != null ? String(req.estimatedAmount) : "",
+                    currency: "USD",
+                    pdfUrl: e.target.value ? `/invoices/auto-${e.target.value}.pdf` : "",
+                  });
+                }}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">— Chọn đơn vận chuyển đã phê duyệt —</option>
+                {approvedRequests.map((r) => (
+                  <option key={r.requestId} value={r.requestId} disabled={r.currency !== "USD"}>
+                    {r.customerName || "Khách hàng"} — Đơn {requestCode(r.requestId)}
+                    {r.estimatedAmount != null ? ` (${formatMoney(r.estimatedAmount, r.currency)})` : ""}
+                  </option>
+                ))}
               </select>
-              <p className="text-xs text-muted-foreground">Chọn yêu cầu đã phê duyệt và cung cấp link PDF hóa đơn.</p>
+              <p className="text-xs text-[var(--text-secondary)]">
+                Hệ thống tự động trích xuất thông tin khách hàng, lộ trình, hồ sơ ngựa và bảng kê hạng mục báo giá từ cơ sở dữ liệu.
+              </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-2"><Label>Số tiền</Label><Input type="number" value={createForm.amount} onChange={(e) => setCreateForm({ ...createForm, amount: e.target.value })} placeholder="0" /></div>
-              <div className="space-y-2"><Label>Loại tiền</Label><Input value="USD" readOnly /></div>
-              {approvedRequests.find((request) => request.requestId === createForm.requestId)?.currency !== "USD" && createForm.requestId && (
-                <p className="rounded-md border border-[var(--warning)]/30 bg-[var(--warning-bg)]/30 p-3 text-sm text-[var(--warning-fg)]">
-                  Yêu cầu này dùng đơn vị tiền tệ lịch sử khác USD. Không thể lập hóa đơn cho tới khi dữ liệu được xử lý; hệ thống không tự quy đổi.
-                </p>
-              )}
+              <div className="space-y-2">
+                <Label>Tổng số tiền hóa đơn (USD)</Label>
+                <Input
+                  type="number"
+                  value={createForm.amount}
+                  onChange={(e) => setCreateForm({ ...createForm, amount: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Đơn vị tiền tệ</Label>
+                <Input value="USD" readOnly />
+              </div>
             </div>
-            <div className="space-y-2"><Label>Link PDF hóa đơn</Label><Input type="url" value={createForm.pdfUrl} onChange={(e) => setCreateForm({ ...createForm, pdfUrl: e.target.value })} placeholder="https://..." /></div>
-            <div className="space-y-2"><Label>Phương thức thanh toán</Label><select value={createForm.paymentMethod} onChange={(e) => setCreateForm({ ...createForm, paymentMethod: e.target.value })} className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"><option>Chuyển khoản thủ công</option><option>Tiền mặt</option></select></div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowCreate(false)}>Hủy</Button>
-              <Button onClick={handleCreate} disabled={createLoading} className="gap-2">{createLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Tạo hóa đơn</Button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Phương thức thanh toán thỏa thuận</Label>
+                <select
+                  value={createForm.paymentMethod}
+                  onChange={(e) => setCreateForm({ ...createForm, paymentMethod: e.target.value })}
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option>Chuyển khoản thủ công</option>
+                  <option>Tiền mặt</option>
+                  <option>Bảo lãnh ngân hàng</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Đường dẫn chứng từ PDF (tự động khởi tạo nếu để trống)</Label>
+                <Input
+                  type="text"
+                  value={createForm.pdfUrl}
+                  onChange={(e) => setCreateForm({ ...createForm, pdfUrl: e.target.value })}
+                  placeholder="/invoices/auto-..."
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowCreate(false)}>
+                Hủy
+              </Button>
+              <Button onClick={handleCreate} disabled={createLoading} className="gap-2 font-semibold">
+                {createLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />} Xác nhận phát hành
+              </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Summary cards */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary"><Receipt className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">Tổng giá trị</p><p className="text-sm font-bold">{formatCurrencyTotals((totals) => totals.total)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--success-bg)] text-[var(--success-fg)]"><CreditCard className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">Đã thanh toán</p><p className="text-sm font-bold text-[var(--success-fg)]">{formatCurrencyTotals((totals) => totals.paid)}</p></div></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center gap-3"><div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--warning-bg)] text-[var(--warning-fg)]"><Clock className="h-5 w-5" /></div><div><p className="text-xs text-muted-foreground">Chưa thanh toán</p><p className="text-sm font-bold text-[var(--warning-fg)]">{formatCurrencyTotals((totals) => totals.unpaid)}</p></div></div></CardContent></Card>
+      {/* 4 Thẻ thống kê tổng hợp tài chính (Tổng giá trị, Đã thanh toán, Còn phải thu, Quá hạn) */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-primary">
+                <Receipt className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-secondary)]">Tổng giá trị hóa đơn</p>
+                <p className="text-sm font-bold text-[var(--text-primary)]">{formatMoney(totalInvoiced, "USD")}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--success-bg)] text-[var(--success-fg)]">
+                <CheckCircle2 className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-secondary)]">Đã thanh toán</p>
+                <p className="text-sm font-bold text-[var(--success-fg)]">{formatMoney(totalPaid, "USD")}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--warning-bg)] text-[var(--warning-fg)]">
+                <Clock className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-secondary)]">Còn phải thu</p>
+                <p className="text-sm font-bold text-[var(--warning-fg)]">{formatMoney(totalRemaining, "USD")}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${overdueCount > 0 ? "bg-[var(--danger-bg)] text-[var(--danger-fg)]" : "bg-muted text-[var(--text-secondary)]"}`}>
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-xs text-[var(--text-secondary)]">Quá hạn thanh toán</p>
+                <p className={`text-sm font-bold ${overdueCount > 0 ? "text-[var(--danger-fg)]" : "text-[var(--text-primary)]"}`}>
+                  {overdueCount} hóa đơn
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Status filters */}
+      {/* Các nút lọc nhanh theo trạng thái thanh toán chuẩn tiếng Việt */}
       <div className="flex flex-wrap gap-1.5">
         {[
           { label: "Tất cả", count: invoices.length },
-          { label: "Chưa thanh toán", count: invoices.filter((i) => paymentStatusLabel(i.paymentStatus) === "Chưa thanh toán").length },
-          { label: "Đã thanh toán", count: invoices.filter((i) => paymentStatusLabel(i.paymentStatus) === "Đã thanh toán").length },
-          { label: "Đã hoàn tiền", count: invoices.filter((i) => paymentStatusLabel(i.paymentStatus) === "Đã hoàn tiền").length },
+          { label: "Chưa thanh toán", count: unpaidCount },
+          { label: "Thanh toán một phần", count: partiallyPaidCount },
+          { label: "Đã thanh toán", count: paidCount },
+          { label: "Quá hạn thanh toán", count: overdueCount },
         ].map((tab) => (
-          <button key={tab.label} onClick={() => setStatusFilter(tab.label)} className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${statusFilter === tab.label ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"}`}>{tab.label} ({tab.count})</button>
+          <button
+            key={tab.label}
+            onClick={() => setStatusFilter(tab.label)}
+            className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              statusFilter === tab.label
+                ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+                : "bg-muted text-[var(--text-secondary)] hover:bg-muted/80 hover:text-[var(--text-primary)]"
+            }`}
+          >
+            {tab.label} ({tab.count})
+          </button>
         ))}
       </div>
 
-      {/* Stats overview */}
+      {/* Thanh tóm tắt tỷ lệ trạng thái */}
       <ListStatsBar
         total={invoices.length}
         filtered={filtered.length}
         stats={[
-          { label: "Đã thanh toán", value: invoices.filter((i) => paymentStatusLabel(i.paymentStatus) === "Đã thanh toán").length, tone: "success" },
-          { label: "Chưa thanh toán", value: invoices.filter((i) => paymentStatusLabel(i.paymentStatus) === "Chưa thanh toán").length, tone: "warning" },
-          { label: "Đã hoàn tiền", value: invoices.filter((invoice) => paymentStatusLabel(invoice.paymentStatus) === "Đã hoàn tiền").length, tone: "danger" },
+          { label: "Đã thanh toán", value: paidCount, tone: "success" },
+          { label: "Thanh toán một phần", value: partiallyPaidCount, tone: "warning" },
+          { label: "Chưa thanh toán", value: unpaidCount, tone: "warning" },
+          { label: "Quá hạn thanh toán", value: overdueCount, tone: "danger" },
         ]}
       />
 
+      {/* Danh sách từng hóa đơn */}
       {filtered.length === 0 ? (
-        <EmptyState illustration="no-data" title="Không có hóa đơn" description="Hóa đơn sẽ được tạo khi đơn vận chuyển được phê duyệt." />
+        <EmptyState
+          illustration="no-data"
+          title="Không có hóa đơn"
+          description="Hóa đơn được phát hành tự động sau khi chuyến vận chuyển hoàn tất và bàn giao thành công."
+        />
       ) : (
         <div className="space-y-3">
-          {filtered.map((inv) => (
-            <button key={inv.invoiceId} onClick={() => navigate("invoice-detail", { id: inv.invoiceId })} className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/40 hover:shadow-md">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"><Receipt className="h-6 w-6" /></div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold">Hóa đơn {invoiceCode(inv.invoiceId)}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {isManager && <span>Khách hàng: {inv.customerName || `Đơn ${requestCode(inv.requestId)}`}</span>}
-                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />Phát hành: {formatDate(inv.issuedAt)}</span>
+          {filtered.map((inv) => {
+            const statusLabel = resolveInvoiceStatusLabel(inv);
+            const isOverdue = statusLabel === "Quá hạn thanh toán";
+            const isPaid = statusLabel === "Đã thanh toán";
+            const isPartiallyPaid = statusLabel === "Thanh toán một phần";
+            const paid = inv.paidAmount ?? (isPaid ? inv.amount : 0);
+            const remaining = inv.remainingAmount ?? Math.max(0, inv.amount - paid);
+            const displayNo = inv.invoiceNumber || invoiceCode(inv.invoiceId);
+            const routeText =
+              inv.transportDetails?.originName && inv.transportDetails?.destinationName
+                ? `${inv.transportDetails.originName} → ${inv.transportDetails.destinationName}`
+                : null;
+
+            return (
+              <div
+                key={inv.invoiceId}
+                onClick={() => navigate("invoice-detail", { id: inv.invoiceId })}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    navigate("invoice-detail", { id: inv.invoiceId });
+                  }
+                }}
+                className={`flex w-full cursor-pointer items-center gap-4 rounded-xl border bg-card p-4 text-left transition-all hover:border-primary/50 hover:shadow-md ${
+                  isOverdue ? "border-[var(--danger-border)] bg-[var(--danger-bg)]/30" : "border-border"
+                }`}
+              >
+                <div
+                  className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${
+                    isPaid
+                      ? "bg-[var(--success-bg)] text-[var(--success-fg)]"
+                      : isOverdue
+                      ? "bg-[var(--danger-bg)] text-[var(--danger-fg)]"
+                      : isPartiallyPaid
+                      ? "bg-[var(--warning-bg)] text-[var(--warning-fg)]"
+                      : "bg-primary/15 text-primary"
+                  }`}
+                >
+                  <Receipt className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="truncate text-sm font-bold text-[var(--text-primary)]">
+                      Hóa đơn {displayNo}
+                    </p>
+                    <span className="text-xs text-[var(--text-secondary)] font-mono">
+                      (Đơn {requestCode(inv.requestId)})
+                    </span>
+                    {isOverdue && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--danger-bg)] border border-[var(--danger-border)] px-2 py-0.5 text-[11px] font-semibold text-[var(--danger-fg)]">
+                        <AlertTriangle className="h-3 w-3" /> Quá hạn {inv.daysOverdue ?? 1} ngày
+                      </span>
+                    )}
+                    {!isOverdue && !isPaid && inv.daysUntilDue != null && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] text-[var(--text-secondary)]">
+                        <Clock className="h-3 w-3" /> Còn {inv.daysUntilDue} ngày
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[var(--text-secondary)]">
+                    {inv.customerName && (
+                      <span>
+                        Khách hàng: <strong className="text-[var(--text-primary)]">{inv.customerName}</strong>
+                      </span>
+                    )}
+                    {routeText && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3 text-primary" /> {routeText}
+                      </span>
+                    )}
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" /> Phát hành: {formatDate(inv.issuedAt)}
+                    </span>
+                    {inv.dueDate && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" /> Hạn: {formatDate(inv.dueDate)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Nếu hóa đơn thanh toán một phần, hiển thị rõ số tiền đã trả và số tiền còn lại */}
+                  {isPartiallyPaid && (
+                    <div className="mt-1.5 flex items-center gap-2 text-xs">
+                      <span className="text-[var(--success-fg)] font-medium">Đã trả: {formatMoney(paid, inv.currency)}</span>
+                      <span className="text-[var(--text-muted)]">·</span>
+                      <span className="text-[var(--warning-fg)] font-medium">Còn lại: {formatMoney(remaining, inv.currency)}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <div className="flex flex-col items-end gap-1.5">
+                    <StatusBadge status={statusLabel} />
+                    <span className="text-sm font-bold text-[var(--text-primary)]">
+                      {formatMoney(inv.amount, inv.currency)}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    title="Xuất PDF chuẩn A4"
+                    className="hidden sm:inline-flex gap-1.5 text-xs"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      exportInvoiceToA4Pdf(inv);
+                    }}
+                  >
+                    <FileDown className="h-3.5 w-3.5" /> PDF A4
+                  </Button>
+                  <ChevronRight className="h-4 w-4 text-[var(--text-secondary)]" />
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1.5">
-                <StatusBadge status={paymentStatusLabel(inv.paymentStatus)} />
-                <span className="text-sm font-bold text-foreground">{formatMoney(inv.amount, inv.currency)}</span>
-              </div>
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

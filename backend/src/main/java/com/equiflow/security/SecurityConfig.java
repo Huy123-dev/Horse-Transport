@@ -58,6 +58,10 @@ public class SecurityConfig {
     ).permitAll()
 
     .requestMatchers("/api/notifications/**").authenticated()
+    .requestMatchers("/api/profile", "/api/profile/**").authenticated()
+    .requestMatchers(HttpMethod.GET, "/api/blacklist/my-status", "/api/blacklist/my-history").hasRole("CUSTOMER")
+    .requestMatchers(HttpMethod.POST, "/api/blacklist/my-payment-proof", "/api/blacklist/my-appeal").hasRole("CUSTOMER")
+    .requestMatchers("/api/blacklist", "/api/blacklist/**").hasRole("LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.GET, "/api/compensation-claims").hasRole("LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.GET, "/api/compensation-claims/my").hasRole("CUSTOMER")
     .requestMatchers(HttpMethod.PATCH, "/api/compensation-claims/*/review").hasRole("LOGISTICS_MANAGER")

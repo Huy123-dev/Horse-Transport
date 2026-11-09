@@ -26,7 +26,10 @@ public class UserController {
     }
 
     @GetMapping
-    public List<UserResponse> getAll() {
+    public List<UserResponse> getAll(@RequestParam(required = false) String role) {
+        if ("CUSTOMER".equalsIgnoreCase(role)) {
+            return userService.findCustomers();
+        }
         return userService.findAll();
     }
 

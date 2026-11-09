@@ -69,9 +69,9 @@ class AssignmentServiceTest {
 
         when(planRepository.findByIdForUpdate(planId)).thenReturn(Optional.of(plan));
         when(userRepository.findById(attendantId)).thenReturn(Optional.of(attendant));
-        when(assignmentRepository.countUserConflicts(
-                attendantId, planId, TransportPlanService.OPEN, plan.getDepartureTime(), plan.getArrivalTime()))
-                .thenReturn(0L);
+        when(assignmentRepository.findUserConflicts(
+                attendantId, planId, NO_ASSIGNMENT, TransportPlanService.OPEN, plan.getDepartureTime(), plan.getArrivalTime()))
+                .thenReturn(List.of());
         when(assignmentRepository.countDistinctAttendantsByPlanIdAndAssignmentIdNot(planId, NO_ASSIGNMENT))
                 .thenReturn(4L);
         when(assignmentRepository.existsByPlanIdAndAssignmentIdNotAndAttendantUserId(
