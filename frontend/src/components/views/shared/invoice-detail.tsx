@@ -57,6 +57,7 @@ import {
 } from "@/lib/constants";
 import { exportToCSV } from "@/lib/csv-export";
 import { exportInvoiceToA4Pdf } from "@/lib/invoice-pdf";
+import { getInvoiceCsvRows, INVOICE_CSV_HEADERS } from "@/lib/invoice-csv";
 import { InvoiceRecord, resolveInvoiceStatusLabel } from "./invoice-list";
 import {
   EquideliInvoiceDocument,
@@ -193,38 +194,8 @@ export function InvoiceDetail() {
   const handleExportCsv = () => {
     exportToCSV(
       `hoa-don-${formattedInvoiceNo}.csv`,
-      [
-        "Số hóa đơn",
-        "Mã định danh (UUID)",
-        "Mã đơn vận chuyển",
-        "Khách hàng",
-        "Tổng số tiền",
-        "Đã thanh toán",
-        "Còn phải thu",
-        "Đơn vị tiền tệ",
-        "Trạng thái thanh toán",
-        "Ngày phát hành",
-        "Hạn thanh toán",
-        "Ngày hoàn tất",
-        "Phương thức thanh toán",
-      ],
-      [
-        [
-          formattedInvoiceNo,
-          invoice.invoiceId,
-          invoice.requestId,
-          invoice.customerName || "",
-          totalAmount,
-          paidAmount,
-          remainingAmount,
-          invoice.currency,
-          statusLabel,
-          invoice.issuedAt,
-          invoice.dueDate ?? "",
-          invoice.paidAt ?? "",
-          invoice.paymentMethod || "",
-        ],
-      ]
+      INVOICE_CSV_HEADERS,
+      getInvoiceCsvRows(invoice)
     );
     toast({ title: "Đã xuất tệp CSV", description: "Bản sao lưu dữ liệu hóa đơn đã được tải về máy." });
   };

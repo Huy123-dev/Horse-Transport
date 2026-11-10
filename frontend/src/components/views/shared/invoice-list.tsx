@@ -58,6 +58,7 @@ import {
 } from "@/lib/constants";
 import { exportToCSV } from "@/lib/csv-export";
 import { exportInvoiceToA4Pdf } from "@/lib/invoice-pdf";
+import { getInvoiceCsvRows, INVOICE_CSV_HEADERS } from "@/lib/invoice-csv";
 import { ListStatsBar } from "@/components/app/list-stats-bar";
 
 export { normalizePaymentStatus, paymentStatusLabel };
@@ -295,36 +296,9 @@ export function InvoiceList() {
 
   /** Xuất danh sách hóa đơn đang lọc ra tệp CSV để phục vụ đối soát kế toán */
   const handleExportCSV = () => {
-    const headers = [
-      "Số hóa đơn",
-      "Mã định danh (UUID)",
-      "Mã đơn vận chuyển",
-      "Khách hàng",
-      "Tổng số tiền (USD)",
-      "Đã thanh toán (USD)",
-      "Còn phải thu (USD)",
-      "Trạng thái thanh toán",
-      "Ngày phát hành",
-      "Hạn thanh toán",
-      "Ngày hoàn tất thanh toán",
-      "Phương thức thanh toán",
-    ];
-    const rows = filtered.map((inv) => [
-      inv.invoiceNumber || invoiceCode(inv.invoiceId),
-      inv.invoiceId,
-      inv.requestId,
-      inv.customerName || "",
-      inv.amount,
-      inv.paidAmount ?? 0,
-      inv.remainingAmount ?? (inv.amount - (inv.paidAmount ?? 0)),
-      resolveInvoiceStatusLabel(inv),
-      inv.issuedAt,
-      inv.dueDate ?? "",
-      inv.paidAt ?? "",
-      inv.paymentMethod || "",
-    ]);
-    exportToCSV(`equideli-hoa-don-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
-    toast({ title: "Đã xuất tệp CSV", description: `${rows.length} hóa đơn đã được tải xuống.` });
+    const rows = filtered.flatMap(getInvoiceCsvRows);
+    exportToCSV(`equideli-hoa-don-${new Date().toISOString().slice(0, 10)}.csv`, INVOICE_CSV_HEADERS, rows);
+    toast({ title: "Đã xuất tệp CSV", description: `${filtered.length} hóa đơn đã được tải xuống.` });
   };
 
   // Tính toán các chỉ số tổng hợp (KPI) trên toàn bộ danh sách hóa đơn
