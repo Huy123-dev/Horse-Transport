@@ -15,6 +15,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -72,9 +74,10 @@ class RouteStopServiceTest {
         when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
         when(stopRepository.findByPlanIdOrderBySequenceNoAsc(planId)).thenReturn(List.of(stop1, stop2));
 
+        OffsetDateTime arrival = OffsetDateTime.of(2026, 11, 10, 10, 52, 0, 0, ZoneOffset.UTC);
         ApiException ex = assertThrows(ApiException.class, () ->
                 routeStopService.updateStatus(stop2Id,
-                        new RouteStopDto.StatusRequest(LocalDateTime.now(), null, "Đã tới mốc 2"),
+                        new RouteStopDto.StatusRequest(arrival, null, "Đã tới mốc 2"),
                         driverId, true));
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
@@ -103,12 +106,77 @@ class RouteStopServiceTest {
         when(stopRepository.findByPlanIdOrderBySequenceNoAsc(planId)).thenReturn(List.of(stop1));
         when(stopRepository.save(any(RouteStop.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
+        OffsetDateTime arrival = OffsetDateTime.of(2026, 11, 10, 10, 52, 0, 0, ZoneOffset.UTC);
         RouteStopDto.Response res = routeStopService.updateStatus(stop1Id,
-                new RouteStopDto.StatusRequest(LocalDateTime.now(), null, "Bắt đầu hành trình"),
+                new RouteStopDto.StatusRequest(arrival, null, "Bắt đầu hành trình"),
                 driverId, true);
 
         assertNotNull(res);
-        assertNotNull(res.actualArrivalTime());
+        assertEquals(arrival, res.actualArrivalTime());
+        assertEquals(LocalDateTime.of(2026, 11, 10, 10, 52), stop1.getActualArrivalTime());
         assertEquals(TransportPlanService.IN_PROGRESS, plan.getStatus());
+    }
+
+    @Test
+    void confirmingDeparturePreservesPreviouslyRecordedArrival() {
+        UUID planId = UUID.randomUUID();
+        UUID stopId = UUID.randomUUID();
+        UUID driverId = UUID.randomUUID();
+        LocalDateTime recordedArrival = LocalDateTime.of(2026, 11, 10, 10, 52);
+
+        TransportPlan plan = new TransportPlan();
+        plan.setPlanId(planId);
+        plan.setStatus(TransportPlanService.IN_PROGRESS);
+
+        RouteStop stop = new RouteStop();
+        stop.setStopId(stopId);
+        stop.setPlanId(planId);
+        stop.setSequenceNo(1);
+        stop.setStopName("Trạm dừng");
+        stop.setStopType("REST");
+        stop.setActualArrivalTime(recordedArrival);
+
+        when(stopRepository.findById(stopId)).thenReturn(Optional.of(stop));
+        when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
+        when(stopRepository.findByPlanIdOrderBySequenceNoAsc(planId)).thenReturn(List.of(stop));
+        when(stopRepository.save(any(RouteStop.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        OffsetDateTime departure = OffsetDateTime.of(2026, 11, 10, 11, 41, 0, 0, ZoneOffset.UTC);
+        RouteStopDto.Response response = routeStopService.updateStatus(stopId,
+                new RouteStopDto.StatusRequest(null, departure, null), driverId, true);
+
+        assertEquals(recordedArrival, stop.getActualArrivalTime());
+        assertEquals(OffsetDateTime.of(recordedArrival, ZoneOffset.UTC), response.actualArrivalTime());
+        assertEquals(departure, response.actualDepartureTime());
+    }
+
+    @Test
+    void cannotConfirmDepartureBeforeArrivalWasRecorded() {
+        UUID planId = UUID.randomUUID();
+        UUID stopId = UUID.randomUUID();
+        UUID driverId = UUID.randomUUID();
+
+        TransportPlan plan = new TransportPlan();
+        plan.setPlanId(planId);
+        plan.setStatus(TransportPlanService.IN_PROGRESS);
+
+        RouteStop stop = new RouteStop();
+        stop.setStopId(stopId);
+        stop.setPlanId(planId);
+        stop.setSequenceNo(1);
+        stop.setStopName("Trạm dừng");
+        stop.setStopType("REST");
+
+        when(stopRepository.findById(stopId)).thenReturn(Optional.of(stop));
+        when(planRepository.findById(planId)).thenReturn(Optional.of(plan));
+        when(stopRepository.findByPlanIdOrderBySequenceNoAsc(planId)).thenReturn(List.of(stop));
+
+        ApiException ex = assertThrows(ApiException.class, () -> routeStopService.updateStatus(stopId,
+                new RouteStopDto.StatusRequest(null,
+                        OffsetDateTime.of(2026, 11, 10, 11, 41, 0, 0, ZoneOffset.UTC), null),
+                driverId, true));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertEquals("Không thể xác nhận rời mốc khi chưa ghi nhận giờ đến", ex.getMessage());
     }
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useAppStore } from "@/store/app-store";
 import {
+  completeDriverPlan,
   createDriverDelivery,
   createDriverHealthLog,
   createDriverIncident,
@@ -126,6 +127,7 @@ export function DriverPlanDetail() {
   const planStatus = normalizedPlanStatus(plan.status);
   const canRecordTripData = ["san sang", "ready", "dang thuc hien", "in progress"].includes(planStatus);
   const canRecordDelivery = ["dang thuc hien", "in progress"].includes(planStatus);
+  const canCompleteTrip = canRecordDelivery && delivery !== null;
   const canRecordHealth = ["san sang", "ready", "dang thuc hien", "in progress", "hoan thanh", "completed"].includes(planStatus);
 
   const handleConfirmArrival = async (stopId: string) => {
@@ -303,6 +305,23 @@ export function DriverPlanDetail() {
       toast({
         title: "Không thể ghi nhận bàn giao",
         description: error instanceof Error ? error.message : "Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCompleteTrip = async () => {
+    setActionLoading(true);
+    try {
+      await completeDriverPlan(planId);
+      toast({ title: "Chuyến vận chuyển đã hoàn tất" });
+      setAttempt((value) => value + 1);
+    } catch (error) {
+      toast({
+        title: "Không thể hoàn tất chuyến",
+        description: error instanceof Error ? error.message : "Vui lòng xử lý các điều kiện còn thiếu rồi thử lại.",
         variant: "destructive",
       });
     } finally {
@@ -712,6 +731,17 @@ export function DriverPlanDetail() {
                         <a className="ml-4 inline-block text-sm text-primary underline" href={delivery.podDocumentUrl} target="_blank" rel="noreferrer">
                           Xem chứng từ POD
                         </a>
+                      )}
+                      {canCompleteTrip && (
+                        <div className="mt-4 border-t border-border pt-4">
+                          <p className="mb-3 text-sm text-muted-foreground">
+                            Đã ghi nhận bàn giao. Hoàn tất chuyến sau khi các sự cố (nếu có) đã được xử lý.
+                          </p>
+                          <Button type="button" onClick={() => void handleCompleteTrip()} disabled={actionLoading} className="gap-2">
+                            <CheckCircle2 className="h-4 w-4" />
+                            {actionLoading ? "Đang hoàn tất..." : "Hoàn tất chuyến"}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ) : (

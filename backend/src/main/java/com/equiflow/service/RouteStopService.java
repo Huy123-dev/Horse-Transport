@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -128,13 +130,24 @@ public class RouteStopService {
             }
         }
 
-        LocalDateTime arrival = req.actualArrivalTime() != null ? req.actualArrivalTime() : LocalDateTime.now();
-        s.setActualArrivalTime(arrival);
+        LocalDateTime arrival = s.getActualArrivalTime();
+        if (req.actualArrivalTime() != null) {
+            arrival = toUtcLocalDateTime(req.actualArrivalTime());
+            s.setActualArrivalTime(arrival);
+        } else if (req.actualDepartureTime() == null && arrival == null) {
+            arrival = LocalDateTime.now(ZoneOffset.UTC);
+            s.setActualArrivalTime(arrival);
+        }
         if (req.actualDepartureTime() != null) {
-            if (req.actualDepartureTime().isBefore(arrival)) {
+            if (arrival == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "Không thể xác nhận rời mốc khi chưa ghi nhận giờ đến");
+            }
+            LocalDateTime departure = toUtcLocalDateTime(req.actualDepartureTime());
+            if (departure.isBefore(arrival)) {
                 throw new ApiException(HttpStatus.BAD_REQUEST, "Giờ rời đi thực tế không được trước giờ đến");
             }
-            s.setActualDepartureTime(req.actualDepartureTime());
+            s.setActualDepartureTime(departure);
         }
         if (req.notes() != null && !req.notes().isBlank()) {
             s.setNotes(req.notes().trim());
@@ -172,15 +185,18 @@ public class RouteStopService {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng nhập tên điểm dừng hoặc chọn địa điểm");
         }
         checkOrder(req.plannedArrivalTime(), req.plannedDepartureTime(), "dự kiến");
-        checkOrder(req.actualArrivalTime(), req.actualDepartureTime(), "thực tế");
+        checkOrder(
+                toUtcLocalDateTime(req.actualArrivalTime()),
+                toUtcLocalDateTime(req.actualDepartureTime()),
+                "thực tế");
 
         s.setLocationId(req.locationId());
         s.setStopName(name);
         s.setStopType(type);
         s.setPlannedArrivalTime(req.plannedArrivalTime());
         s.setPlannedDepartureTime(req.plannedDepartureTime());
-        s.setActualArrivalTime(req.actualArrivalTime());
-        s.setActualDepartureTime(req.actualDepartureTime());
+        s.setActualArrivalTime(toUtcLocalDateTime(req.actualArrivalTime()));
+        s.setActualDepartureTime(toUtcLocalDateTime(req.actualDepartureTime()));
         s.setNotes(blankToNull(req.notes()));
     }
 
@@ -222,7 +238,16 @@ public class RouteStopService {
             return new RouteStopDto.Response(s.getStopId(), s.getPlanId(), s.getSequenceNo(), s.getLocationId(),
                     l == null ? null : l.getName(), l == null ? null : l.getCountryCode(),
                     s.getStopName(), s.getStopType(), s.getPlannedArrivalTime(), s.getPlannedDepartureTime(),
-                    s.getActualArrivalTime(), s.getActualDepartureTime(), s.getNotes());
+                    toUtcOffsetDateTime(s.getActualArrivalTime()),
+                    toUtcOffsetDateTime(s.getActualDepartureTime()), s.getNotes());
         }).toList();
+    }
+
+    private static LocalDateTime toUtcLocalDateTime(OffsetDateTime dateTime) {
+        return dateTime == null ? null : dateTime.withOffsetSameInstant(ZoneOffset.UTC).toLocalDateTime();
+    }
+
+    private static OffsetDateTime toUtcOffsetDateTime(LocalDateTime dateTime) {
+        return dateTime == null ? null : dateTime.atOffset(ZoneOffset.UTC);
     }
 }

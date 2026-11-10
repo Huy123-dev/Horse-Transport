@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ApiError, apiDelete, apiGet, apiPost, apiPut } from "@/lib/api-client";
+import { ApiError, apiDelete, apiGet, apiPatch, apiPost, apiPut } from "@/lib/api-client";
 import { useAppStore } from "@/store/app-store";
 import { PageHeader } from "@/components/app/page-header";
 import { StatusBadge } from "@/components/app/status-badge";
@@ -125,6 +125,7 @@ export function TransportPlanDetail() {
   const [editingAssignment, setEditingAssignment] = useState<AssignmentRecord | null>(null);
   const [editForm, setEditForm] = useState({ assetId: "", driverUserId: "", attendantUserId: "" });
   const [editSaving, setEditSaving] = useState(false);
+  const [readySaving, setReadySaving] = useState(false);
   const [routeStopForm, setRouteStopForm] = useState({
     locationId: "",
     sequenceNo: "",
@@ -304,6 +305,22 @@ export function TransportPlanDetail() {
       });
     } finally {
       setEditSaving(false);
+    }
+  }
+    async function handleMarkReady() {
+    setReadySaving(true);
+    try {
+      await apiPatch(`/transport-plans/${params.id}/status`, { status: "READY" });
+      toast({ title: "Kế hoạch đã sẵn sàng", description: "Tài xế/người đi kèm có thể bắt đầu xác nhận các mốc hành trình." });
+      await load();
+    } catch (readyError: unknown) {
+      toast({
+        title: "Chưa thể chuyển sang sẵn sàng",
+        description: readyError instanceof Error ? readyError.message : "Vui lòng thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setReadySaving(false);
     }
   }
 
@@ -547,6 +564,11 @@ export function TransportPlanDetail() {
             <p className="text-sm text-muted-foreground">Bạn không có quyền xem thông tin phân công.</p>
           )}
           <p className="text-xs text-muted-foreground">Trạng thái sẵn sàng phụ thuộc vào điều kiện nghiệp vụ và xác nhận kiểm định; việc phân công nhân sự là một điều kiện cần.</p>
+                    {canManageAssignments && ["planning", "dang lap ke hoach"].includes(plan.status.trim().toLowerCase()) && (
+            <Button type="button" onClick={() => void handleMarkReady()} disabled={readySaving || (assignments?.length ?? 0) === 0} className="gap-2">
+              <PackageCheck className="h-4 w-4" /> {readySaving ? "Đang cập nhật..." : "Xác nhận sẵn sàng khởi hành"}
+            </Button>
+          )}
         </CardContent>
       </Card>
 
