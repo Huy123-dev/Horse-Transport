@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useAppStore, type ViewKey } from "@/store/app-store";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Search, LayoutDashboard, Heart, FileText, Receipt, Bell, Truck, Users, Route, ShieldCheck, ClipboardCheck, Stethoscope, PackageCheck, Plus, Sun, CornerDownLeft, type LucideIcon } from "lucide-react";
+import { Search, LayoutDashboard, Heart, FileText, Receipt, Bell, Truck, Users, Route, ClipboardCheck, Stethoscope, PackageCheck, Plus, Sun, CornerDownLeft, type LucideIcon } from "lucide-react";
 import { ROLE_LABELS } from "@/lib/constants";
 
 type CommandItem = {
@@ -65,7 +65,7 @@ export function CommandPalette() {
 
   const roleNav: Record<string, { view: ViewKey; label: string; icon: LucideIcon }[]> = {
     CUSTOMER: [...navItems, { view: "recovery-dashboard", label: "Theo dõi hồi phục", icon: Stethoscope }],
-    TRANSPORT_SPECIALIST: [{ view: "dashboard", label: "Tổng quan", icon: LayoutDashboard }, { view: "plans", label: "Kế hoạch & điểm dừng", icon: Route }, { view: "inspections", label: "Hồ sơ thẩm định", icon: ClipboardCheck }, { view: "compliance", label: "Kiểm dịch & Thông quan", icon: ShieldCheck }, { view: "notifications", label: "Thông báo", icon: Bell }],
+    TRANSPORT_SPECIALIST: [{ view: "dashboard", label: "Tổng quan", icon: LayoutDashboard }, { view: "plans", label: "Kế hoạch & điểm dừng", icon: Route }, { view: "inspections", label: "Hồ sơ thẩm định", icon: ClipboardCheck }, { view: "notifications", label: "Thông báo", icon: Bell }],
     LOGISTICS_MANAGER: [{ view: "dashboard", label: "Tổng quan", icon: LayoutDashboard }, { view: "approvals", label: "Phê duyệt đơn hàng", icon: FileText }, { view: "trips", label: "Chuyến vận chuyển", icon: Truck }, { view: "invoices", label: "Hóa đơn & Thanh toán", icon: Receipt }, { view: "staff", label: "Quản lý nhân sự", icon: Users }, { view: "notifications", label: "Thông báo", icon: Bell }],
     FLEET_COORDINATOR: [{ view: "dashboard", label: "Tổng quan", icon: LayoutDashboard }, { view: "plans", label: "Lập kế hoạch lộ trình", icon: Route }, { view: "trips", label: "Chuyến đang vận hành", icon: Truck }, { view: "fleet", label: "Đội xe & Phương tiện", icon: PackageCheck }, { view: "notifications", label: "Thông báo", icon: Bell }],
     DRIVER: [{ view: "dashboard", label: "Tổng quan", icon: LayoutDashboard }, { view: "trips", label: "Chuyến được giao", icon: Truck }, { view: "notifications", label: "Thông báo", icon: Bell }],

@@ -19,7 +19,7 @@ import { useAppStore, type ViewKey } from "@/store/app-store";
 import { getRoleConfig } from "@/components/app/role-badge";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Heart, FileText, ClipboardCheck, ShieldCheck, ShieldAlert,
+  LayoutDashboard, Heart, FileText, ClipboardCheck, ShieldAlert,
   Route, Truck, Users, Bell, ClipboardList, PackageCheck,
   ScrollText, Receipt, Stethoscope, DollarSign, Scale, MessageSquare, type LucideIcon,
 } from "lucide-react";
@@ -41,13 +41,12 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { key: "invoices", label: "Hóa đơn & Thanh toán", icon: Receipt },
     { key: "notifications", label: "Thông báo", icon: Bell },
   ],
-  // 2. Chuyên viên vận tải: Thẩm định yêu cầu cấp 2, lập kế hoạch điểm dừng, kiểm tra sức khỏe & thông quan
+  // 2. Chuyên viên vận tải: Thẩm định yêu cầu cấp 2 và lập kế hoạch điểm dừng
   TRANSPORT_SPECIALIST: [
     { key: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { key: "approvals", label: "Thẩm định yêu cầu", icon: ScrollText },
     { key: "plans", label: "Kế hoạch & điểm dừng", icon: Route },
     { key: "inspections", label: "Hồ sơ thẩm định", icon: ClipboardCheck },
-    { key: "compliance", label: "Kiểm dịch & Thông quan", icon: ShieldCheck },
     { key: "notifications", label: "Thông báo", icon: Bell },
   ],
   // 3. Quản lý Logistics: Phê duyệt đơn hàng cấp 1, giám sát toàn bộ chuyến đi, hóa đơn, nhân sự, danh sách hạn chế và nhật ký kiểm toán
@@ -55,7 +54,6 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { key: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { key: "approvals", label: "Phê duyệt đơn hàng", icon: ScrollText },
     { key: "trips", label: "Chuyến vận chuyển", icon: Truck },
-    { key: "compliance", label: "Kiểm dịch & Thông quan", icon: ShieldCheck },
     { key: "invoices", label: "Hóa đơn & Thanh toán", icon: Receipt },
     { key: "claims-management", label: "Khiếu nại & Bồi thường", icon: Scale },
     { key: "feedback-management", label: "Đánh giá dịch vụ", icon: MessageSquare },
