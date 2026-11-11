@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="vi" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,7 @@
       name="description"
       content="EQUIDELI — Nền tảng quản lý vận chuyển ngựa đua quốc tế: tạo yêu cầu, thẩm định hồ sơ pháp lý, lập kế hoạch lộ trình và theo dõi hành trình."
     />
-    <meta name="theme-color" content="#F7F3EB" />
+    <meta name="theme-color" content="#1F1612" />
     <title>EQUIDELI — Quản lý vận chuyển ngựa đua</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -18,18 +18,12 @@
     <script>
       (() => {
         try {
-          const theme = localStorage.getItem("equideli-theme");
-          if (
-            theme === "dark" ||
-            (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches)
-          ) {
-            document.documentElement.classList.add("dark");
-          }
-        } catch {
-          // Theme initialization is optional when browser storage is unavailable.
-        }
+          document.documentElement.classList.add("dark");
+          localStorage.setItem("equideli-theme", "dark");
+        } catch {}
       })();
     </script>
+      <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
   <body>
     <div id="root"></div>

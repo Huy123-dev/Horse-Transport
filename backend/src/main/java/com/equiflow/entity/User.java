@@ -40,7 +40,10 @@ public class User {
     @Column(name = "staff_type", length = 20)
     private String staffType;
 
-    @Column(name = "google_id", length = 64)
+    @Column(name = "avatar_url", length = 500)
+    private String avatarUrl;
+
+    @Column(name = "google_id", length = 100)
     private String googleId;
 
     @Column(name = "is_active", nullable = false)

@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,7 +18,10 @@ import java.util.List;
  * Đảm bảo các tài khoản người dùng trong cơ sở dữ liệu luôn có mật khẩu chuẩn BCrypt
  * tương thích với mật khẩu mặc định 'equideli123'.
  */
+import org.springframework.context.annotation.Profile;
+
 @Component
+@Profile("!prod")
 public class DemoAccountPasswordInitializer {
 
     private static final Logger log = LoggerFactory.getLogger(DemoAccountPasswordInitializer.class);
@@ -31,6 +36,7 @@ public class DemoAccountPasswordInitializer {
     }
 
     @EventListener(ApplicationReadyEvent.class)
+    @Order(Ordered.LOWEST_PRECEDENCE)
     @Transactional
     public void ensureDemoAccountsHaveValidBcryptPassword() {
         try {

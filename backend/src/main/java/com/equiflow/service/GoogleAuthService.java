@@ -14,6 +14,7 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.gson.GsonFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -46,20 +47,28 @@ public class GoogleAuthService {
     /** null khi chưa cấu hình google.client-id. */
     private final GoogleIdTokenVerifier verifier;
 
+    @Autowired
     public GoogleAuthService(UserRepository userRepository, RoleRepository roleRepository,
                              PasswordEncoder passwordEncoder, JwtService jwtService,
                              @Value("${google.client-id:}") String clientId,
                              @Value("${app.default-role-id}") String defaultRoleId) {
+        this(userRepository, roleRepository, passwordEncoder, jwtService, defaultRoleId,
+                (clientId == null || clientId.isBlank())
+                        ? null
+                        : new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
+                                .setAudience(Collections.singletonList(clientId.trim()))
+                                .build());
+    }
+
+    public GoogleAuthService(UserRepository userRepository, RoleRepository roleRepository,
+                             PasswordEncoder passwordEncoder, JwtService jwtService,
+                             String defaultRoleId, GoogleIdTokenVerifier verifier) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.defaultRoleId = defaultRoleId;
-        this.verifier = (clientId == null || clientId.isBlank())
-                ? null
-                : new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), GsonFactory.getDefaultInstance())
-                        .setAudience(Collections.singletonList(clientId.trim()))
-                        .build();
+        this.verifier = verifier;
     }
 
     @Transactional
@@ -155,6 +164,7 @@ public class GoogleAuthService {
 
     private static UserInfo toInfo(User u) {
         return new UserInfo(u.getUserId(), u.getName(), u.getEmail(), u.getPhoneNumber(),
-                u.getOrganizationName(), u.getRoleId(), AuthService.resolveStaffType(u));
+                u.getOrganizationName(), u.getRoleId(), AuthService.resolveStaffType(u), u.getAvatarUrl(),
+                u.isActive(), u.getCreatedAt());
     }
 }

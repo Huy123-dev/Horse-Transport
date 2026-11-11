@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 public final class RouteStopDto {
@@ -17,6 +18,7 @@ public final class RouteStopDto {
      * sequenceNo bỏ trống: khi thêm sẽ xếp cuối tuyến, khi sửa giữ nguyên.
      * Cần locationId hoặc stopName (bỏ trống stopName thì lấy tên địa điểm).
      */
+    /** Planned times are local schedule times; actual times are timezone-aware instants. */
     public record Request(
             UUID locationId,
             @Min(value = 1, message = "Thứ tự điểm dừng phải từ 1") Integer sequenceNo,
@@ -24,14 +26,14 @@ public final class RouteStopDto {
             @NotBlank(message = "Vui lòng nhập loại điểm dừng") String stopType,
             LocalDateTime plannedArrivalTime,
             LocalDateTime plannedDepartureTime,
-            LocalDateTime actualArrivalTime,
-            LocalDateTime actualDepartureTime,
+            OffsetDateTime actualArrivalTime,
+            OffsetDateTime actualDepartureTime,
             String notes
     ) {}
 
     public record StatusRequest(
-            LocalDateTime actualArrivalTime,
-            LocalDateTime actualDepartureTime,
+            OffsetDateTime actualArrivalTime,
+            OffsetDateTime actualDepartureTime,
             String notes
     ) {}
 
@@ -46,8 +48,8 @@ public final class RouteStopDto {
             String stopType,
             LocalDateTime plannedArrivalTime,
             LocalDateTime plannedDepartureTime,
-            LocalDateTime actualArrivalTime,
-            LocalDateTime actualDepartureTime,
+            OffsetDateTime actualArrivalTime,
+            OffsetDateTime actualDepartureTime,
             String notes
     ) {}
 }

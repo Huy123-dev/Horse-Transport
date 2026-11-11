@@ -2,6 +2,7 @@
 
 import { useAppStore } from "@/store/app-store";
 import { ROLE_LABELS } from "@/lib/constants";
+import { RoleBadge, getRoleConfig } from "@/components/app/role-badge";
 import { Bell, CheckCheck, LogOut, Menu } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -20,15 +21,15 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { UserProfileDialog } from "@/components/app/user-profile-dialog";
 import { GlobalSearch } from "./global-search";
-import { ThemeToggle } from "./theme-toggle";
 import { HelpCircle } from "lucide-react";
 
 export function AppHeader() {
   const { user, setUser, navigate } = useAppStore();
   const [notifOpen, setNotifOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [notificationState, setNotificationState] = useState<{
     userId: string;
     notifications: NotificationItem[];
@@ -94,6 +95,7 @@ export function AppHeader() {
 
   if (!user) return null;
   const initials = user.name.split(" ").map((w) => w[0]).slice(0, 2).join("");
+  const roleConfig = getRoleConfig(user.roleId, user.staffType);
 
   const handleMarkAllRead = async () => {
     try {
@@ -145,7 +147,7 @@ export function AppHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-md sm:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-card/90 px-4 backdrop-blur-md sm:px-6">
       <div className="flex flex-1 items-center gap-3">
         <button
           className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted lg:hidden"
@@ -155,7 +157,7 @@ export function AppHeader() {
         </button>
         <div className="hidden sm:block">
           <p className="text-xs text-muted-foreground">Xin chào,</p>
-          <p className="text-sm font-semibold leading-tight">{user.name}</p>
+          <p className="text-sm font-semibold leading-tight text-foreground">{user.name}</p>
         </div>
         <div className="ml-auto">
           <GlobalSearch />
@@ -163,7 +165,6 @@ export function AppHeader() {
       </div>
 
       <div className="flex items-center gap-2">
-        <ThemeToggle />
         <button
           onClick={() => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "?" })); }}
           className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted transition-colors"
@@ -172,6 +173,7 @@ export function AppHeader() {
         >
           <HelpCircle className="h-5 w-5" />
         </button>
+
         {/* Notifications dropdown */}
         <DropdownMenu open={notifOpen} onOpenChange={setNotifOpen}>
           <DropdownMenuTrigger asChild>
@@ -183,7 +185,7 @@ export function AppHeader() {
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[var(--champagne-gold)] px-1 text-[10px] font-bold text-[#171311] shadow-xs">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -192,7 +194,7 @@ export function AppHeader() {
           <DropdownMenuContent align="end" className="w-80 p-0 sm:w-96">
             <div className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
-                <p className="text-sm font-semibold">Thông báo</p>
+                <p className="text-sm font-semibold text-foreground">Thông báo</p>
                 <p className="text-xs text-muted-foreground">{unreadCount} chưa đọc</p>
               </div>
               {unreadCount > 0 && (
@@ -229,7 +231,7 @@ export function AppHeader() {
                     <span className="flex items-start gap-2">
                       <span className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${notification.read ? "bg-transparent" : "bg-primary"}`} />
                       <span className="min-w-0">
-                        <span className="block text-sm font-medium">{notification.title}</span>
+                        <span className="block text-sm font-medium text-foreground">{notification.title}</span>
                         {notification.message && <span className="mt-0.5 block line-clamp-2 text-xs text-muted-foreground">{notification.message}</span>}
                         <span className="mt-1 block text-[10px] text-muted-foreground">{notificationDate(notification.createdAt)}</span>
                       </span>
@@ -246,34 +248,50 @@ export function AppHeader() {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-muted transition-colors">
-              <Avatar className="h-8 w-8 border border-border">
-                <AvatarFallback className="bg-primary/10 text-xs font-bold text-primary">{initials}</AvatarFallback>
-              </Avatar>
-              <div className="hidden text-left sm:block">
-                <p className="text-xs font-medium leading-tight">{user.name}</p>
-                <p className="text-[10px] text-muted-foreground leading-tight">{ROLE_LABELS[user.roleId]}</p>
-              </div>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>
-              <p className="font-semibold">{user.name}</p>
-              <p className="text-xs font-normal text-muted-foreground">{user.email}</p>
-            </DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2">
-              <Badge variant="outline" className="bg-primary/5">{ROLE_LABELS[user.roleId]}</Badge>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleLogout} className="gap-2 text-[var(--danger-fg)] focus:text-[var(--danger-fg)]">
-              <LogOut className="h-4 w-4" /> Đăng xuất
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Clickable Profile Area for All Roles */}
+        <button
+          type="button"
+          onClick={() => setProfileOpen(true)}
+          className="flex items-center gap-2 rounded-lg p-1 pr-2 hover:bg-muted/80 transition-colors border border-transparent hover:border-border/60 text-left cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary"
+          title="Xem và chỉnh sửa hồ sơ cá nhân"
+          aria-label="Hồ sơ cá nhân"
+        >
+          <Avatar
+            className="h-8 w-8 border-2 transition-all shadow-xs"
+            style={{ borderColor: roleConfig.color }}
+          >
+            {user.avatarUrl ? (
+              <AvatarImage src={user.avatarUrl} alt={user.name} className="object-cover" />
+            ) : null}
+            <AvatarFallback
+              className="text-xs font-bold"
+              style={{ backgroundColor: roleConfig.color + "25", color: roleConfig.color }}
+            >
+              {initials}
+            </AvatarFallback>
+          </Avatar>
+          <div className="hidden text-left sm:block">
+            <p className="text-xs font-medium leading-tight text-foreground truncate max-w-[120px]">{user.name}</p>
+            <p className="text-[10px] font-semibold leading-tight mt-0.5" style={{ color: roleConfig.color }}>
+              {roleConfig.label}
+            </p>
+          </div>
+        </button>
+
+        {/* Quick Logout Button */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
+          title="Đăng xuất"
+          aria-label="Đăng xuất"
+        >
+          <LogOut className="h-4 w-4" />
+        </button>
       </div>
+
+      {/* Unified User Profile Dialog for All 6 Roles */}
+      <UserProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />
     </header>
   );
 }

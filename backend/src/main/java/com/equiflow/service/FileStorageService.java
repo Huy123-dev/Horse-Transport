@@ -80,6 +80,24 @@ public class FileStorageService {
         return store(file, publicRoot);
     }
 
+    public String storeUserAvatar(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng chọn ảnh đại diện để tải lên");
+        }
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new ApiException(HttpStatus.PAYLOAD_TOO_LARGE, "Ảnh đại diện không được vượt quá 5MB");
+        }
+        String name = cleanName(file.getOriginalFilename());
+        String extension = extensionOf(name);
+        String expectedContentType = CONTENT_TYPES.get(extension);
+        if (!Set.of("jpg", "jpeg", "png", "webp").contains(extension)
+                || expectedContentType == null
+                || !expectedContentType.equalsIgnoreCase(file.getContentType())) {
+            throw new ApiException(HttpStatus.BAD_REQUEST, "Ảnh đại diện phải có định dạng JPG, JPEG, PNG hoặc WebP hợp lệ");
+        }
+        return store(file, publicRoot);
+    }
+
     public String storeHorseImage(MultipartFile file) {
         if (file == null || file.isEmpty()) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Vui lòng chọn ảnh ngựa để tải lên");

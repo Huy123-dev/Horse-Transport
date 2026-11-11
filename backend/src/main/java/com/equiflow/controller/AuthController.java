@@ -2,6 +2,7 @@ package com.equiflow.controller;
 
 import com.equiflow.dto.*;
 import com.equiflow.service.AuthService;
+import com.equiflow.service.GoogleAuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,9 +16,11 @@ import java.util.UUID;
 public class AuthController {
 
     private final AuthService authService;
+    private final GoogleAuthService googleAuthService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, GoogleAuthService googleAuthService) {
         this.authService = authService;
+        this.googleAuthService = googleAuthService;
     }
 
     @PostMapping("/register")
@@ -28,6 +31,11 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody LoginRequest req) {
         return authService.login(req);
+    }
+
+    @PostMapping("/google")
+    public AuthResponse googleLogin(@Valid @RequestBody GoogleLoginRequest req) {
+        return googleAuthService.login(req);
     }
 
     @PostMapping("/password-reset/request")

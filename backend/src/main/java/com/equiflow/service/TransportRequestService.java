@@ -58,6 +58,8 @@ public class TransportRequestService {
     private final NotificationRepository notificationRepository;
     private final TransportRequestStallRepository stallRepository;
     private final PricingService pricingService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private BlacklistService blacklistService;
 
     public TransportRequestService(TransportRequestRepository requestRepository,
                                    HorseRepository horseRepository,
@@ -78,6 +80,9 @@ public class TransportRequestService {
 
     @Transactional
     public TransportRequestResponse create(TransportRequestCreateRequest req, UUID customerId) {
+        if (blacklistService != null && blacklistService.isCustomerRestricted(customerId)) {
+            throw new ApiException(HttpStatus.FORBIDDEN, "Tài khoản của bạn hiện đang bị hạn chế (Blacklist). Không thể tạo yêu cầu vận chuyển mới. Vui lòng kiểm tra và gửi kiến nghị hoặc xác minh thanh toán.");
+        }
         if (req.originLocationId().equals(req.destinationLocationId())) {
             throw new ApiException(HttpStatus.BAD_REQUEST, "Điểm đi và điểm đến không được trùng nhau");
         }

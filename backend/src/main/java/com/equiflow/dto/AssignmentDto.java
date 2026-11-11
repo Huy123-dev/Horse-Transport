@@ -31,7 +31,18 @@ public final class AssignmentDto {
             LocalDateTime assignedAt
     ) {}
 
-    public record Option(UUID id, String label, String status) {}
+    public record Option(
+            UUID id,
+            String label,
+            String status,
+            boolean available,
+            String availabilityStatus,
+            String conflictReason
+    ) {
+        public Option(UUID id, String label, String status) {
+            this(id, label, status, true, "AVAILABLE", null);
+        }
+    }
 
     public record OptionsResponse(
             List<Option> assets,

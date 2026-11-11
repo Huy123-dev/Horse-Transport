@@ -1,5 +1,26 @@
 "use client";
 
+/**
+ * ============================================================================
+ * EQUIDELI — BẢNG ĐIỀU KHIỂN KHÁCH HÀNG (CUSTOMER DASHBOARD)
+ * ============================================================================
+ * Màn hình trang chủ dành cho Khách hàng (`CUSTOMER`) sau khi đăng nhập.
+ *
+ * Cơ chế hoạt động:
+ * 1. Sử dụng `Promise.allSettled` để tải song song 3 nguồn dữ liệu độc lập:
+ *    - `/transport-requests/my`: Danh sách yêu cầu vận chuyển của khách hàng
+ *    - `/horses/my-horses`: Danh sách hồ sơ ngựa thuộc sở hữu của khách hàng
+ *    - `/my/invoices`: Danh sách hóa đơn của khách hàng
+ *    (Việc dùng `Promise.allSettled` đảm bảo nếu 1 API phụ gặp lỗi, các phần còn lại
+ *    của bảng điều khiển vẫn hiển thị bình thường).
+ * 2. Kiểm tra trạng thái hạn chế tài khoản (`/blacklist/my-status`):
+ *    Nếu tài khoản đang bị hạn chế (`isRestricted = true`), ẩn nút "Tạo yêu cầu"
+ *    và hiển thị biểu ngữ cảnh báo `CustomerRestrictedBanner`.
+ * 3. Hiển thị 3 thẻ `StatCard` (Hồ sơ ngựa, Yêu cầu vận chuyển, Hóa đơn), biểu đồ
+ *    tỷ lệ trạng thái đơn hàng `StatusPieChart` và 5 yêu cầu gần đây nhất.
+ * ============================================================================
+ */
+
 import { useCallback, useEffect, useState } from "react";
 import { apiGet } from "@/lib/api-client";
 import { useAppStore } from "@/store/app-store";
@@ -12,6 +33,7 @@ import { Button } from "@/components/ui/button";
 import { FileText, LayoutDashboard, Heart, Receipt } from "lucide-react";
 import { formatDate, requestCode, transportRequestStatusLabel } from "@/lib/constants";
 import { StatusPieChart } from "@/components/app/charts";
+import { CustomerRestrictedBanner } from "@/components/views/customer/customer-restricted-banner";
 
 interface CustomerRequest {
   requestId: string;
@@ -36,19 +58,48 @@ export function CustomerDashboard() {
   const [invoiceCount, setInvoiceCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isRestricted, setIsRestricted] = useState(false);
 
+  /** Tải toàn bộ số liệu tổng quan của Khách hàng */
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [requestData, horseData, invoiceData] = await Promise.all([
+      const [reqResult, horseResult, invResult] = await Promise.allSettled([
         apiGet<CustomerRequest[]>("/transport-requests/my"),
         apiGet<CustomerHorse[]>("/horses/my-horses"),
         apiGet<CustomerInvoice[]>("/my/invoices"),
       ]);
-      setRequests(requestData);
-      setHorseCount(horseData.length);
-      setInvoiceCount(invoiceData.length);
+
+      // Chỉ báo lỗi toàn trang nếu cả 3 API đều thất bại
+      if (
+        reqResult.status === "rejected" &&
+        horseResult.status === "rejected" &&
+        invResult.status === "rejected"
+      ) {
+        const firstErr = reqResult.reason;
+        throw firstErr instanceof Error ? firstErr : new Error("Không thể tải bảng điều khiển.");
+      }
+
+      if (reqResult.status === "fulfilled") {
+        setRequests(reqResult.value ?? []);
+      }
+
+      if (horseResult.status === "fulfilled") {
+        setHorseCount(horseResult.value?.length ?? 0);
+      }
+
+      if (invResult.status === "fulfilled") {
+        setInvoiceCount(invResult.value?.length ?? 0);
+      }
+
+      // Kiểm tra xem tài khoản khách hàng có đang bị hạn chế tạo đơn mới hay không
+      try {
+        const bl = await apiGet<{ restricted: boolean }>("/blacklist/my-status");
+        setIsRestricted(bl.restricted);
+      } catch {
+        // Không chặn giao diện nếu không kiểm tra được trạng thái hạn chế
+      }
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Không thể tải bảng điều khiển.");
     } finally {
@@ -70,18 +121,25 @@ export function CustomerDashboard() {
         description="Theo dõi hồ sơ ngựa, yêu cầu vận chuyển và hóa đơn của bạn"
         icon={<LayoutDashboard className="h-5 w-5" />}
         actions={
-          <Button onClick={() => navigate("request-create")} className="gap-2 btn-press">
-            <FileText className="h-4 w-4" /> Tạo yêu cầu
-          </Button>
+          !isRestricted ? (
+            <Button onClick={() => navigate("request-create")} className="gap-2 btn-press">
+              <FileText className="h-4 w-4" /> Tạo yêu cầu
+            </Button>
+          ) : null
         }
       />
 
+      {/* Biểu ngữ cảnh báo nếu tài khoản khách hàng đang bị hạn chế */}
+      <CustomerRestrictedBanner />
+
+      {/* 3 Thẻ chỉ số thống kê (StatCard) */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Hồ sơ ngựa" value={horseCount} icon={<Heart className="h-6 w-6" />} tone="info" />
         <StatCard label="Yêu cầu vận chuyển" value={requests.length} icon={<FileText className="h-6 w-6" />} tone="warning" />
         <StatCard label="Hóa đơn" value={invoiceCount} icon={<Receipt className="h-6 w-6" />} tone="success" />
       </div>
 
+      {/* Gợi ý khởi tạo hồ sơ ngựa đầu tiên cho khách hàng mới */}
       {horseCount === 0 && (
         <Card className="border-primary/20 bg-primary/[0.03]">
           <CardContent className="flex flex-col items-start justify-between gap-4 p-5 sm:flex-row sm:items-center">
@@ -94,6 +152,7 @@ export function CustomerDashboard() {
         </Card>
       )}
 
+      {/* Biểu đồ tròn phân bố tình trạng các yêu cầu vận chuyển */}
       <Card>
         <CardHeader><CardTitle className="text-base">Tình trạng yêu cầu</CardTitle></CardHeader>
         <CardContent>
@@ -107,6 +166,7 @@ export function CustomerDashboard() {
         </CardContent>
       </Card>
 
+      {/* Danh sách 5 yêu cầu vận chuyển gần đây nhất */}
       <Card className="card-hover">
         <CardHeader>
           <CardTitle className="text-base">Yêu cầu vận chuyển gần đây</CardTitle>

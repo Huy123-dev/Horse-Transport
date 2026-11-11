@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { useAppStore } from "@/store/app-store";
 import {
+  completeDriverPlan,
   createDriverDelivery,
   createDriverHealthLog,
   createDriverIncident,
@@ -126,6 +127,7 @@ export function DriverPlanDetail() {
   const planStatus = normalizedPlanStatus(plan.status);
   const canRecordTripData = ["san sang", "ready", "dang thuc hien", "in progress"].includes(planStatus);
   const canRecordDelivery = ["dang thuc hien", "in progress"].includes(planStatus);
+  const canCompleteTrip = canRecordDelivery && delivery !== null;
   const canRecordHealth = ["san sang", "ready", "dang thuc hien", "in progress", "hoan thanh", "completed"].includes(planStatus);
 
   const handleConfirmArrival = async (stopId: string) => {
@@ -310,6 +312,23 @@ export function DriverPlanDetail() {
     }
   };
 
+  const handleCompleteTrip = async () => {
+    setActionLoading(true);
+    try {
+      await completeDriverPlan(planId);
+      toast({ title: "Chuyến vận chuyển đã hoàn tất" });
+      setAttempt((value) => value + 1);
+    } catch (error) {
+      toast({
+        title: "Không thể hoàn tất chuyến",
+        description: error instanceof Error ? error.message : "Vui lòng xử lý các điều kiện còn thiếu rồi thử lại.",
+        variant: "destructive",
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -377,7 +396,7 @@ export function DriverPlanDetail() {
                     return (
                       <div key={stop.stopId} className="rounded-lg border border-border p-4 space-y-3 bg-card">
                         <div className="flex items-start gap-3">
-                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${isStopFinished ? "bg-emerald-500/10 text-emerald-600" : isPendingDeparture ? "bg-amber-500/10 text-amber-600" : "bg-primary/10 text-primary"}`}>
+                          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${isStopFinished ? "bg-[var(--success-bg)] text-[var(--success-fg)] border border-[var(--success-border)]" : isPendingDeparture ? "bg-[var(--warning-bg)] text-[var(--warning-fg)] border border-[var(--warning-border)]" : "bg-primary/10 text-primary"}`}>
                             {stop.sequenceNo}
                           </div>
                           <div className="min-w-0 flex-1">
@@ -385,12 +404,12 @@ export function DriverPlanDetail() {
                               <p className="font-semibold text-foreground">{stop.stopName}</p>
                               <Badge variant="outline">{stop.stopType}</Badge>
                               {isStopFinished && (
-                                <Badge variant="outline" className="border-emerald-500/40 text-emerald-600 bg-emerald-500/10 gap-1 text-[11px] py-0.5">
+                                <Badge variant="outline" className="border-[var(--success-border)] text-[var(--success-fg)] bg-[var(--success-bg)] gap-1 text-[11px] py-0.5">
                                   <CheckCircle2 className="h-3 w-3" /> Đã hoàn thành
                                 </Badge>
                               )}
                               {isPendingDeparture && (
-                                <Badge variant="outline" className="border-amber-500/40 text-amber-600 bg-amber-500/10 gap-1 text-[11px] py-0.5">
+                                <Badge variant="outline" className="border-[var(--warning-border)] text-[var(--warning-fg)] bg-[var(--warning-bg)] gap-1 text-[11px] py-0.5">
                                   <Clock className="h-3 w-3" /> Đang dừng tại trạm
                                 </Badge>
                               )}
@@ -712,6 +731,17 @@ export function DriverPlanDetail() {
                         <a className="ml-4 inline-block text-sm text-primary underline" href={delivery.podDocumentUrl} target="_blank" rel="noreferrer">
                           Xem chứng từ POD
                         </a>
+                      )}
+                      {canCompleteTrip && (
+                        <div className="mt-4 border-t border-border pt-4">
+                          <p className="mb-3 text-sm text-muted-foreground">
+                            Đã ghi nhận bàn giao. Hoàn tất chuyến sau khi các sự cố (nếu có) đã được xử lý.
+                          </p>
+                          <Button type="button" onClick={() => void handleCompleteTrip()} disabled={actionLoading} className="gap-2">
+                            <CheckCircle2 className="h-4 w-4" />
+                            {actionLoading ? "Đang hoàn tất..." : "Hoàn tất chuyến"}
+                          </Button>
+                        </div>
                       )}
                     </div>
                   ) : (

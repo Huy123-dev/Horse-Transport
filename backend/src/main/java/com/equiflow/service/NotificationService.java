@@ -53,6 +53,20 @@ public class NotificationService {
         return new NotificationDto.UnreadCount(0);
     }
 
+    @Transactional
+    public Notification sendNotification(UUID recipientUserId, String type, String title, String message, String relatedEntityType, UUID relatedEntityId) {
+        Notification n = new Notification();
+        n.setRecipientUserId(recipientUserId);
+        n.setType(type);
+        n.setTitle(title);
+        n.setMessage(message);
+        n.setRelatedEntityType(relatedEntityType);
+        n.setRelatedEntityId(relatedEntityId);
+        n.setRead(false);
+        n.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
+        return repository.save(n);
+    }
+
     private NotificationDto.Response toResponse(Notification notification) {
         return new NotificationDto.Response(
                 notification.getNotificationId(), notification.getType(), notification.getTitle(),

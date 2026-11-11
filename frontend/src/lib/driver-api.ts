@@ -91,6 +91,9 @@ export const getDriverPlans = () => apiGet<DriverTransportPlan[]>("/transport-pl
 export const getDriverPlan = (planId: string) =>
   apiGet<DriverTransportPlan>(`/transport-plans/${planId}`);
 
+export const completeDriverPlan = (planId: string) =>
+  apiPatch<DriverTransportPlan>(`/transport-plans/${planId}/complete`, {});
+
 export const getDriverPlanStops = (planId: string) =>
   apiGet<DriverRouteStop[]>(`/transport-plans/${planId}/stops`);
 

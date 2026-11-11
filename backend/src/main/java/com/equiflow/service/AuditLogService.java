@@ -32,8 +32,10 @@ public class AuditLogService {
 
     private final AuditLogRepository repository;
     private final UserRepository userRepository;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
-    public AuditLogService(AuditLogRepository repository, UserRepository userRepository) {
+    public AuditLogService(AuditLogRepository repository, UserRepository userRepository, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
         this.repository = repository;
         this.userRepository = userRepository;
     }
@@ -76,6 +78,17 @@ public class AuditLogService {
         AuditLog log = repository.findById(id)
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Không tìm thấy nhật ký hệ thống"));
         return toResponses(List.of(log)).get(0);
+    }
+
+    public void record(UUID userId, String action, String details, String ipAddress) {
+        try {
+            jdbcTemplate.update(
+                "INSERT INTO audit_logs (log_id, user_id, action, details, ip_address, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                UUID.randomUUID(), userId, action, details, ipAddress, java.time.LocalDateTime.now(java.time.ZoneOffset.UTC)
+            );
+        } catch (Exception ex) {
+            // non-blocking
+        }
     }
 
     private List<AuditLogDto.Response> toResponses(List<AuditLog> logs) {

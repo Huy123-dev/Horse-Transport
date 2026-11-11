@@ -13,7 +13,15 @@ public record UserResponse(
         String roleId,
         String roleName,
         String staffType,
+        String avatarUrl,
         boolean active,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
-) {}
+) {
+    public UserResponse(UUID userId, String name, String email, String phoneNumber,
+                        String organizationName, String roleId, String roleName,
+                        String staffType, boolean active, LocalDateTime createdAt,
+                        LocalDateTime updatedAt) {
+        this(userId, name, email, phoneNumber, organizationName, roleId, roleName, staffType, null, active, createdAt, updatedAt);
+    }
+}

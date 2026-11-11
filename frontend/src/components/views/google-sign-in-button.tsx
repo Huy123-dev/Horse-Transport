@@ -55,7 +55,8 @@ interface GoogleSignInButtonProps {
 }
 
 export function GoogleSignInButton({ onCredential, onError, disabled }: GoogleSignInButtonProps) {
-  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const DEFAULT_GOOGLE_CLIENT_ID = "962874969403-ca69pqo117k5hf11m8ev6tbcgrra3f1o.apps.googleusercontent.com";
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || DEFAULT_GOOGLE_CLIENT_ID;
   const containerRef = useRef<HTMLDivElement>(null);
   const onCredentialRef = useRef(onCredential);
   const onErrorRef = useRef(onError);

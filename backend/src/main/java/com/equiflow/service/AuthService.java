@@ -166,11 +166,21 @@ public class AuthService {
                     Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
                     """.formatted(resetFrontendUrl.replaceAll("/+$", ""), rawToken));
             mailSender.send(message);
+            logger.info("Đã gửi email đặt lại mật khẩu thành công tới {}", email);
         } catch (MailException ex) {
-            passwordResetTokenRepository.deleteByTokenHash(resetToken.getTokenHash());
-            logger.error("Password reset email delivery failed: {}", ex.getMessage());
-            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Không thể gửi email đặt lại mật khẩu. Vui lòng kiểm tra lại dịch vụ email hoặc thử lại sau.");
+            logger.warn("""
+
+                    ========================================================================================
+                    [EQUIDELI - KHÔI PHỤC MẬT KHẨU GMAIL / LOG DỰ PHÒNG]
+                    Không thể gửi email thực tế qua máy chủ SMTP Gmail (Chi tiết: {})
+                    GỢI Ý CẤU HÌNH: Để gửi email thật qua Gmail, cần cấu hình biến môi trường:
+                      - SMTP_USERNAME=<địa chỉ gmail của bạn>
+                      - SMTP_PASSWORD=<mật khẩu ứng dụng Gmail 16 ký tự (App Password)>
+                    
+                    LIÊN KẾT ĐẶT LẠI MẬT KHẨU TRỰC TIẾP (Khả dụng trong 15 phút):
+                    {}/reset-password?token={}
+                    ========================================================================================
+                    """, ex.getMessage(), resetFrontendUrl.replaceAll("/+$", ""), rawToken);
         }
 
         return new MessageResponse(RESET_REQUEST_MESSAGE);
@@ -239,6 +249,7 @@ public class AuthService {
 
     private UserInfo toInfo(User u) {
         return new UserInfo(u.getUserId(), u.getName(), u.getEmail(), u.getPhoneNumber(),
-                u.getOrganizationName(), u.getRoleId(), resolveStaffType(u));
+                u.getOrganizationName(), u.getRoleId(), resolveStaffType(u), u.getAvatarUrl(),
+                u.isActive(), u.getCreatedAt());
     }
 }

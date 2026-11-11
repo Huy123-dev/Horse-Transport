@@ -24,46 +24,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        BCryptPasswordEncoder bcrypt = new BCryptPasswordEncoder();
-        return new PasswordEncoder() {
-            @Override
-            public String encode(CharSequence rawPassword) {
-                return bcrypt.encode(rawPassword);
-            }
-
-            @Override
-            public boolean matches(CharSequence rawPassword, String encodedPassword) {
-                if (rawPassword == null || encodedPassword == null) {
-                    return false;
-                }
-                String raw = rawPassword.toString();
-
-                if (encodedPassword.startsWith("$2a$") || encodedPassword.startsWith("$2b$") || encodedPassword.startsWith("$2y$")) {
-                    try {
-                        if (bcrypt.matches(raw, encodedPassword)) {
-                            return true;
-                        }
-                    } catch (Exception ignored) {
-                    }
-                }
-
-                if (raw.equals(encodedPassword)) {
-                    return true;
-                }
-
-                if ("equideli123".equals(raw) || "Password123!".equals(raw)) {
-                    if (encodedPassword.contains("yHRWoPcg3QPD")
-                            || encodedPassword.contains("KF9VOrNTLazipQtuESZ2l")
-                            || encodedPassword.startsWith("$2a$hash_")
-                            || "equideli123".equalsIgnoreCase(encodedPassword)
-                            || "Password123!".equals(encodedPassword)) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        };
+        return new BCryptPasswordEncoder();
     }
 
     @Bean
@@ -98,6 +59,10 @@ public class SecurityConfig {
     ).permitAll()
 
     .requestMatchers("/api/notifications/**").authenticated()
+    .requestMatchers("/api/profile", "/api/profile/**").authenticated()
+    .requestMatchers(HttpMethod.GET, "/api/blacklist/my-status", "/api/blacklist/my-history").hasRole("CUSTOMER")
+    .requestMatchers(HttpMethod.POST, "/api/blacklist/my-payment-proof", "/api/blacklist/my-appeal").hasRole("CUSTOMER")
+    .requestMatchers("/api/blacklist", "/api/blacklist/**").hasRole("LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.GET, "/api/compensation-claims").hasRole("LOGISTICS_MANAGER")
     .requestMatchers(HttpMethod.GET, "/api/compensation-claims/my").hasRole("CUSTOMER")
     .requestMatchers(HttpMethod.PATCH, "/api/compensation-claims/*/review").hasRole("LOGISTICS_MANAGER")
@@ -145,6 +110,15 @@ public class SecurityConfig {
         .hasAnyRole("LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST")
     .requestMatchers(HttpMethod.PATCH, "/api/quarantine-reservations/*/status")
         .hasAnyRole("LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST")
+
+    .requestMatchers(HttpMethod.GET, "/api/customs-regulations", "/api/customs-regulations/*")
+        .hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR")
+    .requestMatchers(HttpMethod.POST, "/api/customs-regulations")
+        .hasAnyRole("LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST")
+    .requestMatchers(HttpMethod.PUT, "/api/customs-regulations/*")
+        .hasAnyRole("LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST")
+    .requestMatchers(HttpMethod.DELETE, "/api/customs-regulations/*")
+        .hasRole("LOGISTICS_MANAGER")
 
     .requestMatchers(HttpMethod.POST, "/api/transport-requests").hasRole("CUSTOMER")
     .requestMatchers(HttpMethod.GET, "/api/transport-requests/my").hasRole("CUSTOMER")
@@ -268,4 +242,3 @@ public class SecurityConfig {
         return src;
     }
 }
-

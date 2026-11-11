@@ -108,7 +108,7 @@ export function ApprovalList() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold">Yêu cầu {requestCode(request.requestId)}</p>
                     <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      <span>Khách hàng: {request.customerName}</span>
+                      <span>Khách hàng: <strong className="text-[var(--role-customer)] font-medium">{request.customerName}</strong></span>
                       <span>{request.origin?.name || "Chưa xác định"} → {request.destination?.name || "Chưa xác định"}</span>
                       <span>Khởi hành: {formatDate(request.scheduledDepartureDate)}</span>
                     </div>

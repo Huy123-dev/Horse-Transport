@@ -26,7 +26,10 @@ export type ViewKey =
   | "invoice-detail"
   | "claims-management"
   | "feedback-management"
-  | "recovery-dashboard";
+  | "recovery-dashboard"
+  | "audit-logs"
+  | "blacklist"
+  | "account-restricted";
 
 
 export type PublicView =
@@ -50,6 +53,9 @@ interface AppState {
     roleId: string;
     roleName: string;
     organizationName: string | null;
+    phoneNumber?: string | null;
+    avatarUrl?: string | null;
+    restricted?: boolean;
     staffType?: "DRIVER" | "ESCORT" | null;
   } | null;
   setUser: (u: AppState["user"]) => void;

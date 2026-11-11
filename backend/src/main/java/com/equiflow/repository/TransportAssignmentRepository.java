@@ -43,6 +43,9 @@ public interface TransportAssignmentRepository extends JpaRepository<TransportAs
     boolean existsByAssetId(UUID assetId);
 
     boolean existsByPlanIdAndAssetIdAndAssignmentIdNot(UUID planId, UUID assetId, UUID assignmentId);
+
+    boolean existsByPlanIdAndAssignmentIdNotAndDriverUserId(UUID planId, UUID assignmentId, UUID driverUserId);
+
     boolean existsByPlanIdAndAssignmentIdNotAndAttendantUserId(UUID planId, UUID assignmentId, UUID attendantUserId);
 
     @Query("""
@@ -60,21 +63,63 @@ public interface TransportAssignmentRepository extends JpaRepository<TransportAs
     @Query("""
             select count(a) from TransportAssignment a, TransportPlan p
             where a.planId = p.planId and a.assetId = :assetId and p.planId <> :planId
+              and a.assignmentId <> :assignmentId
               and p.status in :openStatuses
               and p.departureTime < :end and p.arrivalTime > :start
             """)
     long countAssetConflicts(@Param("assetId") UUID assetId, @Param("planId") UUID planId,
+                             @Param("assignmentId") UUID assignmentId,
                              @Param("openStatuses") Collection<String> openStatuses,
                              @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    default long countAssetConflicts(UUID assetId, UUID planId, Collection<String> openStatuses, LocalDateTime start, LocalDateTime end) {
+        return countAssetConflicts(assetId, planId, new UUID(0L, 0L), openStatuses, start, end);
+    }
 
     /** Tương tự cho nhân sự: tài xế/người đi kèm không thể ở hai chuyến cùng lúc. */
     @Query("""
             select count(a) from TransportAssignment a, TransportPlan p
             where a.planId = p.planId and (a.driverUserId = :userId or a.attendantUserId = :userId)
-              and p.planId <> :planId and p.status in :openStatuses
+              and p.planId <> :planId
+              and a.assignmentId <> :assignmentId
+              and p.status in :openStatuses
               and p.departureTime < :end and p.arrivalTime > :start
             """)
     long countUserConflicts(@Param("userId") UUID userId, @Param("planId") UUID planId,
+                            @Param("assignmentId") UUID assignmentId,
                             @Param("openStatuses") Collection<String> openStatuses,
                             @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    default long countUserConflicts(UUID userId, UUID planId, Collection<String> openStatuses, LocalDateTime start, LocalDateTime end) {
+        return countUserConflicts(userId, planId, new UUID(0L, 0L), openStatuses, start, end);
+    }
+
+    /** Lấy danh sách phân công phương tiện bị xung đột kèm thông tin chi tiết. */
+    @Query("""
+            select a from TransportAssignment a, TransportPlan p
+            where a.planId = p.planId and a.assetId = :assetId and p.planId <> :planId
+              and a.assignmentId <> :assignmentId
+              and p.status in :openStatuses
+              and p.departureTime < :end and p.arrivalTime > :start
+            """)
+    List<TransportAssignment> findAssetConflicts(
+            @Param("assetId") UUID assetId, @Param("planId") UUID planId,
+            @Param("assignmentId") UUID assignmentId,
+            @Param("openStatuses") Collection<String> openStatuses,
+            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    /** Lấy danh sách phân công nhân viên bị xung đột kèm thông tin chi tiết. */
+    @Query("""
+            select a from TransportAssignment a, TransportPlan p
+            where a.planId = p.planId and (a.driverUserId = :userId or a.attendantUserId = :userId)
+              and p.planId <> :planId
+              and a.assignmentId <> :assignmentId
+              and p.status in :openStatuses
+              and p.departureTime < :end and p.arrivalTime > :start
+            """)
+    List<TransportAssignment> findUserConflicts(
+            @Param("userId") UUID userId, @Param("planId") UUID planId,
+            @Param("assignmentId") UUID assignmentId,
+            @Param("openStatuses") Collection<String> openStatuses,
+            @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 }

@@ -68,7 +68,7 @@ export function PlanList() {
                 <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDateTime(plan.departureTime)} → {formatDateTime(plan.arrivalTime)}</span>
                   <span className="flex items-center gap-1"><Truck className="h-3 w-3" />Yêu cầu {requestCode(plan.requestId)}</span>
-                  {plan.coordinatorName && <span>Điều phối: {plan.coordinatorName}</span>}
+                  {plan.coordinatorName && <span className="font-medium text-[var(--role-coordinator)]">Điều phối: {plan.coordinatorName}</span>}
                 </div>
               </div>
               <StatusBadge status={transportPlanStatusLabel(plan.status)} />
