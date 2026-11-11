@@ -13,7 +13,8 @@ import { HelpModal } from "./help-modal";
 
 export function AppShell() {
   const { sidebarOpen } = useAppStore();
-  useKeyboardShortcuts();
+  useKeyboardShortcuts(); 
+  
 
   return (
     <div className="flex min-h-screen bg-background">
