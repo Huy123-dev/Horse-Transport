@@ -1,0 +1,694 @@
+<!DOCTYPE html><html lang="vi" style="width: 2146px; height: 2746px; overflow: hidden; position: relative;"><head><meta charset="utf-8"><meta content="width=device-width, initial-scale=1.0" name="viewport"><meta content="web_dashboard" name="shell-type"><link href="https://fonts.googleapis.com" rel="preconnect"><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"><link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "secondary-fixed": "#ffddaf", "primary": "#032448", "on-primary": "#ffffff", "inverse-on-surface": "#f0f1f3", "secondary": "#7e5708", "on-tertiary-container": "#c69d60", "surface-container-low": "#f3f4f6", "on-secondary-container": "#795203", "outline-variant": "#c4c6cf", "background": "#f8f9fb", "surface-dim": "#d9dadc", "inverse-primary": "#aec8f4", "error-container": "#ffdad6", "on-primary-container": "#8ba4cf", "primary-container": "#1f3a5f", "surface-tint": "#465f86", "tertiary-fixed": "#ffddb0", "on-surface-variant": "#43474e", "on-secondary-fixed": "#281800", "tertiary-fixed-dim": "#ecbf7f", "on-error": "#ffffff", "surface-container-lowest": "#ffffff", "inverse-surface": "#2e3132", "on-tertiary-fixed-variant": "#5f410c", "tertiary": "#342000", "primary-fixed": "#d5e3ff", "on-background": "#191c1e", "tertiary-container": "#503400", "on-error-container": "#93000a", "on-surface": "#191c1e", "on-tertiary-fixed": "#281800", "on-secondary-fixed-variant": "#614000", "outline": "#74777f", "error": "#ba1a1a", "surface-bright": "#f8f9fb", "surface": "#f8f9fb", "on-primary-fixed": "#001c3b", "surface-container-highest": "#e1e2e4", "on-secondary": "#ffffff", "primary-fixed-dim": "#aec8f4", "surface-container": "#edeef0", "secondary-container": "#ffc974", "surface-variant": "#e1e2e4", "secondary-fixed-dim": "#f3be6a", "on-primary-fixed-variant": "#2d476d", "surface-container-high": "#e7e8ea", "on-tertiary": "#ffffff" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xl": "1.5rem", "space-lg": "1.25rem", "margin": "1.5rem", "space-md": "1rem", "space-xs": "0.25rem", "gutter": "1.5rem", "space-sm": "0.5rem" }, "fontFamily": { "caption": ["Be Vietnam Pro"], "headline-card": ["Be Vietnam Pro"], "body-default": ["Be Vietnam Pro"], "headline-page": ["Be Vietnam Pro"], "body-semibold": ["Be Vietnam Pro"], "display-lg": ["Be Vietnam Pro"], "body-medium": ["Be Vietnam Pro"], "headline-section": ["Be Vietnam Pro"], "badge-label": ["Be Vietnam Pro"], "code-mono": ["JetBrains Mono"] }, "fontSize": { "caption": ["12px", { "lineHeight": "16px", "fontWeight": "400" }], "headline-card": ["16px", { "lineHeight": "24px", "fontWeight": "600" }], "body-default": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-page": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "body-semibold": ["14px", { "lineHeight": "20px", "fontWeight": "600" }], "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }], "body-medium": ["14px", { "lineHeight": "20px", "fontWeight": "500" }], "headline-section": ["20px", { "lineHeight": "28px", "fontWeight": "600" }], "badge-label": ["12px", { "lineHeight": "16px", "fontWeight": "600" }], "code-mono": ["13px", { "lineHeight": "18px", "fontWeight": "500" }] } } } };</script></head><body class="bg-surface font-body-default text-on-surface antialiased"><aside class="fixed left-0 top-0 h-screen w-64 bg-surface-container-lowest z-50 flex flex-col justify-between shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex flex-col flex-1 overflow-y-auto"><div class="h-16 px-space-md flex items-center gap-space-sm bg-surface-container-lowest"><img alt="EQUIFLOW - Quản lý vận chuyển ngựa" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1UGikK8NXS9M4JgxmlSjtXa6LBSbd6Y2QP8z7tWNi09dvyuT3XXfKfKDX8Q2MdO5lCiDUMIjH-BC8CSj8J_XbBxrst0OF2VXVtzoDy2aqzbR1uNGjpUXCJA0ulgPxwYcukU39NRgET6W8K9hPVA7AHpJNp7Pa3JMlbQZaFm50cqO_mwdbzk6PI7qXErXvtG6lA6nWqRwmJfxwqGFP_RJH6QcWEZ0I1am8ET2uzYhZBkRO6mmjM1LJLWGtg"><div class="flex flex-col"></div></div><nav class="px-space-sm py-space-sm flex flex-col gap-space-xs" data-active-classes="bg-primary-container text-on-primary font-body-semibold rounded-lg"><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="trang-tong-quan" href="#"><span class="material-symbols-outlined text-[20px]">grid_view</span><span class="">Trang tổng quan</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="duyet-don" href="#"><span class="material-symbols-outlined text-[20px]">fact_check</span><span class="">Duyệt đơn</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="lich-va-rui-ro" href="#"><span class="material-symbols-outlined text-[20px]">schedule</span><span class="">Lịch và rủi ro</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="ke-hoach-chuyen" href="#"><span class="material-symbols-outlined text-[20px]">alt_route</span><span class="">Kế hoạch chuyến</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="su-co-va-chi-phi" href="#"><span class="material-symbols-outlined text-[20px]">warning</span><span class="">Sự cố và chi phí</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="bao-cao" href="#"><span class="material-symbols-outlined text-[20px]">insert_chart</span><span class="">Báo cáo</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="doi-tac" href="#"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span class="">Đối tác</span></a><a class="flex items-center gap-space-sm px-space-md py-space-sm rounded-lg font-body-medium text-body-medium text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" data-path="nhan-su" href="#"><span class="material-symbols-outlined text-[20px]">badge</span><span class="">Nhân sự</span></a></nav></div><div class="p-space-md m-space-sm bg-surface-container-low rounded-lg shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]"><div class="flex items-center gap-space-xs mb-space-xs text-secondary"><span class="material-symbols-outlined text-[16px]">verified</span><span class="font-badge-label text-badge-label uppercase tracking-wider text-[11px]">Tham chiếu vận hành</span></div><div class="flex flex-col gap-space-xs"><div class="font-caption text-caption text-on-surface flex items-start gap-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></span><span class="">IATA Live Animals Regulations (LAR)</span></div><div class="font-caption text-caption text-on-surface flex items-start gap-space-xs"><span class="w-1.5 h-1.5 rounded-full bg-secondary mt-1.5 shrink-0"></span><span class="">FEI – Hộ chiếu ngựa thể thao toàn cầu</span></div></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl z-40 flex items-center justify-between px-space-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="flex items-center gap-space-md"><div class="relative flex items-center w-96"><span class="material-symbols-outlined absolute left-3 text-[18px] text-outline">search</span><input class="w-full h-10 pl-9 pr-space-md bg-surface-container-low rounded-lg font-body-default text-body-default text-on-surface placeholder:text-outline outline-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary-container transition-all" placeholder="Tìm mã ngựa, mã đơn, mã chuyến, giải đấu..." type="text"></div></div><div class="flex items-center gap-space-lg"><button aria-label="Thông báo khẩn" class="relative p-2 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-error text-on-error font-badge-label text-[10px] leading-4 text-center font-bold">3</span></button><div class="flex items-center gap-space-sm pl-space-sm"><div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary font-body-semibold text-body-semibold text-[13px] tracking-wide">TH</div><div class="flex flex-col text-left"><span class="font-body-semibold text-body-semibold text-on-surface leading-tight">Trần Thu Hà</span><span class="font-caption text-caption text-on-surface-variant leading-tight">Logistics Manager • Điều hành vận tải</span></div></div></div></header><main class="w-full pt-16 min-h-screen bg-surface px-space-xl py-space-xl"><div class="flex flex-col w-full pb-28">
+<!-- Top Navigation & Header Row -->
+<div class="flex flex-col gap-space-xs mb-space-lg">
+<!-- Breadcrumb -->
+<nav class="flex items-center gap-space-xs text-on-surface-variant font-caption text-caption">
+<a class="hover:text-primary transition-colors" href="#">Bảng điều khiển</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Duyệt đơn</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="font-code-mono text-code-mono text-primary font-semibold">ORD-2026-001</span>
+</nav>
+<!-- Page Title & Quick Actions -->
+<div class="flex flex-wrap items-center justify-between gap-space-md mt-space-xs">
+<div class="flex flex-wrap items-center gap-space-md">
+<h1 class="font-headline-page text-headline-page text-primary tracking-tight">
+          Phê duyệt đơn vận chuyển: ORD-2026-001
+        </h1>
+<div class="flex items-center gap-space-xs">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container font-badge-label text-badge-label text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+            Đang chờ xem xét phê duyệt bổ sung
+          </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-error-container text-on-error-container font-badge-label text-badge-label">
+<span class="material-symbols-outlined text-[14px] text-error">priority_high</span>
+            Mức ưu tiên: Cực cao
+          </span>
+</div>
+</div>
+<!-- Action Buttons Top Right -->
+<div class="flex items-center gap-space-sm">
+<button class="h-10 px-4 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-semibold hover:bg-surface-container-low transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">print</span>
+<span class="">In phiếu thẩm định</span>
+</button>
+<button class="h-10 px-4 rounded-lg bg-surface-container-lowest text-primary font-body-semibold text-body-semibold hover:bg-surface-container-low transition-colors shadow-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">history</span>
+<span class="">Xem lịch sử thay đổi</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Countdown / SLA Alert Banner -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-space-md shadow-sm mb-space-xl flex flex-wrap items-center justify-between gap-space-md relative overflow-hidden">
+<div class="absolute left-0 top-0 bottom-0 w-1.5 bg-secondary"></div>
+<div class="flex items-center gap-space-md pl-2">
+<div class="w-10 h-10 rounded-lg bg-secondary-fixed/50 text-secondary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">timer</span>
+</div>
+<div>
+<p class="font-headline-card text-headline-card text-on-surface">Thời hạn cất cánh dự kiến còn: <span class="text-secondary font-display-lg text-[22px] font-bold">192 giờ 15 phút</span></p>
+
+</div>
+</div>
+<div class="flex items-center gap-space-lg bg-surface-container-low px-space-md py-space-sm rounded-lg">
+<div class="text-right">
+<span class="font-caption text-caption text-on-surface-variant block">Đích đến cuối</span>
+<span class="font-body-semibold text-body-semibold text-primary">Meydan Racecourse, Dubai</span>
+</div>
+<div class="h-8 w-px bg-surface-container-highest"></div>
+<div>
+<span class="font-caption text-caption text-on-surface-variant block">Hạn nộp Coggins</span>
+<span class="font-body-semibold text-body-semibold text-error">15/03/2026 (Gấp)</span>
+</div>
+</div>
+</div>
+<!-- Main 12-Column Grid (8 left, 4 right) -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+<!-- LEFT COLUMN: Primary Details & Decision Form (8 cols) -->
+<div class="lg:col-span-8 flex flex-col gap-space-xl">
+<!-- Card 1: Equine Profile & Route Overview -->
+<section class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-md mb-space-md border-b-0">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[24px]">pets</span>
+<h2 class="font-headline-section text-headline-section text-primary">Tóm tắt hồ sơ ngựa &amp; Lộ trình vận chuyển</h2>
+</div>
+<span class="font-code-mono text-code-mono text-on-surface-variant bg-surface-container-low px-2 py-0.5 rounded text-[12px]">Hồ sơ số: #EQ-H001-26</span>
+</div>
+<!-- Equine Profile Details -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md p-space-md bg-surface-container-low rounded-xl mb-space-lg">
+<div class="flex flex-col gap-space-xs">
+<span class="font-caption text-caption text-on-surface-variant">Chi tiết cá thể ngựa</span>
+<div class="flex items-center gap-2">
+<span class="font-display-lg text-[20px] font-bold text-primary">H001 - Silver Star</span>
+<span class="material-symbols-outlined text-secondary text-[18px]" title="Ngựa thi đấu đẳng cấp cao">military_tech</span>
+</div>
+<p class="font-body-default text-body-default text-on-surface">5 tuổi • Giống Thuần chủng (Thoroughbred) • 510 kg</p>
+</div>
+<div class="flex flex-col gap-space-xs">
+<span class="font-caption text-caption text-on-surface-variant">Mã định danh toàn cầu</span>
+<div class="flex items-center gap-1.5 font-code-mono text-code-mono text-primary font-medium text-[13px]">
+<span class="material-symbols-outlined text-[16px] text-outline">nfc</span>
+<span class="">FEI: VN-2021-992</span>
+</div>
+<div class="flex items-center gap-1.5 font-code-mono text-code-mono text-on-surface-variant text-[12px]">
+<span class="material-symbols-outlined text-[16px] text-outline">memory</span>
+<span class="">RFID: 981020002938101</span>
+<button class="hover:text-primary transition-colors ml-1" title="Sao chép RFID"><span class="material-symbols-outlined text-[14px]">content_copy</span></button>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<span class="font-caption text-caption text-on-surface-variant">Chủ sở hữu &amp; Trại lưu trú</span>
+<span class="font-body-semibold text-body-semibold text-on-surface">Nguyễn Minh Khang</span>
+<span class="font-body-default text-body-default text-on-surface-variant">Củ Chi Stable • TP. Hồ Chí Minh</span>
+</div>
+</div>
+<!-- Competition & Arrival Time Constraints -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md mb-space-lg">
+<div class="p-space-md rounded-lg bg-surface-container-lowest shadow-sm flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed/40 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">trophy</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-on-surface-variant">Giải đấu mục tiêu</span>
+<span class="font-body-semibold text-body-semibold text-primary">Dubai Racing Cup</span>
+<span class="font-body-default text-body-default text-on-surface-variant mt-0.5">Trường đua Meydan, Dubai</span>
+<span class="font-caption text-caption text-secondary font-medium mt-1">Giờ thi đấu: 25/03/2026 16:00 (Giờ UAE)</span>
+</div>
+</div>
+<div class="p-space-md rounded-lg bg-surface-container-lowest shadow-sm flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">gavel</span>
+</div>
+<div class="flex flex-col">
+<span class="font-caption text-caption text-on-surface-variant">Hạn chót nhập chuồng (Hard Deadline)</span>
+<span class="font-body-semibold text-body-semibold text-error">20/03/2026 18:00 (Bắt buộc)</span>
+
+</div>
+</div>
+</div>
+<!-- Route Visualization -->
+<div class="mt-space-md">
+<span class="font-body-semibold text-body-semibold text-on-surface block mb-space-md">Hành lang logistics đa phương thức</span>
+<div class="p-space-md bg-surface-container-low rounded-xl">
+<!-- Stepper Container -->
+<div class="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-space-md">
+<!-- Segment 1: Củ Chi -->
+<div class="flex items-center gap-3 relative z-10 w-full md:w-auto">
+<div class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-[14px]">1</div>
+<div>
+<p class="font-body-semibold text-body-semibold text-primary">Trại Củ Chi</p>
+<p class="font-caption text-caption text-on-surface-variant">Xuất phát đường bộ</p>
+</div>
+</div>
+<!-- Connecting Line 1 -->
+<div class="hidden md:flex flex-1 items-center px-2">
+<div class="h-0.5 w-full bg-outline-variant relative">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-caption text-on-surface-variant bg-surface-container-low px-1 flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">local_shipping</span> 48km
+                  </div>
+</div>
+</div>
+<!-- Segment 2: Tan Son Nhat Airport -->
+<div class="flex items-center gap-3 relative z-10 w-full md:w-auto">
+<div class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-[14px]">2</div>
+<div>
+<p class="font-body-semibold text-body-semibold text-primary">Sân bay Tân Sơn Nhất (SGN)</p>
+<p class="font-caption text-caption text-on-surface-variant">Làm thủ tục soi chiếu &amp; lên container</p>
+</div>
+</div>
+<!-- Connecting Line 2 (Air) -->
+<div class="hidden md:flex flex-1 items-center px-2">
+<div class="h-0.5 w-full bg-primary-container relative">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-caption text-primary bg-surface-container-low px-1 flex items-center gap-0.5 font-medium">
+<span class="material-symbols-outlined text-[12px]">flight_takeoff</span> EQ-CARGO-01
+                  </div>
+</div>
+</div>
+<!-- Segment 3: Dubai DWC -->
+<div class="flex items-center gap-3 relative z-10 w-full md:w-auto">
+<div class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-[14px]">3</div>
+<div>
+<p class="font-body-semibold text-body-semibold text-primary">Dubai World Central (DWC)</p>
+<p class="font-caption text-caption text-on-surface-variant">Cửa khẩu thú y &amp; hải quan UAE</p>
+</div>
+</div>
+<!-- Connecting Line 3 -->
+<div class="hidden md:flex flex-1 items-center px-2">
+<div class="h-0.5 w-full bg-outline-variant relative">
+<div class="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-caption text-on-surface-variant bg-surface-container-low px-1 flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[12px]">local_shipping</span> 55km
+                  </div>
+</div>
+</div>
+<!-- Segment 4: Meydan Stable -->
+<div class="flex items-center gap-3 relative z-10 w-full md:w-auto">
+<div class="w-9 h-9 rounded-full bg-secondary text-on-secondary flex items-center justify-center font-bold text-[14px]">4</div>
+<div>
+<p class="font-body-semibold text-body-semibold text-secondary">Trường đua Meydan</p>
+<p class="font-caption text-caption text-on-surface-variant">Chuồng cách ly thi đấu</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Card 2: Legal Dossier & Vet Quarantine Appraisal Results -->
+<section class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<div class="flex flex-wrap items-center justify-between pb-space-md mb-space-md border-b-0 gap-space-xs">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[24px]">verified_user</span>
+<div>
+<h2 class="font-headline-section text-headline-section text-primary">Kết quả thẩm định hồ sơ pháp lý &amp; kiểm dịch thú y</h2>
+<p class="font-caption text-caption text-on-surface-variant">Báo cáo thẩm định thủ công trực tiếp bởi <span class="font-semibold text-primary">Transport Specialist: Lê Quốc Bảo</span> (11/03/2026 17:30)</p>
+</div>
+</div>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-code-mono text-[11px]">
+<span class="material-symbols-outlined text-[14px]">lock_reset</span> Thẩm định thủ công (Non-OCR)
+          </span>
+</div>
+<!-- Table of Dossier Items -->
+<div class="overflow-x-auto rounded-xl bg-surface-container-low mb-space-lg">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-high/60 text-on-surface-variant font-caption text-caption uppercase tracking-wider">
+<th class="py-3 px-space-md font-semibold">Tên chứng từ &amp; Pháp lý</th>
+<th class="py-3 px-space-md font-semibold">Cơ quan thụ lý / Cấp</th>
+<th class="py-3 px-space-md font-semibold">Trạng thái hồ sơ</th>
+<th class="py-3 px-space-md font-semibold">Ghi chú nghiệp vụ</th>
+</tr>
+</thead>
+<tbody class="font-body-default text-body-default text-on-surface divide-y-0">
+<!-- Row 1: FEI Passport -->
+<tr class="hover:bg-surface-container-lowest/80 transition-colors">
+<td class="py-3.5 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">Hộ chiếu thể thao FEI VN-2021-992</span>
+<span class="font-caption text-caption text-on-surface-variant">Định danh vi mạch &amp; màu lông chuẩn</span>
+</div>
+</td>
+<td class="py-3.5 px-space-md text-on-surface-variant">Liên đoàn Thể thao Cưỡi ngựa Quốc tế (FEI)</td>
+<td class="py-3.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-badge-label text-badge-label">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Đủ, còn hạn
+                  </span>
+</td>
+<td class="py-3.5 px-space-md text-caption text-on-surface-variant">
+                  Còn hạn đến 12/2028; đã tiêm nhắc cúm ngựa Equine Influenza Booster đúng chu kỳ 6 tháng.
+                </td>
+</tr>
+<!-- Row 2: Animal Health Department Quarantine -->
+<tr class="hover:bg-surface-container-lowest/80 transition-colors">
+<td class="py-3.5 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">Giấy kiểm dịch xuất khẩu Chi cục Vùng VI</span>
+<span class="font-caption text-caption text-on-surface-variant">Biên bản cách ly kiểm dịch 14 ngày</span>
+</div>
+</td>
+<td class="py-3.5 px-space-md text-on-surface-variant">Chi cục Thú y Vùng VI (Bộ NN&amp;PTNT)</td>
+<td class="py-3.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#F3F4F6] text-[#374151] font-badge-label text-badge-label">
+<span class="material-symbols-outlined text-[13px]">hourglass_top</span> Đang kiểm tra
+                  </span>
+</td>
+<td class="py-3.5 px-space-md text-caption text-on-surface-variant">
+                  Đã hoàn tất lấy mẫu huyết thanh ngày 11/03, dự kiến có kết quả âm tính chứng nhận ngày 14/03.
+                </td>
+</tr>
+<!-- Row 3: Coggins Test -->
+<tr class="hover:bg-surface-container-lowest/80 transition-colors bg-error-container/20">
+<td class="py-3.5 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-error">Phiếu xét nghiệm Coggins Test (EIA)</span>
+<span class="font-caption text-caption text-on-surface-variant">Xét nghiệm Thiếu máu Truyền nhiễm Ngựa</span>
+</div>
+</td>
+<td class="py-3.5 px-space-md text-on-surface-variant">Trung tâm Chẩn đoán Thú y TW</td>
+<td class="py-3.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FEF2F2] text-[#991B1B] font-badge-label text-badge-label">
+<span class="material-symbols-outlined text-[13px]">cancel</span> Thiếu giấy tờ
+                  </span>
+</td>
+<td class="py-3.5 px-space-md text-caption text-error font-medium">
+                  Đang chờ khách hàng nộp phiếu gốc có mộc đỏ trước ngày 15/03 để nộp Cục Thú y UAE cấp Import Permit.
+                </td>
+</tr>
+<!-- Row 4: CITES Permit -->
+<tr class="hover:bg-surface-container-lowest/80 transition-colors">
+<td class="py-3.5 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">Giấy phép xuất khẩu CITES</span>
+<span class="font-caption text-caption text-on-surface-variant">Động vật chuyển dịch quốc tế đặc thù</span>
+</div>
+</td>
+<td class="py-3.5 px-space-md text-on-surface-variant">Cơ quan Thẩm quyền Quản lý CITES VN</td>
+<td class="py-3.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#FFF7ED] text-[#9A3412] font-badge-label text-badge-label">
+<span class="material-symbols-outlined text-[13px]">warning</span> Sắp hết hạn
+                  </span>
+</td>
+<td class="py-3.5 px-space-md text-caption text-on-surface-variant">
+                  Hết hiệu lực ngày 22/03/2026; đối tác hải quan đã gửi đơn xin gia hạn thêm 15 ngày làm việc.
+                </td>
+</tr>
+<!-- Row 5: IATA LAR Stalls -->
+<tr class="hover:bg-surface-container-lowest/80 transition-colors">
+<td class="py-3.5 px-space-md">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">Hồ sơ khoang bay IATA LAR Container Type 3</span>
+<span class="font-caption text-caption text-on-surface-variant">Chuồng bay tiêu chuẩn giảm chấn động</span>
+</div>
+</td>
+<td class="py-3.5 px-space-md text-on-surface-variant">Bộ phận Kỹ thuật Đội bay &amp; Ground Handler</td>
+<td class="py-3.5 px-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-badge-label text-badge-label">
+<span class="material-symbols-outlined text-[13px]">check_circle</span> Đủ tiêu chuẩn
+                  </span>
+</td>
+<td class="py-3.5 px-space-md text-caption text-on-surface-variant">
+                  Đã kiểm tra kiểm định áp suất không khí, chống trượt và dải nhiệt độ điều hòa cài đặt 18-20°C.
+                </td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Specialist's Appraisal Statement -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-start gap-space-md">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary flex items-center justify-center font-bold text-caption shrink-0">
+            LB
+          </div>
+<div class="flex flex-col flex-1">
+<div class="flex items-center justify-between mb-1">
+<span class="font-body-semibold text-body-semibold text-primary">Nhận xét thẩm định của Chuyên viên (Lê Quốc Bảo)</span>
+<span class="font-caption text-caption text-on-surface-variant">11/03/2026 - 17:30</span>
+</div>
+<p class="font-body-default text-body-default text-on-surface italic bg-surface-container-lowest p-space-sm rounded-lg">
+              "Hồ sơ cơ bản hoàn thiện 80%, đủ điều kiện cấp duyệt có điều kiện để Fleet lên lịch chuyến trước, yêu cầu khách hàng hoàn tất nộp giấy Coggins Test trước giờ cất cánh."
+            </p>
+</div>
+</div>
+</section>
+<!-- Card 3: Manager Decision Form -->
+<section class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm border border-outline-variant/30 relative overflow-hidden">
+<div class="flex flex-wrap items-center justify-between pb-space-md mb-space-md border-b-0 gap-space-xs">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-container text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[24px]">rule</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<h2 class="font-headline-section text-headline-section text-primary">ĐÁNH GIÁ KHẢ NĂNG VẬN CHUYỂN &amp; ĐIỀU KIỆN TIÊN QUYẾT</h2>
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#ECFDF5] text-[#065F46] font-badge-label text-badge-label">
+<span class="material-symbols-outlined text-[13px]">verified</span> 5/5 Tiêu chuẩn Đạt
+</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant">Ma trận rà soát điều kiện khả thi cho cá thể H001 trước khi ký lệnh điều phối chính thức</p>
+</div>
+</div>
+<div class="text-right">
+<span class="font-caption text-caption text-on-surface-variant block">Trạng thái khả năng thi đấu</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#ECFDF5] text-[#065F46] font-body-semibold text-body-semibold text-[13px]">
+<span class="w-2 h-2 rounded-full bg-[#065F46]"></span> Đủ khả năng thi đấu (Đệm an toàn: 54h - 79h)
+</span>
+</div>
+</div>
+
+<!-- 8 Checklist Items Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-md mb-space-md">
+<!-- Item 1: Hồ sơ -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-3 border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-[#ECFDF5] text-[#065F46] flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">1. Hồ sơ pháp lý &amp; kiểm dịch</span>
+<span class="font-badge-label text-badge-label px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46]">Đạt</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">Kiểm dịch Coggins, CITES, FEI Passport đã hợp lệ &amp; được thông quan kỹ thuật.</p>
+</div>
+</div>
+
+<!-- Item 2: Y tế -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-3 border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-[#ECFDF5] text-[#065F46] flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">check_circle</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">2. Sức khỏe &amp; Y tế vận tải</span>
+<span class="font-badge-label text-badge-label px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46]">Đạt</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">Chứng nhận thú y xuất cảnh, kiểm tra sinh trắc đạt chuẩn thể lực bay đường dài.</p>
+</div>
+</div>
+
+<!-- Item 3: Chuồng -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-3 border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-[#ECFDF5] text-[#065F46] flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">3. Cấu hình chuồng chuyên dụng</span>
+<span class="font-badge-label text-badge-label px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46]">Đã xác nhận</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">Stall Type 3 riêng cho H001 theo đề xuất hành vi (chống stress &amp; êm ái).</p>
+</div>
+</div>
+
+<!-- Item 4: Phương tiện -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-3 border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-[#ECFDF5] text-[#065F46] flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">flight</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">4. Phương tiện vận chuyển</span>
+<span class="font-badge-label text-badge-label px-2 py-0.5 rounded bg-[#ECFDF5] text-[#065F46]">Có sẵn sàng</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">Boeing 777F + Xe Equi-Trek 29A-882.19 sẵn sàng tại điểm đón Củ Chi.</p>
+</div>
+</div>
+
+<!-- Item 5: ETA & Phương án điều chỉnh -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-3 border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed/50 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">5. Thời gian đến dự kiến (ETA)</span>
+<span class="font-code-mono text-code-mono text-primary font-bold text-[12px]">20/03 09:00</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">Kế hoạch chuẩn: 21/03/2026 10:00 • Phương án điều chỉnh ưu tiên: <span class="text-primary font-medium">20/03/2026 09:00</span>.</p>
+</div>
+</div>
+
+<!-- Item 6: Deadline Hạn có mặt BTC -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-3 border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-error-container text-on-error-container flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">alarm_on</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">6. Hạn chót có mặt (BTC)</span>
+<span class="font-code-mono text-code-mono text-error font-bold text-[12px]">20/03 18:00</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">Deadline nghiêm ngặt của BTC Dubai Racing Cup (Đến sớm hơn hạn chót 9 giờ).</p>
+</div>
+</div>
+
+<!-- Item 7: Recovery -->
+<div class="p-space-md bg-surface-container-low rounded-xl flex items-start gap-3 border border-outline-variant/20">
+<div class="w-8 h-8 rounded-full bg-secondary-fixed/50 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">battery_charging_full</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-on-surface">7. Thời gian hồi phục (Recovery)</span>
+<span class="font-body-semibold text-body-semibold text-primary">48 giờ</span>
+</div>
+<p class="font-caption text-caption text-on-surface-variant mt-0.5">Theo quy chuẩn thú y FEI: Ngựa đua đường dài cần tối thiểu 48h xả cơ &amp; bù nước.</p>
+</div>
+</div>
+
+<!-- Item 8: Khả năng thi đấu -->
+<div class="p-space-md bg-[#ECFDF5] rounded-xl flex items-start gap-3 border border-[#065F46]/20">
+<div class="w-8 h-8 rounded-full bg-[#065F46] text-on-primary flex items-center justify-center shrink-0 mt-0.5">
+<span class="material-symbols-outlined text-[18px]">sports_score</span>
+</div>
+<div class="flex-1 flex flex-col">
+<div class="flex items-center justify-between">
+<span class="font-body-semibold text-body-semibold text-[#065F46]">8. Khả năng thi đấu chính thức</span>
+<span class="font-badge-label text-badge-label px-2 py-0.5 rounded bg-[#065F46] text-on-primary">🟢 Đủ điều kiện</span>
+</div>
+<p class="font-caption text-caption text-[#065F46] mt-0.5 font-medium">Khoảng đệm an toàn còn 54h - 79h trước giờ thi đấu (25/03 16:00 UAE).</p>
+</div>
+</div>
+</div>
+
+<!-- QUY TẮC PHÊ DUYỆT BẮT BUỘC BANNER -->
+<div class="p-space-md rounded-xl bg-surface-container-low border-l-4 border-primary flex items-start gap-3 mb-space-sm">
+<span class="material-symbols-outlined text-primary text-[22px] shrink-0 mt-0.5">policy</span>
+<div class="flex flex-col text-caption text-on-surface leading-relaxed">
+<span class="font-body-semibold text-body-semibold text-primary uppercase text-[12px] tracking-wide">QUY TẮC PHÊ DUYỆT CỦA LOGISTICS MANAGER</span>
+<p class="mt-0.5">Logistics Manager chỉ được phê duyệt khi <strong>tất cả điều kiện bắt buộc (Hồ sơ, Y tế, Chuồng, Phương tiện, Khả năng thi đấu) đều đạt</strong>. Nếu có bất kỳ điều kiện nào chưa đạt: Nút phê duyệt sẽ tự động bị khóa (disabled) kèm lý do chặn cụ thể.</p>
+</div>
+</div>
+
+<!-- CẢNH BÁO THAY ĐỔI PHƯƠNG ÁN -->
+<div class="p-space-md rounded-xl bg-[#FFF7ED] border border-secondary-fixed/50 flex items-start gap-3">
+<span class="material-symbols-outlined text-[#9A3412] text-[20px] shrink-0 mt-0.5">warning</span>
+<p class="font-caption text-caption text-[#9A3412] leading-relaxed">
+<strong>⚠️ Cảnh báo ràng buộc:</strong> Khi thay đổi bất kỳ phương án nào (phương tiện, cấu hình chuồng, lịch bay): Thay đổi này sẽ ảnh hưởng trực tiếp đến kế hoạch và yêu cầu hệ thống đánh giá lại toàn bộ ETA, Recovery và chi phí trước khi duyệt.
+</p>
+</div>
+</section><section class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center justify-between pb-space-md mb-space-md">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[24px]">rate_review</span>
+<h2 class="font-headline-section text-headline-section text-primary">Biểu mẫu Quyết định của Logistics Manager</h2>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Người ký duyệt: <strong class="text-primary font-body-semibold">Trần Thu Hà</strong></span>
+</div>
+<!-- Decision Radios -->
+<div class="flex flex-col gap-space-sm mb-space-lg">
+<span class="font-body-semibold text-body-semibold text-on-surface">Phương án quyết định:</span>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-space-md">
+<!-- Option 1: Approve (Selected) -->
+<label class="cursor-pointer flex items-start gap-3 p-space-md rounded-xl bg-[#EFF6FF] transition-all">
+<input checked="" class="mt-1 w-4 h-4 text-primary focus:ring-0" name="manager_decision" type="radio" value="approve">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">Phê duyệt đơn</span>
+<span class="font-caption text-caption text-on-surface-variant">Cho phép lập kế hoạch chuyến bay &amp; điều phối nhân sự</span>
+</div>
+</label>
+<!-- Option 2: Request Supplemental -->
+<label class="cursor-pointer flex items-start gap-3 p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-all">
+<input class="mt-1 w-4 h-4 text-primary focus:ring-0" name="manager_decision" type="radio" value="supplement">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-on-surface">Yêu cầu bổ sung hồ sơ</span>
+<span class="font-caption text-caption text-on-surface-variant">Tạm dừng kế hoạch, gia hạn thời gian nộp chứng từ</span>
+</div>
+</label>
+<!-- Option 3: Reject -->
+<label class="cursor-pointer flex items-start gap-3 p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container-high transition-all">
+<input class="mt-1 w-4 h-4 text-primary focus:ring-0" name="manager_decision" type="radio" value="reject">
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-error">Từ chối đơn</span>
+<span class="font-caption text-caption text-on-surface-variant">Không bảo đảm điều kiện an toàn &amp; kiểm dịch</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Notes / Directives Input -->
+<div class="flex flex-col gap-space-xs">
+<label class="font-body-semibold text-body-semibold text-on-surface flex items-center justify-between" for="manager_notes">
+<span class="">Lý do / Ghi chú chỉ đạo điều hành:</span>
+<span class="font-caption text-caption text-secondary font-medium">Bắt buộc nhập</span>
+</label>
+<textarea class="w-full p-space-md bg-surface-container-low rounded-xl font-body-default text-body-default text-on-surface focus:bg-surface-container-lowest outline-none focus:ring-2 focus:ring-primary/20 transition-all leading-relaxed" id="manager_notes" rows="4">Chấp thuận phê duyệt đơn ORD-2026-001 với mức ưu tiên CỰC CAO. Yêu cầu bộ phận Điều phối kích hoạt chuyến bay EQ-CARGO-01 chặng SGN-DWC. Đội ngũ y tế theo dõi sát sao việc bổ sung giấy xét nghiệm Coggins Test trước ngày 15/03 để bảo đảm không bị giữ lại tại cửa khẩu hải quan DWC.</textarea>
+<span class="font-caption text-caption text-on-surface-variant italic mt-1">Chỉ đạo này sẽ được lưu cố định vào hồ sơ thẩm định chuyến bay và hiển thị trực tiếp trên lệnh điều phối vận tải.</span>
+</div>
+</section>
+</div>
+<!-- RIGHT COLUMN: Assignments & Operations Reference (4 cols) -->
+<div class="lg:col-span-4 flex flex-col gap-space-xl">
+<!-- Card: Human Resource Assignment -->
+<section class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm">
+<div class="flex items-center gap-space-sm pb-space-md mb-space-md">
+<span class="material-symbols-outlined text-secondary text-[24px]">assignment_ind</span>
+<div>
+<h2 class="font-headline-section text-headline-section text-primary">Phân công nhân sự phụ trách</h2>
+<p class="font-caption text-caption text-on-surface-variant">Thiết lập kíp vận hành chịu trách nhiệm chuyến ORD-2026-001</p>
+</div>
+</div>
+<div class="flex flex-col gap-space-md">
+<!-- Role 1: Transport Specialist -->
+<div class="flex flex-col gap-1.5">
+<label class="font-caption text-caption text-on-surface-variant flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px] text-primary">gavel</span>
+<span class="">Chuyên viên thủ tục kiểm dịch (Transport Specialist)</span>
+</label>
+<div class="relative">
+<select class="w-full h-11 px-3 pr-8 rounded-lg bg-surface-container-low font-body-default text-body-default text-on-surface outline-none appearance-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary transition-all">
+<option selected="">Lê Quốc Bảo (Chuyên viên kiểm dịch cấp 2 - Thẩm định thú y XNK)</option>
+<option>Nguyễn Lan Phương (Chuyên viên thủ tục hải quan FEI)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-3 text-[18px] text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Role 2: Route Coordinator -->
+<div class="flex flex-col gap-1.5">
+<label class="font-caption text-caption text-on-surface-variant flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px] text-primary">alt_route</span>
+<span class="">Điều phối viên phương tiện &amp; lộ trình (Route Coordinator)</span>
+</label>
+<div class="relative">
+<select class="w-full h-11 px-3 pr-8 rounded-lg bg-surface-container-low font-body-default text-body-default text-on-surface outline-none appearance-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary transition-all">
+<option selected="">Phạm Ngọc Anh (Điều phối viên Logistics hàng không &amp; đường bộ)</option>
+<option>Hoàng Trung Dũng (Điều phối bay quốc tế IATA)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-3 text-[18px] text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Role 3: Escort Vet -->
+<div class="flex flex-col gap-1.5">
+<label class="font-caption text-caption text-on-surface-variant flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px] text-primary">medical_services</span>
+<span class="">Nhân viên thú y áp tải đi cùng chuyến bay (Escort Vet)</span>
+</label>
+<div class="relative">
+<select class="w-full h-11 px-3 pr-8 rounded-lg bg-surface-container-low font-body-default text-body-default text-on-surface outline-none appearance-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary transition-all">
+<option selected="">Đặng Thị Mai (Chứng chỉ thú y IATA LAR &amp; Hộ tống ngựa quốc tế)</option>
+<option>Bác sĩ Trần Đình Tuấn (Bác sĩ thú y lâm sàng chuyên ngựa)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-3 text-[18px] text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- Role 4: Driver -->
+<div class="flex flex-col gap-1.5">
+<label class="font-caption text-caption text-on-surface-variant flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[16px] text-primary">directions_bus</span>
+<span class="">Tài xế chặng nội địa (Driver)</span>
+</label>
+<div class="relative">
+<select class="w-full h-11 px-3 pr-8 rounded-lg bg-surface-container-low font-body-default text-body-default text-on-surface outline-none appearance-none focus:bg-surface-container-lowest focus:ring-1 focus:ring-primary transition-all">
+<option selected="">Võ Văn Hùng (Bằng lái xe chuyên dụng vận tải động vật sống)</option>
+<option>Trần Quốc Cường (Tài xế xe chuyên dụng Củ Chi - SGN)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-3 text-[18px] text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Automatic System Notification Badge -->
+<div class="mt-space-lg p-space-sm bg-surface-container-low rounded-lg flex items-center gap-space-xs text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px] text-secondary">outgoing_mail</span>
+<span class="font-caption text-caption">Hệ thống tự động gửi thông báo nhiệm vụ đến tài khoản và ứng dụng của 4 nhân sự được phân công ngay sau khi phê duyệt.</span>
+</div>
+</section>
+<!-- Card: Operational Compliance Reference -->
+<section class="bg-surface-container-lowest rounded-xl p-space-lg shadow-sm relative overflow-hidden">
+<div class="flex items-center gap-space-xs mb-space-sm text-secondary">
+<span class="material-symbols-outlined text-[20px]">verified</span>
+<span class="font-badge-label text-badge-label uppercase tracking-wider text-[12px] font-bold">THAM CHIẾU VẬN HÀNH</span>
+</div>
+<p class="font-body-default text-body-default text-on-surface mb-space-md">
+          Mọi quyết định phê duyệt phải tuân thủ tuyệt đối quy trình vận hành và thời gian hồi phục thể lực động vật sống theo các hiệp định đã chuẩn hóa:
+        </p>
+<div class="flex flex-col gap-space-sm">
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] mt-0.5">menu_book</span>
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">IATA Live Animals Regulations (LAR)</span>
+<span class="font-caption text-caption text-on-surface-variant">Tiêu chuẩn Container Type 3, nồng độ oxy, thông gió và kiểm soát áp suất cabin bay.</span>
+</div>
+</div>
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-start gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[18px] mt-0.5">badge</span>
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">FEI – Hộ chiếu ngựa thể thao toàn cầu</span>
+<span class="font-caption text-caption text-on-surface-variant">Quy chế cách ly sinh học chống doping và kiểm tra thể lực trước thi đấu tối thiểu 72 giờ.</span>
+</div>
+</div>
+</div>
+<div class="mt-space-md p-space-sm rounded-lg bg-surface-container-high/50 text-caption text-on-surface-variant flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary">security</span>
+<span class="">Bảo chứng bởi Quy trình Chuẩn EQUIFLOW v4.2</span>
+</div>
+</section>
+<!-- Mini Photo Card of Equine In Transit -->
+<section class="bg-surface-container-lowest rounded-xl p-space-md shadow-sm overflow-hidden flex flex-col gap-space-xs">
+<span class="font-caption text-caption text-on-surface-variant font-semibold">Hình ảnh kiểm tra thực địa cá thể (11/03)</span>
+<div class="relative w-full h-44 rounded-lg overflow-hidden bg-surface-container-high">
+<img class="w-full h-full object-cover" data-alt="High quality close-up photograph of a magnificent thoroughbred brown racehorse standing calmly in a clean, modern equine quarantine stable with soft natural lighting, leather halter, healthy coat, equestrian sports aesthetic in deep navy and warm tones." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZ2ELH_QMG1D_-YPzSr7_8SQYWR1W7LJ5-WnCfwhEuibpxudlXsU3UBdHfAH1hFvdo2-qIPZ2GQs5QBpzRRsEPAhJy9iMwU_bggm8zLemnTRIp-5HgyWhCFbl9YAAkGmuz1AYRNgDtPn6J24PkuaawWuWxgxZq8ZJDB1mxd-8MWxJDmLbEwcmXkGfMqWx7tfd41Jm1ClKvyx9cFpdjcuTtwU1dukFoo3jC_wY8nd45QN8FGfDU8Zwq">
+<span class="absolute bottom-2 left-2 bg-primary/80 backdrop-blur-md text-on-primary font-caption text-[11px] px-2 py-0.5 rounded">H001 • Silver Star</span>
+
+</div>
+</section>
+</div>
+</div>
+<!-- STICKY BOTTOM ACTION BAR -->
+<aside class="fixed bottom-0 left-64 right-0 h-20 bg-surface-container-lowest/95 backdrop-blur-md shadow-xl px-space-xl flex items-center justify-between z-40">
+<div class="flex items-center gap-space-md">
+<div class="w-3 h-3 rounded-full bg-secondary"></div>
+<div class="flex flex-col">
+<span class="font-body-semibold text-body-semibold text-primary">Hồ sơ ORD-2026-001 (Silver Star)</span>
+<span class="font-caption text-caption text-on-surface-variant">Quyết định phê duyệt sẽ lập tức kích hoạt quy trình lập kế hoạch chuyến bay</span>
+</div>
+</div>
+<div class="flex items-center gap-space-md">
+<button class="h-10 px-5 rounded-lg bg-surface-container-lowest text-on-surface font-body-semibold text-body-semibold hover:bg-surface-container-low transition-colors shadow-sm" type="button">
+        Hủy bỏ
+      </button>
+<button class="h-10 px-5 rounded-lg bg-surface-container-low text-primary font-body-semibold text-body-semibold hover:bg-surface-container-high transition-colors" type="button">
+        Lưu bản nháp
+      </button>
+<button class="h-10 px-6 rounded-lg bg-primary text-on-primary font-body-semibold text-body-semibold hover:bg-[#162A45] active:bg-[#101F33] transition-all flex items-center gap-2 shadow-md" onclick="handleApproveSubmit()" type="button">
+<span class="material-symbols-outlined text-[20px]">task_alt</span>
+<span class="">Xác nhận phê duyệt &amp; Phân công nhiệm vụ</span>
+</button>
+</div>
+</aside>
+<!-- Interactive Feedback Script -->
+<script>
+    function handleApproveSubmit() {
+      const selected = document.querySelector('input[name="manager_decision"]:checked').value;
+      const notes = document.getElementById('manager_notes').value;
+      
+      let msg = "Đã xác nhận phê duyệt đơn ORD-2026-001 và kích hoạt phân công kíp vận hành thành công!";
+      if (selected === 'supplement') {
+        msg = "Đã chuyển trạng thái hồ sơ sang: Yêu cầu bổ sung!";
+      } else if (selected === 'reject') {
+        msg = "Đã ghi nhận quyết định TỪ CHỐI đơn ORD-2026-001!";
+      }
+      
+      alert(msg + "\n\nNội dung điều phối: " + notes.substring(0, 100) + "...");
+    }
+  </script>
+</div></main></div>
+
+<div id="snapdom-sandbox" data-snapdom-sandbox="true" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px; width: 0px; height: 0px; overflow: hidden;"></div></body></html>

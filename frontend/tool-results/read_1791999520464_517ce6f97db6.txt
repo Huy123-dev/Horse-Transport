@@ -1,0 +1,618 @@
+     1→     1→/* ============================================================================
+     2→     2→   HorseTransportManagementDB.sql
+     3→     3→   Database + 22 bang + PK + FK + Index + du lieu mau
+     4→     4→   Cap nhat theo 5 vai tro nghiep vu va 6 luong xu ly (Flow 1-6)
+     5→     5→   SQL Server (T-SQL)
+     6→     6→   ============================================================================ */
+     7→     7→
+     8→     8→SET NOCOUNT ON;
+     9→     9→GO
+    10→    10→
+    11→    11→/* ============================================================================
+    12→    12→   1. DATABASE
+    13→    13→   ============================================================================ */
+    14→    14→IF DB_ID(N'HorseTransportManagementDB') IS NOT NULL
+    15→    15→BEGIN
+    16→    16→    ALTER DATABASE HorseTransportManagementDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    17→    17→    DROP DATABASE HorseTransportManagementDB;
+    18→    18→END
+    19→    19→GO
+    20→    20→
+    21→    21→CREATE DATABASE HorseTransportManagementDB;
+    22→    22→GO
+    23→    23→
+    24→    24→USE HorseTransportManagementDB;
+    25→    25→GO
+    26→    26→
+    27→    27→/* ============================================================================
+    28→    28→   2. TABLES (theo thu tu phu thuoc khoa ngoai)
+    29→    29→   ============================================================================ */
+    30→    30→
+    31→    31→/* ---------- 2.1 roles ---------- */
+    32→    32→CREATE TABLE roles (
+    33→    33→    role_id      VARCHAR(50)   NOT NULL,
+    34→    34→    role_name    NVARCHAR(100) NOT NULL,
+    35→    35→    description  NVARCHAR(MAX) NULL,
+    36→    36→    CONSTRAINT PK_roles PRIMARY KEY (role_id)
+    37→    37→);
+    38→    38→GO
+    39→    39→
+    40→    40→/* ---------- 2.2 partners (khong phu thuoc bang nao) ---------- */
+    41→    41→CREATE TABLE partners (
+    42→    42→    partner_id     UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_partners_id DEFAULT NEWID(),
+    43→    43→    name           NVARCHAR(150)    NOT NULL,
+    44→    44→    type           NVARCHAR(50)     NOT NULL,
+    45→    45→    contract_info  NVARCHAR(MAX)    NULL,
+    46→    46→    rate_table     NVARCHAR(MAX)    NULL,
+    47→    47→    CONSTRAINT PK_partners PRIMARY KEY (partner_id)
+    48→    48→);
+    49→    49→GO
+    50→    50→
+    51→    51→/* ---------- 2.3 locations (khong phu thuoc bang nao) ---------- */
+    52→    52→CREATE TABLE locations (
+    53→    53→    location_id    UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_locations_id DEFAULT NEWID(),
+    54→    54→    name           NVARCHAR(150)    NOT NULL,
+    55→    55→    type           NVARCHAR(50)     NOT NULL,
+    56→    56→    latitude       DECIMAL(9,6)     NOT NULL,
+    57→    57→    longitude      DECIMAL(9,6)     NOT NULL,
+    58→    58→    capacity       INT              NULL,
+    59→    59→    contact_info   NVARCHAR(MAX)    NULL,
+    60→    60→    country_code   VARCHAR(3)       NOT NULL,
+    61→    61→    CONSTRAINT PK_locations PRIMARY KEY (location_id)
+    62→    62→);
+    63→    63→GO
+    64→    64→
+    65→    65→/* ---------- 2.4 users (phu thuoc roles) ---------- */
+    66→    66→CREATE TABLE users (
+    67→    67→    user_id            UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_users_id DEFAULT NEWID(),
+    68→    68→    email              NVARCHAR(255)    NOT NULL,
+    69→    69→    password_hash      NVARCHAR(255)    NOT NULL,
+    70→    70→    role_id            VARCHAR(50)      NOT NULL,
+    71→    71→    name               NVARCHAR(100)    NOT NULL,
+    72→    72→    phone_number       VARCHAR(20)      NULL,
+    73→    73→    organization_name  NVARCHAR(150)    NULL,
+    74→    74→    created_at         DATETIME2        NOT NULL CONSTRAINT DF_users_created DEFAULT SYSUTCDATETIME(),
+    75→    75→    updated_at         DATETIME2        NOT NULL CONSTRAINT DF_users_updated DEFAULT SYSUTCDATETIME(),
+    76→    76→    CONSTRAINT PK_users PRIMARY KEY (user_id),
+    77→    77→    CONSTRAINT UQ_users_email UNIQUE (email),
+    78→    78→    CONSTRAINT UQ_users_phone_number UNIQUE (phone_number),
+    79→    79→    CONSTRAINT FK_users_role FOREIGN KEY (role_id) REFERENCES roles (role_id)
+    80→    80→);
+    81→    81→GO
+    82→    82→
+    83→    83→/* ---------- 2.5 horses (phu thuoc users) ---------- */
+    84→    84→CREATE TABLE horses (
+    85→    85→    horse_id          UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_horses_id DEFAULT NEWID(),
+    86→    86→    microchip_id      VARCHAR(50)      NOT NULL,
+    87→    87→    name              NVARCHAR(100)    NOT NULL,
+    88→    88→    pedigree          NVARCHAR(MAX)    NULL,
+    89→    89→    owner_user_id     UNIQUEIDENTIFIER NULL,
+    90→    90→    medical_history   NVARCHAR(MAX)    NULL,
+    91→    91→    allergies         NVARCHAR(MAX)    NULL,
+    92→    92→    temperament       NVARCHAR(MAX)    NULL,
+    93→    93→    gender            VARCHAR(10)      NOT NULL,
+    94→    94→    created_at        DATETIME2        NOT NULL CONSTRAINT DF_horses_created DEFAULT SYSUTCDATETIME(),
+    95→    95→    CONSTRAINT PK_horses PRIMARY KEY (horse_id),
+    96→    96→    CONSTRAINT UQ_horses_microchip UNIQUE (microchip_id),
+    97→    97→    CONSTRAINT FK_horses_owner FOREIGN KEY (owner_user_id) REFERENCES users (user_id)
+    98→    98→);
+    99→    99→GO
+   100→   100→
+   101→   101→/* ---------- 2.6 transport_assets (phu thuoc partners) ---------- */
+   102→   102→CREATE TABLE transport_assets (
+   103→   103→    asset_id          UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_assets_id DEFAULT NEWID(),
+   104→   104→    name              NVARCHAR(100)    NOT NULL,
+   105→   105→    type              VARCHAR(50)      NOT NULL,
+   106→   106→    capacity          INT              NOT NULL,
+   107→   107→    owner_partner_id  UNIQUEIDENTIFIER NULL,
+   108→   108→    status            NVARCHAR(50)     NOT NULL,
+   109→   109→    CONSTRAINT PK_transport_assets PRIMARY KEY (asset_id),
+   110→   110→    CONSTRAINT FK_assets_partner FOREIGN KEY (owner_partner_id) REFERENCES partners (partner_id)
+   111→   111→);
+   112→   112→GO
+   113→   113→
+   114→   114→/* ---------- 2.7 transport_requests (phu thuoc users, locations)
+   115→   115→   [CAP NHAT] them approved_by, approved_at de truy vet Logistics Manager
+   116→   116→   phe duyet don hang (Flow 1) ---------- */
+   117→   117→CREATE TABLE transport_requests (
+   118→   118→    request_id                 UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_requests_id DEFAULT NEWID(),
+   119→   119→    customer_id                UNIQUEIDENTIFIER NOT NULL,
+   120→   120→    origin_location_id         UNIQUEIDENTIFIER NOT NULL,
+   121→   121→    destination_location_id    UNIQUEIDENTIFIER NOT NULL,
+   122→   122→    scheduled_departure_date   DATE             NOT NULL,
+   123→   123→    scheduled_arrival_date     DATE             NOT NULL,
+   124→   124→    special_requirements       NVARCHAR(MAX)    NULL,
+   125→   125→    status                     NVARCHAR(50)     NOT NULL,
+   126→   126→    estimated_amount           DECIMAL(12,2)    NULL,
+   127→   127→    currency                   VARCHAR(3)       NOT NULL,
+   128→   128→    approved_by                UNIQUEIDENTIFIER NULL,
+   129→   129→    approved_at                DATETIME2        NULL,
+   130→   130→    created_at                 DATETIME2        NOT NULL CONSTRAINT DF_requests_created DEFAULT SYSUTCDATETIME(),
+   131→   131→    updated_at                 DATETIME2        NOT NULL CONSTRAINT DF_requests_updated DEFAULT SYSUTCDATETIME(),
+   132→   132→    CONSTRAINT PK_transport_requests PRIMARY KEY (request_id),
+   133→   133→    CONSTRAINT FK_requests_customer FOREIGN KEY (customer_id) REFERENCES users (user_id),
+   134→   134→    CONSTRAINT FK_requests_origin FOREIGN KEY (origin_location_id) REFERENCES locations (location_id),
+   135→   135→    CONSTRAINT FK_requests_destination FOREIGN KEY (destination_location_id) REFERENCES locations (location_id),
+   136→   136→    CONSTRAINT FK_requests_approver FOREIGN KEY (approved_by) REFERENCES users (user_id)
+   137→   137→);
+   138→   138→GO
+   139→   139→
+   140→   140→/* ---------- 2.8 transport_request_horses (bang lien ket N-N) ---------- */
+   141→   141→CREATE TABLE transport_request_horses (
+   142→   142→    request_id  UNIQUEIDENTIFIER NOT NULL,
+   143→   143→    horse_id    UNIQUEIDENTIFIER NOT NULL,
+   144→   144→    CONSTRAINT PK_transport_request_horses PRIMARY KEY (request_id, horse_id),
+   145→   145→    CONSTRAINT FK_trh_request FOREIGN KEY (request_id) REFERENCES transport_requests (request_id),
+   146→   146→    CONSTRAINT FK_trh_horse FOREIGN KEY (horse_id) REFERENCES horses (horse_id)
+   147→   147→);
+   148→   148→GO
+   149→   149→
+   150→   150→/* ---------- 2.9 horse_documents (phu thuoc horses, transport_requests) ---------- */
+   151→   151→CREATE TABLE horse_documents (
+   152→   152→    document_id    UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_documents_id DEFAULT NEWID(),
+   153→   153→    horse_id       UNIQUEIDENTIFIER NOT NULL,
+   154→   154→    request_id     UNIQUEIDENTIFIER NULL,
+   155→   155→    document_type  NVARCHAR(100)    NOT NULL,
+   156→   156→    file_url       NVARCHAR(512)    NOT NULL,
+   157→   157→    uploaded_at    DATETIME2        NOT NULL CONSTRAINT DF_documents_uploaded DEFAULT SYSUTCDATETIME(),
+   158→   158→    expiry_date    DATE             NULL,
+   159→   159→    CONSTRAINT PK_horse_documents PRIMARY KEY (document_id),
+   160→   160→    CONSTRAINT FK_documents_horse FOREIGN KEY (horse_id) REFERENCES horses (horse_id),
+   161→   161→    CONSTRAINT FK_documents_request FOREIGN KEY (request_id) REFERENCES transport_requests (request_id)
+   162→   162→);
+   163→   163→GO
+   164→   164→
+   165→   165→/* ---------- 2.10 customs_regulations (phu thuoc locations) ---------- */
+   166→   166→CREATE TABLE customs_regulations (
+   167→   167→    regulation_id         UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_regulations_id DEFAULT NEWID(),
+   168→   168→    country_code          VARCHAR(3)       NOT NULL,
+   169→   169→    port_location_id      UNIQUEIDENTIFIER NULL,
+   170→   170→    quarantine_standard   NVARCHAR(MAX)    NULL,
+   171→   171→    required_documents    NVARCHAR(MAX)    NULL,
+   172→   172→    import_export_type    VARCHAR(10)      NOT NULL,
+   173→   173→    CONSTRAINT PK_customs_regulations PRIMARY KEY (regulation_id),
+   174→   174→    CONSTRAINT FK_regulations_port FOREIGN KEY (port_location_id) REFERENCES locations (location_id),
+   175→   175→    CONSTRAINT CK_regulations_type CHECK (import_export_type IN ('IMPORT','EXPORT'))
+   176→   176→);
+   177→   177→GO
+   178→   178→
+   179→   179→/* ---------- 2.11 inspection_statuses (phu thuoc transport_requests, horses, users)
+   180→   180→   [CAP NHAT] them assigned_specialist_id de gan Transport Specialist
+   181→   181→   phu trach ho so kiem dich/thong quan (Flow 2) ---------- */
+   182→   182→CREATE TABLE inspection_statuses (
+   183→   183→    inspection_id           UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_inspection_id DEFAULT NEWID(),
+   184→   184→    request_id              UNIQUEIDENTIFIER NOT NULL,
+   185→   185→    horse_id                UNIQUEIDENTIFIER NOT NULL,
+   186→   186→    agency_name             NVARCHAR(150)    NOT NULL,
+   187→   187→    status                  NVARCHAR(50)     NOT NULL,
+   188→   188→    remarks                 NVARCHAR(MAX)    NULL,
+   189→   189→    assigned_specialist_id  UNIQUEIDENTIFIER NULL,
+   190→   190→    updated_at              DATETIME2        NOT NULL CONSTRAINT DF_inspection_updated DEFAULT SYSUTCDATETIME(),
+   191→   191→    CONSTRAINT PK_inspection_statuses PRIMARY KEY (inspection_id),
+   192→   192→    CONSTRAINT FK_inspection_request FOREIGN KEY (request_id) REFERENCES transport_requests (request_id),
+   193→   193→    CONSTRAINT FK_inspection_horse FOREIGN KEY (horse_id) REFERENCES horses (horse_id),
+   194→   194→    CONSTRAINT FK_inspection_specialist FOREIGN KEY (assigned_specialist_id) REFERENCES users (user_id)
+   195→   195→);
+   196→   196→GO
+   197→   197→
+   198→   198→/* ---------- 2.12 transport_plans (phu thuoc transport_requests, users)
+   199→   199→   [CAP NHAT] them coordinator_id de gan Fleet & Route Coordinator
+   200→   200→   lap ke hoach lo trinh (Flow 3) ---------- */
+   201→   201→CREATE TABLE transport_plans (
+   202→   202→    plan_id          UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_plans_id DEFAULT NEWID(),
+   203→   203→    request_id       UNIQUEIDENTIFIER NOT NULL,
+   204→   204→    route_details    NVARCHAR(MAX)    NULL,
+   205→   205→    departure_time   DATETIME2        NOT NULL,
+   206→   206→    arrival_time     DATETIME2        NOT NULL,
+   207→   207→    status           NVARCHAR(50)     NOT NULL,
+   208→   208→    coordinator_id   UNIQUEIDENTIFIER NULL,
+   209→   209→    CONSTRAINT PK_transport_plans PRIMARY KEY (plan_id),
+   210→   210→    CONSTRAINT FK_plans_request FOREIGN KEY (request_id) REFERENCES transport_requests (request_id),
+   211→   211→    CONSTRAINT FK_plans_coordinator FOREIGN KEY (coordinator_id) REFERENCES users (user_id)
+   212→   212→);
+   213→   213→GO
+   214→   214→
+   215→   215→/* ---------- 2.13 route_stops [BANG MOI] (phu thuoc transport_plans, locations)
+   216→   216→   The hien tung diem dung theo thu tu tren lo trinh: tram kiem dich,
+   217→   217→   tram nghi, tram tiep nhien lieu, thong quan... phuc vu Flow 3 va Flow 4 ---------- */
+   218→   218→CREATE TABLE route_stops (
+   219→   219→    stop_id                  UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_route_stops_id DEFAULT NEWID(),
+   220→   220→    plan_id                  UNIQUEIDENTIFIER NOT NULL,
+   221→   221→    sequence_no              INT              NOT NULL,
+   222→   222→    location_id              UNIQUEIDENTIFIER NULL,
+   223→   223→    stop_name                NVARCHAR(150)    NOT NULL,
+   224→   224→    stop_type                VARCHAR(50)      NOT NULL,
+   225→   225→    planned_arrival_time     DATETIME2        NULL,
+   226→   226→    planned_departure_time   DATETIME2        NULL,
+   227→   227→    actual_arrival_time      DATETIME2        NULL,
+   228→   228→    actual_departure_time    DATETIME2        NULL,
+   229→   229→    notes                    NVARCHAR(MAX)    NULL,
+   230→   230→    CONSTRAINT PK_route_stops PRIMARY KEY (stop_id),
+   231→   231→    CONSTRAINT FK_route_stops_plan FOREIGN KEY (plan_id) REFERENCES transport_plans (plan_id),
+   232→   232→    CONSTRAINT FK_route_stops_location FOREIGN KEY (location_id) REFERENCES locations (location_id),
+   233→   233→    CONSTRAINT UQ_route_stops_plan_seq UNIQUE (plan_id, sequence_no),
+   234→   234→    CONSTRAINT CK_route_stops_type CHECK (stop_type IN ('ORIGIN','TRANSIT','CUSTOMS','QUARANTINE','REST','REFUEL','DESTINATION'))
+   235→   235→);
+   236→   236→GO
+   237→   237→
+   238→   238→/* ---------- 2.14 transport_assignments (phu thuoc transport_plans, transport_assets, users) ---------- */
+   239→   239→CREATE TABLE transport_assignments (
+   240→   240→    assignment_id       UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_assignments_id DEFAULT NEWID(),
+   241→   241→    plan_id             UNIQUEIDENTIFIER NOT NULL,
+   242→   242→    asset_id            UNIQUEIDENTIFIER NULL,
+   243→   243→    driver_user_id      UNIQUEIDENTIFIER NULL,
+   244→   244→    attendant_user_id   UNIQUEIDENTIFIER NULL,
+   245→   245→    assigned_at         DATETIME2        NOT NULL CONSTRAINT DF_assignments_assigned DEFAULT SYSUTCDATETIME(),
+   246→   246→    CONSTRAINT PK_transport_assignments PRIMARY KEY (assignment_id),
+   247→   247→    CONSTRAINT FK_assignments_plan FOREIGN KEY (plan_id) REFERENCES transport_plans (plan_id),
+   248→   248→    CONSTRAINT FK_assignments_asset FOREIGN KEY (asset_id) REFERENCES transport_assets (asset_id),
+   249→   249→    CONSTRAINT FK_assignments_driver FOREIGN KEY (driver_user_id) REFERENCES users (user_id),
+   250→   250→    CONSTRAINT FK_assignments_attendant FOREIGN KEY (attendant_user_id) REFERENCES users (user_id)
+   251→   251→);
+   252→   252→GO
+   253→   253→
+   254→   254→/* ---------- 2.15 tracking_logs (phu thuoc transport_plans, users) ---------- */
+   255→   255→CREATE TABLE tracking_logs (
+   256→   256→    log_id        UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_tracking_id DEFAULT NEWID(),
+   257→   257→    plan_id       UNIQUEIDENTIFIER NOT NULL,
+   258→   258→    milestone     NVARCHAR(100)    NULL,
+   259→   259→    latitude      DECIMAL(9,6)     NOT NULL,
+   260→   260→    longitude     DECIMAL(9,6)     NOT NULL,
+   261→   261→    reported_at   DATETIME2        NOT NULL CONSTRAINT DF_tracking_reported DEFAULT SYSUTCDATETIME(),
+   262→   262→    reported_by   UNIQUEIDENTIFIER NOT NULL,
+   263→   263→    CONSTRAINT PK_tracking_logs PRIMARY KEY (log_id),
+   264→   264→    CONSTRAINT FK_tracking_plan FOREIGN KEY (plan_id) REFERENCES transport_plans (plan_id),
+   265→   265→    CONSTRAINT FK_tracking_user FOREIGN KEY (reported_by) REFERENCES users (user_id)
+   266→   266→);
+   267→   267→GO
+   268→   268→
+   269→   269→/* ---------- 2.16 health_logs (phu thuoc transport_plans, horses, users) ---------- */
+   270→   270→CREATE TABLE health_logs (
+   271→   271→    log_id            UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_health_id DEFAULT NEWID(),
+   272→   272→    plan_id           UNIQUEIDENTIFIER NOT NULL,
+   273→   273→    horse_id          UNIQUEIDENTIFIER NOT NULL,
+   274→   274→    stress_level      INT              NULL,
+   275→   275→    heart_rate        INT              NULL,
+   276→   276→    temperature       DECIMAL(4,2)     NULL,
+   277→   277→    appetite_status   NVARCHAR(50)     NULL,
+   278→   278→    notes             NVARCHAR(MAX)    NULL,
+   279→   279→    photo_url         NVARCHAR(512)    NULL,
+   280→   280→    logged_at         DATETIME2        NOT NULL CONSTRAINT DF_health_logged DEFAULT SYSUTCDATETIME(),
+   281→   281→    logged_by         UNIQUEIDENTIFIER NOT NULL,
+   282→   282→    CONSTRAINT PK_health_logs PRIMARY KEY (log_id),
+   283→   283→    CONSTRAINT FK_health_plan FOREIGN KEY (plan_id) REFERENCES transport_plans (plan_id),
+   284→   284→    CONSTRAINT FK_health_horse FOREIGN KEY (horse_id) REFERENCES horses (horse_id),
+   285→   285→    CONSTRAINT FK_health_user FOREIGN KEY (logged_by) REFERENCES users (user_id)
+   286→   286→);
+   287→   287→GO
+   288→   288→
+   289→   289→/* ---------- 2.17 incidents (phu thuoc transport_plans, users) ---------- */
+   290→   290→CREATE TABLE incidents (
+   291→   291→    incident_id        UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_incidents_id DEFAULT NEWID(),
+   292→   292→    plan_id            UNIQUEIDENTIFIER NOT NULL,
+   293→   293→    category           NVARCHAR(50)     NOT NULL,
+   294→   294→    description        NVARCHAR(MAX)    NOT NULL,
+   295→   295→    is_sos             BIT              NOT NULL CONSTRAINT DF_incidents_sos DEFAULT 0,
+   296→   296→    latitude           DECIMAL(9,6)     NULL,
+   297→   297→    longitude          DECIMAL(9,6)     NULL,
+   298→   298→    status             NVARCHAR(50)     NOT NULL,
+   299→   299→    additional_cost    DECIMAL(12,2)    NULL,
+   300→   300→    cost_approved_by   UNIQUEIDENTIFIER NULL,
+   301→   301→    reported_at        DATETIME2        NOT NULL CONSTRAINT DF_incidents_reported DEFAULT SYSUTCDATETIME(),
+   302→   302→    CONSTRAINT PK_incidents PRIMARY KEY (incident_id),
+   303→   303→    CONSTRAINT FK_incidents_plan FOREIGN KEY (plan_id) REFERENCES transport_plans (plan_id),
+   304→   304→    CONSTRAINT FK_incidents_approver FOREIGN KEY (cost_approved_by) REFERENCES users (user_id)
+   305→   305→);
+   306→   306→GO
+   307→   307→
+   308→   308→/* ---------- 2.18 deliveries (phu thuoc transport_plans) ---------- */
+   309→   309→CREATE TABLE deliveries (
+   310→   310→    delivery_id            UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_deliveries_id DEFAULT NEWID(),
+   311→   311→    plan_id                UNIQUEIDENTIFIER NOT NULL,
+   312→   312→    recipient_name         NVARCHAR(150)    NOT NULL,
+   313→   313→    signature_image_url    NVARCHAR(512)    NOT NULL,
+   314→   314→    delivered_at           DATETIME2        NOT NULL CONSTRAINT DF_deliveries_delivered DEFAULT SYSUTCDATETIME(),
+   315→   315→    pod_document_url       NVARCHAR(512)    NULL,
+   316→   316→    CONSTRAINT PK_deliveries PRIMARY KEY (delivery_id),
+   317→   317→    CONSTRAINT FK_deliveries_plan FOREIGN KEY (plan_id) REFERENCES transport_plans (plan_id)
+   318→   318→);
+   319→   319→GO
+   320→   320→
+   321→   321→/* ---------- 2.19 invoices (phu thuoc transport_requests) ---------- */
+   322→   322→CREATE TABLE invoices (
+   323→   323→    invoice_id       UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_invoices_id DEFAULT NEWID(),
+   324→   324→    request_id       UNIQUEIDENTIFIER NOT NULL,
+   325→   325→    amount           DECIMAL(12,2)    NOT NULL,
+   326→   326→    currency         VARCHAR(3)       NOT NULL,
+   327→   327→    pdf_url          NVARCHAR(512)    NOT NULL,
+   328→   328→    payment_status   NVARCHAR(50)     NOT NULL,
+   329→   329→    payment_method   NVARCHAR(50)     NULL,
+   330→   330→    issued_at        DATETIME2        NOT NULL CONSTRAINT DF_invoices_issued DEFAULT SYSUTCDATETIME(),
+   331→   331→    paid_at          DATETIME2        NULL,
+   332→   332→    CONSTRAINT PK_invoices PRIMARY KEY (invoice_id),
+   333→   333→    CONSTRAINT FK_invoices_request FOREIGN KEY (request_id) REFERENCES transport_requests (request_id)
+   334→   334→);
+   335→   335→GO
+   336→   336→
+   337→   337→/* ---------- 2.20 quarantine_reservations (phu thuoc transport_requests, locations) ---------- */
+   338→   338→CREATE TABLE quarantine_reservations (
+   339→   339→    reservation_id        UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_reservations_id DEFAULT NEWID(),
+   340→   340→    request_id            UNIQUEIDENTIFIER NOT NULL,
+   341→   341→    facility_location_id  UNIQUEIDENTIFIER NOT NULL,
+   342→   342→    start_date            DATE             NOT NULL,
+   343→   343→    end_date              DATE             NOT NULL,
+   344→   344→    status                NVARCHAR(50)     NOT NULL,
+   345→   345→    CONSTRAINT PK_quarantine_reservations PRIMARY KEY (reservation_id),
+   346→   346→    CONSTRAINT FK_reservations_request FOREIGN KEY (request_id) REFERENCES transport_requests (request_id),
+   347→   347→    CONSTRAINT FK_reservations_facility FOREIGN KEY (facility_location_id) REFERENCES locations (location_id)
+   348→   348→);
+   349→   349→GO
+   350→   350→
+   351→   351→/* ---------- 2.21 notifications (phu thuoc users; tham chieu mem toi cac thuc the khac) ---------- */
+   352→   352→CREATE TABLE notifications (
+   353→   353→    notification_id     UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_notifications_id DEFAULT NEWID(),
+   354→   354→    recipient_user_id    UNIQUEIDENTIFIER NOT NULL,
+   355→   355→    type                 VARCHAR(50)      NOT NULL,
+   356→   356→    title                NVARCHAR(200)    NOT NULL,
+   357→   357→    message              NVARCHAR(MAX)    NULL,
+   358→   358→    related_entity_type  VARCHAR(50)      NULL,
+   359→   359→    related_entity_id    UNIQUEIDENTIFIER NULL,
+   360→   360→    is_read              BIT              NOT NULL CONSTRAINT DF_notifications_is_read DEFAULT 0,
+   361→   361→    created_at           DATETIME2        NOT NULL CONSTRAINT DF_notifications_created DEFAULT SYSUTCDATETIME(),
+   362→   362→    read_at              DATETIME2        NULL,
+   363→   363→    CONSTRAINT PK_notifications PRIMARY KEY (notification_id),
+   364→   364→    CONSTRAINT FK_notifications_recipient FOREIGN KEY (recipient_user_id) REFERENCES users (user_id),
+   365→   365→    CONSTRAINT CK_notifications_type CHECK (type IN ('REQUEST_STATUS','INSPECTION_UPDATE','PLAN_UPDATE','ASSIGNMENT','INCIDENT_SOS','INVOICE','QUARANTINE','SYSTEM'))
+   366→   366→);
+   367→   367→GO
+   368→   368→
+   369→   369→/* ---------- 2.22 audit_logs (phu thuoc users) ---------- */
+   370→   370→CREATE TABLE audit_logs (
+   371→   371→    log_id        UNIQUEIDENTIFIER NOT NULL CONSTRAINT DF_audit_id DEFAULT NEWID(),
+   372→   372→    user_id       UNIQUEIDENTIFIER NULL,
+   373→   373→    action        NVARCHAR(150)    NOT NULL,
+   374→   374→    details       NVARCHAR(MAX)    NULL,
+   375→   375→    ip_address    VARCHAR(45)      NULL,
+   376→   376→    created_at    DATETIME2        NOT NULL CONSTRAINT DF_audit_created DEFAULT SYSUTCDATETIME(),
+   377→   377→    CONSTRAINT PK_audit_logs PRIMARY KEY (log_id),
+   378→   378→    CONSTRAINT FK_audit_user FOREIGN KEY (user_id) REFERENCES users (user_id)
+   379→   379→);
+   380→   380→GO
+   381→   381→
+   382→   382→/* ============================================================================
+   383→   383→   3. INDEXES (ngoai PK/UQ da tao tu dong o tren)
+   384→   384→   ============================================================================ */
+   385→   385→
+   386→   386→CREATE INDEX IX_users_role_id ON users (role_id);
+   387→   387→CREATE INDEX IX_horses_owner_user_id ON horses (owner_user_id);
+   388→   388→CREATE INDEX IX_transport_assets_owner_partner_id ON transport_assets (owner_partner_id);
+   389→   389→CREATE INDEX IX_transport_assets_status ON transport_assets (status);
+   390→   390→
+   391→   391→CREATE INDEX IX_requests_customer_id ON transport_requests (customer_id);
+   392→   392→CREATE INDEX IX_requests_origin_location_id ON transport_requests (origin_location_id);
+   393→   393→CREATE INDEX IX_requests_destination_location_id ON transport_requests (destination_location_id);
+   394→   394→CREATE INDEX IX_requests_status ON transport_requests (status);
+   395→   395→CREATE INDEX IX_requests_approved_by ON transport_requests (approved_by);
+   396→   396→
+   397→   397→CREATE INDEX IX_trh_horse_id ON transport_request_horses (horse_id);
+   398→   398→
+   399→   399→CREATE INDEX IX_documents_horse_id ON horse_documents (horse_id);
+   400→   400→CREATE INDEX IX_documents_request_id ON horse_documents (request_id);
+   401→   401→CREATE INDEX IX_documents_expiry_date ON horse_documents (expiry_date);
+   402→   402→
+   403→   403→CREATE INDEX IX_regulations_country_code ON customs_regulations (country_code);
+   404→   404→CREATE INDEX IX_regulations_port_location_id ON customs_regulations (port_location_id);
+   405→   405→
+   406→   406→CREATE INDEX IX_inspection_request_id ON inspection_statuses (request_id);
+   407→   407→CREATE INDEX IX_inspection_horse_id ON inspection_statuses (horse_id);
+   408→   408→CREATE INDEX IX_inspection_status ON inspection_statuses (status);
+   409→   409→CREATE INDEX IX_inspection_specialist_id ON inspection_statuses (assigned_specialist_id);
+   410→   410→
+   411→   411→CREATE INDEX IX_plans_request_id ON transport_plans (request_id);
+   412→   412→CREATE INDEX IX_plans_status ON transport_plans (status);
+   413→   413→CREATE INDEX IX_plans_coordinator_id ON transport_plans (coordinator_id);
+   414→   414→
+   415→   415→CREATE INDEX IX_route_stops_plan_id ON route_stops (plan_id);
+   416→   416→CREATE INDEX IX_route_stops_location_id ON route_stops (location_id);
+   417→   417→CREATE INDEX IX_route_stops_type ON route_stops (stop_type);
+   418→   418→
+   419→   419→CREATE INDEX IX_assignments_plan_id ON transport_assignments (plan_id);
+   420→   420→CREATE INDEX IX_assignments_asset_id ON transport_assignments (asset_id);
+   421→   421→CREATE INDEX IX_assignments_driver_user_id ON transport_assignments (driver_user_id);
+   422→   422→CREATE INDEX IX_assignments_attendant_user_id ON transport_assignments (attendant_user_id);
+   423→   423→
+   424→   424→CREATE INDEX IX_tracking_plan_id ON tracking_logs (plan_id);
+   425→   425→CREATE INDEX IX_tracking_reported_by ON tracking_logs (reported_by);
+   426→   426→CREATE INDEX IX_tracking_reported_at ON tracking_logs (reported_at);
+   427→   427→
+   428→   428→CREATE INDEX IX_health_plan_id ON health_logs (plan_id);
+   429→   429→CREATE INDEX IX_health_horse_id ON health_logs (horse_id);
+   430→   430→CREATE INDEX IX_health_logged_by ON health_logs (logged_by);
+   431→   431→
+   432→   432→CREATE INDEX IX_incidents_plan_id ON incidents (plan_id);
+   433→   433→CREATE INDEX IX_incidents_cost_approved_by ON incidents (cost_approved_by);
+   434→   434→CREATE INDEX IX_incidents_is_sos ON incidents (is_sos);
+   435→   435→CREATE INDEX IX_incidents_status ON incidents (status);
+   436→   436→
+   437→   437→CREATE INDEX IX_deliveries_plan_id ON deliveries (plan_id);
+   438→   438→
+   439→   439→CREATE INDEX IX_invoices_request_id ON invoices (request_id);
+   440→   440→CREATE INDEX IX_invoices_payment_status ON invoices (payment_status);
+   441→   441→
+   442→   442→CREATE INDEX IX_reservations_request_id ON quarantine_reservations (request_id);
+   443→   443→CREATE INDEX IX_reservations_facility_location_id ON quarantine_reservations (facility_location_id);
+   444→   444→CREATE INDEX IX_reservations_status ON quarantine_reservations (status);
+   445→   445→
+   446→   446→CREATE INDEX IX_notifications_recipient_user_id ON notifications (recipient_user_id);
+   447→   447→CREATE INDEX IX_notifications_is_read ON notifications (is_read);
+   448→   448→CREATE INDEX IX_notifications_type ON notifications (type);
+   449→   449→CREATE INDEX IX_notifications_created_at ON notifications (created_at);
+   450→   450→CREATE INDEX IX_notifications_related_entity ON notifications (related_entity_type, related_entity_id);
+   451→   451→
+   452→   452→CREATE INDEX IX_audit_user_id ON audit_logs (user_id);
+   453→   453→CREATE INDEX IX_audit_action ON audit_logs (action);
+   454→   454→CREATE INDEX IX_audit_created_at ON audit_logs (created_at);
+   455→   455→GO
+   456→   456→
+   457→   457→/* ============================================================================
+   458→   458→   4. DU LIEU MAU (sample data)
+   459→   459→   GUID duoc ghi co dinh de de tham chieu cheo giua cac bang.
+   460→   460→   ============================================================================ */
+   461→   461→
+   462→   462→/* ---------- 4.1 roles [CAP NHAT] tach STAFF thanh 4 vai tro nghiep vu cu the ---------- */
+   463→   463→INSERT INTO roles (role_id, role_name, description) VALUES
+   464→   464→('ADMIN',                N'Quan tri he thong',                  N'Quan tri toan bo he thong (tai khoan, cau hinh)'),
+   465→   465→('LOGISTICS_MANAGER',    N'Quan ly Dieu hanh Logistics',        N'Tiep nhan/phe duyet don hang, lap ke hoach tong the, phan cong nhan su, phe duyet chi phi phat sinh'),
+   466→   466→('TRANSPORT_SPECIALIST', N'Chuyen vien Thu tuc & Kiem dich',    N'Quan ly quy dinh y te/kiem dich/hai quan, ho so van chuyen so hoa, theo doi phe duyet tu co quan chuc nang'),
+   467→   467→('FLEET_COORDINATOR',    N'Dieu phoi vien Doi xe & Lo trinh',   N'Quan ly phuong tien chuyen dung, xay dung lo trinh, cap nhat tien do tung chang'),
+   468→   468→('DRIVER_ESCORT',        N'Tai xe / Nhan vien di kem',          N'Thuc hien van chuyen, bao cao tien do va nhat ky suc khoe ngua, bao su co khan cap'),
+   469→   469→('CUSTOMER',             N'Khach hang',                         N'Chu ngua/CLB gui yeu cau van chuyen va theo doi don hang');
+   470→   470→GO
+   471→   471→
+   472→   472→/* ---------- 4.2 partners ---------- */
+   473→   473→INSERT INTO partners (partner_id, name, type, contract_info, rate_table) VALUES
+   474→   474→('a1000000-0000-0000-0000-000000000001', N'Cong ty Van tai Hang khong Toan cau', N'AIR_CARGO_AGENT', N'Hop dong nam 2026, hieu luc den 2027-12-31', N'{"base_rate_vnd":500000000}'),
+   475→   475→('a1000000-0000-0000-0000-000000000002', N'Cong ty Van chuyen Duong bo Kanto',   N'GROUND_CARRIER',  N'Hop dong nam 2026, hieu luc den 2027-06-30', N'{"base_rate_vnd":150000000}');
+   476→   476→GO
+   477→   477→
+   478→   478→/* ---------- 4.3 locations ---------- */
+   479→   479→INSERT INTO locations (location_id, name, type, latitude, longitude, capacity, contact_info, country_code) VALUES
+   480→   480→('b2000000-0000-0000-0000-000000000001', N'Ga hang hoa San bay Quoc te Narita', N'SAN BAY',                 35.764700, 140.386200, 20, N'042-XXX-XXXX', 'JPN'),
+   481→   481→('b2000000-0000-0000-0000-000000000002', N'Trung tam kiem dich ngua Sa Dien',   N'CHUONG NGUA BAO THUE',    22.386700, 114.196900, 15, N'+852-XXXX-XXXX', 'HKG'),
+   482→   482→('b2000000-0000-0000-0000-000000000003', N'San bay Quoc te Xich Lap Giac',      N'SAN BAY',                 22.308000, 113.918500, 25, N'+852-XXXX-XXXX', 'HKG'),
+   483→   483→('b2000000-0000-0000-0000-000000000004', N'Tram kiem dich dong vat chi nhanh Tokyo', N'CO SO KIEM DICH CHI DINH', 35.549700, 139.779100, 10, N'03-XXXX-XXXX', 'JPN');
+   484→   484→GO
+   485→   485→
+   486→   486→/* ---------- 4.4 users [CAP NHAT] mo rong thanh 7 nguoi dung, gan dung 5 vai tro nghiep vu ---------- */
+   487→   487→INSERT INTO users (user_id, email, password_hash, role_id, name, phone_number, organization_name) VALUES
+   488→   488→('c3000000-0000-0000-0000-000000000001', 'admin@example.com',              '$2a$hash_admin',      'ADMIN',                N'Nguyen Van An',    '0901000001', NULL),
+   489→   489→('c3000000-0000-0000-0000-000000000002', 'logistics.manager@example.com',  '$2a$hash_manager',    'LOGISTICS_MANAGER',    N'Tran Thi Hoa',     '0901000002', NULL),
+   490→   490→('c3000000-0000-0000-0000-000000000003', 'driver@example.com',             '$2a$hash_driver',     'DRIVER_ESCORT',        N'Le Van Binh',      '0901000003', NULL),
+   491→   491→('c3000000-0000-0000-0000-000000000004', 'escort.vet@example.com',         '$2a$hash_vet',        'DRIVER_ESCORT',        N'Pham Van Cuong',   '0901000004', NULL),
+   492→   492→('c3000000-0000-0000-0000-000000000005', 'customer@example.com',           '$2a$hash_customer',   'CUSTOMER',             N'Hoang Van Dung',   '0908123456', N'Trai Cu Chi Stable'),
+   493→   493→('c3000000-0000-0000-0000-000000000006', 'specialist@example.com',         '$2a$hash_specialist', 'TRANSPORT_SPECIALIST', N'Ngo Thi Mai',      '0901000006', NULL),
+   494→   494→('c3000000-0000-0000-0000-000000000007', 'fleet.coordinator@example.com',  '$2a$hash_coordinator','FLEET_COORDINATOR',    N'Dang Van Nam',     '0901000007', NULL);
+   495→   495→GO
+   496→   496→
+   497→   497→/* ---------- 4.5 horses ---------- */
+   498→   498→INSERT INTO horses (horse_id, microchip_id, name, pedigree, owner_user_id, medical_history, allergies, temperament, gender) VALUES
+   499→   499→('d4000000-0000-0000-0000-000000000001', 'MC-0001', N'Sakura Ace',    N'Cha: Deep Impact - Me: Sakura Hana', 'c3000000-0000-0000-0000-000000000005', N'Khong co tien su benh', N'Khong', N'Hien lanh', N'Duc'),
+   500→   500→('d4000000-0000-0000-0000-000000000002', 'MC-0002', N'Hayate Fujin',  N'Cha: King Kamehameha - Me: Hayate',  'c3000000-0000-0000-0000-000000000005', N'Khong co tien su benh', N'Di ung phan hoa', N'Hoi nhay cam', N'Cai'),
+   501→   501→('d4000000-0000-0000-0000-000000000003', 'MC-0003', N'Rising Sun',    N'Cha: Lord Kanaloa - Me: Sunrise',    'c3000000-0000-0000-0000-000000000005', N'Tung dieu tri mong guoc', N'Khong', N'Hieu dong', N'Thien');
+   502→   502→GO
+   503→   503→
+   504→   504→/* ---------- 4.6 transport_assets ---------- */
+   505→   505→INSERT INTO transport_assets (asset_id, name, type, capacity, owner_partner_id, status) VALUES
+   506→   506→('e5000000-0000-0000-0000-000000000001', N'Container #AC-101', 'AIR_CONTAINER', 3, 'a1000000-0000-0000-0000-000000000001', N'San sang su dung'),
+   507→   507→('e5000000-0000-0000-0000-000000000002', N'Xe tai van chuyen 501', 'TRUCK', 2, 'a1000000-0000-0000-0000-000000000002', N'Dang van hanh'),
+   508→   508→('e5000000-0000-0000-0000-000000000003', N'Chuyen bay JL-701 - Khoang hang hoa', 'FLIGHT_SLOT', 4, NULL, N'San sang su dung');
+   509→   509→GO
+   510→   510→
+   511→   511→/* ---------- 4.7 transport_requests [CAP NHAT] them approved_by/approved_at ---------- */
+   512→   512→INSERT INTO transport_requests (request_id, customer_id, origin_location_id, destination_location_id, scheduled_departure_date, scheduled_arrival_date, special_requirements, status, estimated_amount, currency, approved_by, approved_at) VALUES
+   513→   513→('f6000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000005', 'b2000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000003', '2026-10-01', '2026-10-02', N'Mong muon xep 2 con cung khoang', N'Da phe duyet', 2500000.00, 'JPY', 'c3000000-0000-0000-0000-000000000002', '2026-09-15T09:30:00'),
+   514→   514→('f6000000-0000-0000-0000-000000000002', 'c3000000-0000-0000-0000-000000000005', 'b2000000-0000-0000-0000-000000000002', 'b2000000-0000-0000-0000-000000000001', '2026-11-10', '2026-11-11', NULL, N'Dang tham dinh', 1800000.00, 'JPY', NULL, NULL),
+   515→   515→('f6000000-0000-0000-0000-000000000003', 'c3000000-0000-0000-0000-000000000005', 'b2000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000002', '2026-09-01', '2026-09-02', NULL, N'Da huy', NULL, 'JPY', NULL, NULL);
+   516→   516→GO
+   517→   517→
+   518→   518→/* ---------- 4.8 transport_request_horses ---------- */
+   519→   519→INSERT INTO transport_request_horses (request_id, horse_id) VALUES
+   520→   520→('f6000000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000001'),
+   521→   521→('f6000000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000002'),
+   522→   522→('f6000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000003');
+   523→   523→GO
+   524→   524→
+   525→   525→/* ---------- 4.9 horse_documents ---------- */
+   526→   526→INSERT INTO horse_documents (document_id, horse_id, request_id, document_type, file_url, expiry_date) VALUES
+   527→   527→(NEWID(), 'd4000000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000001', N'Giay chung nhan suc khoe', 'https://s3.example.com/docs/health_0001.pdf', '2027-01-01'),
+   528→   528→(NEWID(), 'd4000000-0000-0000-0000-000000000002', 'f6000000-0000-0000-0000-000000000001', N'Giay chung nhan tiem chung', 'https://s3.example.com/docs/vaccine_0002.pdf', '2026-12-01'),
+   529→   529→(NEWID(), 'd4000000-0000-0000-0000-000000000003', 'f6000000-0000-0000-0000-000000000002', N'Ho chieu ngua', 'https://s3.example.com/docs/passport_0003.pdf', NULL);
+   530→   530→GO
+   531→   531→
+   532→   532→/* ---------- 4.10 customs_regulations ---------- */
+   533→   533→INSERT INTO customs_regulations (regulation_id, country_code, port_location_id, quarantine_standard, required_documents, import_export_type) VALUES
+   534→   534→(NEWID(), 'JPN', 'b2000000-0000-0000-0000-000000000001', N'Kiem dich luu giu 72 gio sau khi den', N'Giay chung nhan suc khoe, giay chung nhan tiem chung', 'IMPORT'),
+   535→   535→(NEWID(), 'HKG', 'b2000000-0000-0000-0000-000000000003', N'Kiem dich cach ly 14 ngay truoc khi xuat canh', N'Ho chieu ngua, giay chung nhan suc khoe', 'EXPORT');
+   536→   536→GO
+   537→   537→
+   538→   538→/* ---------- 4.11 inspection_statuses [CAP NHAT] them assigned_specialist_id ---------- */
+   539→   539→INSERT INTO inspection_statuses (inspection_id, request_id, horse_id, agency_name, status, remarks, assigned_specialist_id) VALUES
+   540→   540→(NEWID(), 'f6000000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000001', N'Tram kiem dich dong vat', N'Da phe duyet', NULL, 'c3000000-0000-0000-0000-000000000006'),
+   541→   541→(NEWID(), 'f6000000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000002', N'Hai quan',               N'Dang xu ly', NULL, 'c3000000-0000-0000-0000-000000000006'),
+   542→   542→(NEWID(), 'f6000000-0000-0000-0000-000000000002', 'd4000000-0000-0000-0000-000000000003', N'Bo Nong nghiep',         N'Yeu cau bo sung ho so', N'Can nop lai giay chung nhan tiem chung', 'c3000000-0000-0000-0000-000000000006');
+   543→   543→GO
+   544→   544→
+   545→   545→/* ---------- 4.12 transport_plans [CAP NHAT] them coordinator_id ---------- */
+   546→   546→INSERT INTO transport_plans (plan_id, request_id, route_details, departure_time, arrival_time, status, coordinator_id) VALUES
+   547→   547→('11a00000-0000-0000-0000-000000000001', 'f6000000-0000-0000-0000-000000000001', N'{"route":["NRT","HKG"]}', '2026-10-01T08:00:00', '2026-10-02T14:00:00', N'Dang thuc hien', 'c3000000-0000-0000-0000-000000000007'),
+   548→   548→('11a00000-0000-0000-0000-000000000002', 'f6000000-0000-0000-0000-000000000002', N'{"route":["HKG","NRT"]}', '2026-11-10T09:00:00', '2026-11-11T15:00:00', N'Dang lap ke hoach', 'c3000000-0000-0000-0000-000000000007');
+   549→   549→GO
+   550→   550→
+   551→   551→/* ---------- 4.13 route_stops [BANG MOI] chi tiet tung diem dung theo thu tu ---------- */
+   552→   552→INSERT INTO route_stops (stop_id, plan_id, sequence_no, location_id, stop_name, stop_type, planned_arrival_time, planned_departure_time) VALUES
+   553→   553→(NEWID(), '11a00000-0000-0000-0000-000000000001', 1, 'b2000000-0000-0000-0000-000000000001', N'San bay Narita - Diem xuat phat',        'ORIGIN',      NULL, '2026-10-01T08:00:00'),
+   554→   554→(NEWID(), '11a00000-0000-0000-0000-000000000001', 2, 'b2000000-0000-0000-0000-000000000003', N'San bay Xich Lap Giac - Thong quan',     'CUSTOMS',     '2026-10-01T18:00:00', '2026-10-01T20:00:00'),
+   555→   555→(NEWID(), '11a00000-0000-0000-0000-000000000001', 3, 'b2000000-0000-0000-0000-000000000002', N'Trung tam kiem dich Sa Dien - Diem den',  'DESTINATION', '2026-10-02T14:00:00', NULL),
+   556→   556→(NEWID(), '11a00000-0000-0000-0000-000000000002', 1, 'b2000000-0000-0000-0000-000000000002', N'Trung tam kiem dich Sa Dien - Diem xuat phat', 'ORIGIN',      NULL, '2026-11-10T09:00:00'),
+   557→   557→(NEWID(), '11a00000-0000-0000-0000-000000000002', 2, 'b2000000-0000-0000-0000-000000000001', N'San bay Narita - Diem den',              'DESTINATION', '2026-11-11T15:00:00', NULL);
+   558→   558→GO
+   559→   559→
+   560→   560→/* ---------- 4.14 transport_assignments ---------- */
+   561→   561→INSERT INTO transport_assignments (assignment_id, plan_id, asset_id, driver_user_id, attendant_user_id) VALUES
+   562→   562→(NEWID(), '11a00000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000001', 'c3000000-0000-0000-0000-000000000003', 'c3000000-0000-0000-0000-000000000004'),
+   563→   563→(NEWID(), '11a00000-0000-0000-0000-000000000001', 'e5000000-0000-0000-0000-000000000003', NULL, 'c3000000-0000-0000-0000-000000000004');
+   564→   564→GO
+   565→   565→
+   566→   566→/* ---------- 4.15 tracking_logs ---------- */
+   567→   567→INSERT INTO tracking_logs (log_id, plan_id, milestone, latitude, longitude, reported_by) VALUES
+   568→   568→(NEWID(), '11a00000-0000-0000-0000-000000000001', N'Khoi hanh',           35.764700, 140.386200, 'c3000000-0000-0000-0000-000000000003'),
+   569→   569→(NEWID(), '11a00000-0000-0000-0000-000000000001', N'Thong quan',          22.308000, 113.918500, 'c3000000-0000-0000-0000-000000000003'),
+   570→   570→(NEWID(), '11a00000-0000-0000-0000-000000000002', N'Chuan bi khoi hanh',  22.386700, 114.196900, 'c3000000-0000-0000-0000-000000000007');
+   571→   571→GO
+   572→   572→
+   573→   573→/* ---------- 4.16 health_logs ---------- */
+   574→   574→INSERT INTO health_logs (log_id, plan_id, horse_id, stress_level, heart_rate, temperature, appetite_status, notes, logged_by) VALUES
+   575→   575→(NEWID(), '11a00000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000001', 3, 40, 37.50, N'Tot', NULL, 'c3000000-0000-0000-0000-000000000004'),
+   576→   576→(NEWID(), '11a00000-0000-0000-0000-000000000001', 'd4000000-0000-0000-0000-000000000002', 5, 48, 38.10, N'Hoi kem', N'Hoi kich dong luc cat canh', 'c3000000-0000-0000-0000-000000000004');
+   577→   577→GO
+   578→   578→
+   579→   579→/* ---------- 4.17 incidents [CAP NHAT] cost_approved_by chuyen sang Logistics Manager ---------- */
+   580→   580→INSERT INTO incidents (incident_id, plan_id, category, description, is_sos, latitude, longitude, status, additional_cost, cost_approved_by) VALUES
+   581→   581→(NEWID(), '11a00000-0000-0000-0000-000000000001', N'Thoi tiet xau', N'Tam dung cho tai san bay do bao tiep can', 0, 22.308000, 113.918500, N'Dang xu ly', 80000.00, 'c3000000-0000-0000-0000-000000000002');
+   582→   582→GO
+   583→   583→
+   584→   584→/* ---------- 4.18 deliveries ---------- */
+   585→   585→INSERT INTO deliveries (delivery_id, plan_id, recipient_name, signature_image_url, pod_document_url) VALUES
+   586→   586→(NEWID(), '11a00000-0000-0000-0000-000000000001', N'Quan ly chuong ngua Sa Dien', 'https://s3.example.com/signatures/sig_0001.png', 'https://s3.example.com/pod/pod_0001.pdf');
+   587→   587→GO
+   588→   588→
+   589→   589→/* ---------- 4.19 invoices ---------- */
+   590→   590→INSERT INTO invoices (invoice_id, request_id, amount, currency, pdf_url, payment_status, payment_method, paid_at) VALUES
+   591→   591→(NEWID(), 'f6000000-0000-0000-0000-000000000001', 2500000.00, 'JPY', 'https://s3.example.com/invoices/inv_0001.pdf', N'Chua thanh toan', NULL, NULL),
+   592→   592→(NEWID(), 'f6000000-0000-0000-0000-000000000002', 1800000.00, 'JPY', 'https://s3.example.com/invoices/inv_0002.pdf', N'Da thanh toan', N'Chuyen khoan ngan hang', '2026-11-05T10:00:00');
+   593→   593→GO
+   594→   594→
+   595→   595→/* ---------- 4.20 quarantine_reservations ---------- */
+   596→   596→INSERT INTO quarantine_reservations (reservation_id, request_id, facility_location_id, start_date, end_date, status) VALUES
+   597→   597→(NEWID(), 'f6000000-0000-0000-0000-000000000001', 'b2000000-0000-0000-0000-000000000004', '2026-09-25', '2026-09-30', N'Da xac nhan cho');
+   598→   598→GO
+   599→   599→
+   600→   600→/* ---------- 4.21 notifications ---------- */
+   601→   601→INSERT INTO notifications (notification_id, recipient_user_id, type, title, message, related_entity_type, related_entity_id, is_read, read_at) VALUES
+   602→   602→(NEWID(), 'c3000000-0000-0000-0000-000000000005', 'REQUEST_STATUS',   N'Don hang da duoc phe duyet', N'Yeu cau van chuyen cua ban da duoc Logistics Manager phe duyet.', 'transport_requests', 'f6000000-0000-0000-0000-000000000001', 1, '2026-09-15T09:35:00'),
+   603→   603→(NEWID(), 'c3000000-0000-0000-0000-000000000006', 'INSPECTION_UPDATE', N'Ho so can bo sung', N'Ho so kiem dich cua ngua Rising Sun can nop lai giay chung nhan tiem chung.', 'inspection_statuses', 'f6000000-0000-0000-0000-000000000002', 0, NULL),
+   604→   604→(NEWID(), 'c3000000-0000-0000-0000-000000000007', 'PLAN_UPDATE',      N'Ke hoach lo trinh moi', N'Ban duoc phan cong dieu phoi ke hoach lo trinh cho don hang f6000000-...0002.', 'transport_plans', '11a00000-0000-0000-0000-000000000002', 0, NULL),
+   605→   605→(NEWID(), 'c3000000-0000-0000-0000-000000000003', 'ASSIGNMENT',       N'Phan cong chuyen van chuyen', N'Ban duoc phan cong lam tai xe cho ke hoach 11a00000-...0001.', 'transport_assignments', '11a00000-0000-0000-0000-000000000001', 1, '2026-09-30T08:00:00'),
+   606→   606→(NEWID(), 'c3000000-0000-0000-0000-000000000002', 'INCIDENT_SOS',     N'Su co can phe duyet chi phi', N'Co su co thoi tiet xau phat sinh chi phi 80,000 JPY can ban phe duyet.', 'incidents', '11a00000-0000-0000-0000-000000000001', 0, NULL);
+   607→   607→GO
+   608→   608→
+   609→   609→/* ---------- 4.22 audit_logs ---------- */
+   610→   610→INSERT INTO audit_logs (log_id, user_id, action, details, ip_address) VALUES
+   611→   611→(NEWID(), 'c3000000-0000-0000-0000-000000000001', N'Dang nhap', N'Quan tri vien dang nhap thanh cong', '203.0.113.10'),
+   612→   612→(NEWID(), NULL, N'Bao dong SOS', N'Ghi nhan tu dong su co khan cap', NULL);
+   613→   613→GO
+   614→   614→
+   615→   615→/* ============================================================================
+   616→   616→   END OF SCRIPT
+   617→   617→   ============================================================================ */
+   618→   618→

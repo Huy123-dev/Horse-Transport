@@ -1,0 +1,588 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ==========================================================================
+   CẤU HÌNH ÁNH XẠ BIẾN MÀU CHO TAILWIND CSS V4 (@theme inline)
+   Giúp các lớp tiện ích của Tailwind (như bg-background, text-primary,
+   border-border...) liên kết trực tiếp với các biến CSS gốc bên dưới.
+   ========================================================================== */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-be-vietnam);
+  --font-mono: var(--font-geist-mono);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* Bảng màu bề mặt tối lấy cảm hứng từ màu lông ngựa đua (Equestrian Dark Surface Palette) */
+  --color-surface-dark-bay: var(--surface-dark-bay);
+  --color-surface-chestnut: var(--surface-chestnut);
+  --color-surface-leather: var(--surface-leather);
+  --color-surface-sand: var(--surface-sand);
+
+  /* Bảng màu thương hiệu ngựa thuần chủng (Thoroughbred Brand Colors) */
+  --color-coat-black: var(--coat-black);
+  --color-coat-dark-bay: var(--coat-dark-bay);
+  --color-coat-chestnut: var(--coat-chestnut);
+  --color-coat-gray: var(--coat-gray);
+  --color-coat-palomino: var(--coat-palomino);
+  --color-copper-light: var(--copper-light);
+  --color-champagne-gold: var(--champagne-gold);
+
+  /* Hệ thống màu chữ độ tương phản cao (High-Contrast Typography & Highlight Colors) */
+  --color-text-primary: var(--text-primary);
+  --color-text-body: var(--text-body);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-placeholder: var(--text-placeholder);
+  --color-text-accent: var(--text-accent);
+  --color-text-link: var(--text-link);
+  --color-text-purple: var(--text-purple);
+  --color-text-cyan: var(--text-cyan);
+  --color-text-pink: var(--text-pink);
+
+  /* Màu nhận diện 6 vai trò người dùng trong hệ thống (Role Identity Colors) */
+  --color-role-customer: var(--role-customer);
+  --color-role-manager: var(--role-manager);
+  --color-role-specialist: var(--role-specialist);
+  --color-role-coordinator: var(--role-coordinator);
+  --color-role-driver: var(--role-driver);
+  --color-role-escort: var(--role-escort);
+
+  /* Độ bo góc chuẩn hóa cho các khung thẻ, nút bấm và ô nhập liệu */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* ==========================================================================
+   HỆ THỐNG THIẾT KẾ TOÀN CỤC EQUIDELI — CHẾ ĐỘ NỀN TỐI (DARK MODE)
+   - Giữ nguyên bản sắc thương hiệu nâu đậm & đồng cổ (Dark Brown & Bronze)
+   - Đảm bảo độ tương phản chữ đạt chuẩn trợ năng WCAG 2.2 AA & AAA
+   - Phân tách rõ ràng giữa: Màu chữ phân cấp, Màu vai trò và Màu trạng thái nghiệp vụ
+   ========================================================================== */
+
+:root,
+.dark {
+  /* Phông chữ chính hỗ trợ đầy đủ dấu tiếng Việt */
+  --font-be-vietnam: "Be Vietnam Pro", "Inter", system-ui, sans-serif;
+  --radius: 0.625rem;
+
+  /* ------------------------------------------------------------------------
+     1. BẢNG MÀU NỀN CHÍNH (EQUESTRIAN DARK THEME SURFACES)
+     Quy định độ sâu thị giác giữa nền trang, thanh bên (sidebar) và thẻ (card).
+     ------------------------------------------------------------------------ */
+  /* Màu nền chính của toàn bộ hệ thống EQUIDELI (nâu đen đậm). */
+  --background: #1F1612;
+  /* Màu nền cho các khu vực phân vùng tối hoặc hộp thông tin phụ. */
+  --surface-dark-bay: #241713;
+  /* Màu nền phụ cho các khối nội dung thứ cấp. */
+  --surface-chestnut: #35241F;
+  /* Màu nền cho các thẻ cần nhấn mạnh phân cấp. */
+  --surface-leather: #3D2B22;
+  /* Màu nền của thẻ nội dung chính (Card), sáng hơn nền trang để tạo chiều sâu. */
+  --card: #2B201A;
+  /* Màu nền cho hộp thoại thả xuống (Dropdown, Select, Popover). */
+  --popover: #30231D;
+  /* Màu nền thanh điều hướng bên trái (Sidebar), tối hơn nền chính để cố định bố cục. */
+  --sidebar: #150E0B;
+  /* Màu nền nhấn nhẹ khi di chuột hoặc vùng chọn phụ. */
+  --surface-sand: #47372C;
+  /* Màu đường viền tiêu chuẩn giữa các thẻ và bảng dữ liệu. */
+  --border: #5A4238;
+  /* Màu nền của ô nhập liệu (Input, Select, Textarea), tách biệt rõ với nền Card (#2B201A). */
+  --input: #30231D;
+
+  /* ------------------------------------------------------------------------
+     2. BẢNG MÀU THƯƠNG HIỆU (THOROUGHBRED BRAND COLORS)
+     ------------------------------------------------------------------------ */
+  --coat-black: #171311;
+  --coat-dark-bay: #241713;
+  --coat-chestnut: #713F2C;
+  --coat-gray: #B5A18F;
+  --coat-palomino: #D6A15D;
+  --copper-light: #D6A15D;
+  --champagne-gold: #D6A15D;
+
+  /* ------------------------------------------------------------------------
+     3. MÀU THÀNH PHẦN GIAO DIỆN CHUNG (COMPONENT SEMANTIC TOKENS)
+     ------------------------------------------------------------------------ */
+  --foreground: #F5EDE3;
+  --card-foreground: #F5EDE3;
+  --popover-foreground: #F5EDE3;
+  --sidebar-foreground: #F5EDE3;
+  --sidebar-primary: #D6A15D;
+  --sidebar-primary-foreground: #171311;
+  --sidebar-accent: #2B201A;
+  --sidebar-accent-foreground: #F5EDE3;
+  --sidebar-border: #3D2B22;
+  --sidebar-ring: #91BCEB;
+
+  /* Màu điểm nhấn chính (Primary Accent): dùng cho nút hành động chính, tab đang chọn, biểu tượng nổi bật. */
+  --primary: #D6A15D;
+  /* Màu chữ tối (#171311) đặt trên nền nút màu vàng đồng (#D6A15D) để đảm bảo độ tương phản cao. */
+  --primary-foreground: #171311;
+  --secondary: #35241F;
+  --secondary-foreground: #F5EDE3;
+  --muted: #382A23;
+  --muted-foreground: #D8C8B8;
+  --accent: #713F2C;
+  --accent-foreground: #F5EDE3;
+  --destructive: #F0786B;
+  --destructive-foreground: #171311;
+  --ring: #91BCEB;
+
+  /* ------------------------------------------------------------------------
+     4. HỆ THỐNG PHÂN CẤP MÀU CHỮ (TYPOGRAPHY COLOR HIERARCHY)
+     Sự khác biệt giữa 4 nhóm màu chữ:
+     - Primary Text (#F5EDE3): Màu kem sáng ấm, độ tương phản cao nhất trên nền tối.
+       Dùng cho tiêu đề trang, tiêu đề mục, tổng tiền hóa đơn, mã đơn và dữ liệu chính.
+     - Secondary Text (#D8C8B8): Màu be sáng dịu mắt hơn Primary Text.
+       Dùng cho câu mô tả dưới tiêu đề, thông tin phụ của khách hàng, nhãn cột, ngày giờ.
+     - Muted Text (#B5A18F): Màu nâu xám nhạt.
+       Chỉ dùng cho văn bản gợi ý trong ô nhập (placeholder), chú thích phụ hoặc siêu dữ liệu.
+     - Primary Accent (#D6A15D): Màu vàng đồng thương hiệu.
+       Dùng để làm nổi bật số liệu tài chính, liên kết quan trọng hoặc trạng thái đang chọn.
+     ------------------------------------------------------------------------ */
+  /* Màu chữ chính, dùng cho tiêu đề và nội dung quan trọng. */
+  --text-primary: #F5EDE3;
+  /* Màu chữ cho văn bản thân bài thông thường. */
+  --text-body: #F5EDE3;
+  /* Màu chữ phụ, dùng cho mô tả, nhãn phụ và thông tin bổ sung. */
+  --text-secondary: #D8C8B8;
+  /* Màu chữ trầm, dùng cho siêu dữ liệu (metadata), gợi ý phụ. */
+  --text-muted: #B5A18F;
+  /* Màu chữ gợi ý bên trong các ô nhập liệu (input/textarea placeholder). */
+  --text-placeholder: #B5A18F;
+  /* Màu chữ nhấn mạnh màu vàng đồng thương hiệu. */
+  --text-accent: #D6A15D;
+  /* Màu chữ cho các đường dẫn liên kết (hyperlink). */
+  --text-link: #91BCEB;
+  --text-purple: #C4B5FD;
+  --text-cyan: #5EEAD4;
+  --text-pink: #F9A8D4;
+
+  /* ------------------------------------------------------------------------
+     5. MÀU NHẬN DIỆN VAI TRÒ NGƯỜI DÙNG (ROLE IDENTITY COLORS)
+     Mỗi vai trò trong 6 vai trò của EQUIDELI có một màu huy hiệu riêng biệt
+     để người dùng dễ dàng phân biệt quyền hạn trên Header, Sidebar và bảng nhân sự.
+     ------------------------------------------------------------------------ */
+  /* Khách hàng (CUSTOMER) - Tím hồng phấn */
+  --role-customer: #E9A8FF;
+  --role-customer-bg: rgba(233, 168, 255, 0.12);
+  --role-customer-border: rgba(233, 168, 255, 0.35);
+
+  /* Quản lý Logistics (LOGISTICS_MANAGER) - Cam san hô */
+  --role-manager: #FF9F80;
+  --role-manager-bg: rgba(255, 159, 128, 0.12);
+  --role-manager-border: rgba(255, 159, 128, 0.35);
+
+  /* Chuyên viên vận tải & hồ sơ (TRANSPORT_SPECIALIST) - Xanh da trời */
+  --role-specialist: #7DD3FC;
+  --role-specialist-bg: rgba(125, 211, 252, 0.12);
+  --role-specialist-border: rgba(125, 211, 252, 0.35);
+
+  /* Điều phối viên Đội xe & Lộ trình (FLEET_COORDINATOR) - Tím Lavender */
+  --role-coordinator: #C4B5FD;
+  --role-coordinator-bg: rgba(196, 181, 253, 0.12);
+  --role-coordinator-border: rgba(196, 181, 253, 0.35);
+
+  /* Tài xế (DRIVER) - Xanh ngọc Turquoise */
+  --role-driver: #5EEAD4;
+  --role-driver-bg: rgba(94, 234, 212, 0.12);
+  --role-driver-border: rgba(94, 234, 212, 0.35);
+
+  /* Nhân viên đi kèm chăm sóc ngựa (ESCORT) - Hồng Flamingo */
+  --role-escort: #F9A8D4;
+  --role-escort-bg: rgba(249, 168, 212, 0.12);
+  --role-escort-border: rgba(249, 168, 212, 0.35);
+
+  /* ------------------------------------------------------------------------
+     6. MÀU TRẠNG THÁI NGHIỆP VỤ CHUẨN HÓA (SEMANTIC STATUS COLORS)
+     Sự khác biệt giữa 4 nhóm trạng thái nghiệp vụ:
+     - Success (#81C995 - Xanh lá dịu): Biểu thị hoàn tất, đã thanh toán (PAID),
+       đã phê duyệt (APPROVED), phương tiện sẵn sàng (AVAILABLE) hoặc tài khoản hoạt động.
+     - Warning (#F2BD65 - Vàng hổ phách): Biểu thị trạng thái cần chú ý hoặc đang chờ,
+       như chưa thanh toán (UNPAID), thanh toán một phần (PARTIALLY_PAID), chờ duyệt,
+       tạm dừng hoặc cần bổ sung hồ sơ.
+     - Danger (#F0786B - Đỏ san hô): Biểu thị cảnh báo nghiêm trọng hoặc lỗi,
+       như quá hạn thanh toán (OVERDUE), bị từ chối (REJECTED), đã hủy (CANCELLED),
+       sự cố khẩn cấp (SOS) hoặc tài khoản bị hạn chế (RESTRICTED).
+     - Info (#91BCEB - Xanh dương sáng): Biểu thị tiến trình đang diễn ra bình thường,
+       như đang thực hiện (IN_PROGRESS), đang thẩm định (UNDER_REVIEW), mới gửi (SUBMITTED).
+     ------------------------------------------------------------------------ */
+  /* Màu trạng thái thành công như đã thanh toán, đã phê duyệt hoặc hoàn thành chuyến. */
+  --success: #81C995;
+  --success-bg: rgba(129, 201, 149, 0.14);
+  --success-fg: #81C995;
+  --success-border: rgba(129, 201, 149, 0.42);
+
+  /* Màu trạng thái cảnh báo hoặc chờ xử lý như chưa thanh toán, thanh toán một phần, chờ duyệt. */
+  --warning: #F2BD65;
+  --warning-bg: rgba(242, 189, 101, 0.14);
+  --warning-fg: #F2BD65;
+  --warning-border: rgba(242, 189, 101, 0.42);
+
+  /* Màu trạng thái lỗi hoặc khẩn cấp như quá hạn thanh toán, từ chối, hủy đơn, bị hạn chế. */
+  --danger: #F0786B;
+  --danger-bg: rgba(240, 120, 107, 0.14);
+  --danger-fg: #F0786B;
+  --danger-border: rgba(240, 120, 107, 0.42);
+
+  /* Màu trạng thái thông tin hoặc đang xử lý như đang vận chuyển, đang thẩm định, đang lập kế hoạch. */
+  --info: #91BCEB;
+  --info-bg: rgba(145, 188, 235, 0.14);
+  --info-fg: #91BCEB;
+  --info-border: rgba(145, 188, 235, 0.42);
+
+  /* ------------------------------------------------------------------------
+     7. BẢNG MÀU BIỂU ĐỒ THỐNG KÊ (RECHARTS ANALYTICS PALETTE)
+     ------------------------------------------------------------------------ */
+  --chart-1: #713F2C;             /* Nâu hạt dẻ (Chestnut) */
+  --chart-2: #D6A15D;             /* Vàng đồng (Gold Accent) */
+  --chart-3: #81C995;             /* Xanh lá thành công (Success Green) */
+  --chart-4: #91BCEB;             /* Xanh dương thông tin (Info Light Blue) */
+  --chart-5: #F0786B;             /* Đỏ san hô cảnh báo (Danger Coral Red) */
+
+  /* ------------------------------------------------------------------------
+     8. BIẾN TƯƠNG THÍCH NGƯỢC (BACKWARD COMPATIBILITY ALIASES)
+     Đảm bảo các thành phần cũ dùng --cream, --ivory, --copper vẫn hiển thị
+     đúng độ tương phản cao trên nền tối (#F5EDE3 thay vì màu tối).
+     ------------------------------------------------------------------------ */
+  --chestnut: #713F2C;
+  --dark-bay: #241713;
+  --copper: #D6A15D;
+  --sand: #35241F;
+  --sand-dark: #5A4238;
+  --ivory: #F5EDE3;
+  --cream: #F5EDE3;
+  --ink: #F5EDE3;
+  --ink-soft: #D8C8B8;
+}
+
+/* ==========================================================================
+   QUY TẮC HIỂN THỊ CƠ BẢN (BASE TYPOGRAPHY & ELEMENT STYLES)
+   ========================================================================== */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+    color: var(--text-primary);
+    background-color: var(--background);
+    /* Chiều cao dòng 1.6 giúp văn bản tiếng Việt có dấu đọc thoáng và không dính chữ */
+    line-height: 1.6;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+  a {
+    color: var(--text-link);
+    text-underline-offset: 4px;
+    transition: color 0.15s ease, filter 0.15s ease;
+  }
+  a:hover {
+    filter: brightness(1.15);
+  }
+  ::selection {
+    background-color: var(--coat-palomino);
+    color: var(--coat-black);
+  }
+}
+
+/* Định dạng thống nhất cho các ô nhập liệu (Input, Select, Textarea) */
+@layer base {
+  input:not([type="checkbox"]):not([type="radio"]), select, textarea {
+    background-color: var(--input) !important;
+    border: 1px solid var(--border) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius);
+  }
+  input::placeholder, textarea::placeholder {
+    color: var(--text-placeholder) !important;
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--copper-light) !important;
+    box-shadow: 0 0 0 3px rgba(214, 161, 93, 0.28) !important;
+    outline: none !important;
+  }
+}
+
+/* ==========================================================================
+   HIỆU ỨNG CHUYỂN ĐỘNG VÀ LỚP TIỆN ÍCH GIAO DIỆN (UTILITIES & ANIMATIONS)
+   ========================================================================== */
+@layer utilities {
+  @keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+  }
+  @keyframes fade-in-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+  @keyframes slide-in-right {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .animate-fade-in-up { animation: fade-in-up 0.4s ease-out both; }
+  .animate-slide-in-right { animation: slide-in-right 0.3s ease-out both; }
+  .animate-pulse-soft { animation: pulse-soft 2s ease-in-out infinite; }
+
+  /* Hiệu ứng khung xương khi đang tải dữ liệu (Skeleton loading) */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, #2B201A 0%, #382A23 50%, #2B201A 100%);
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  /* Hiệu ứng nổi nhẹ khi di chuột qua thẻ (Card hover) */
+  .card-hover {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.5);
+    border-color: var(--copper-light);
+  }
+
+  /* Hiệu ứng nhấn nút vật lý */
+  .btn-press {
+    transition: transform 0.1s ease;
+  }
+  .btn-press:active {
+    transform: scale(0.97);
+  }
+
+  /* Hiệu ứng nhịp thở nhẹ cho huy hiệu trạng thái */
+  .badge-pulse::before {
+    content: "";
+    animation: pulse-soft 2s ease-in-out infinite;
+  }
+
+  /* Chữ chuyển sắc thương hiệu */
+  .text-gradient-brand {
+    background: linear-gradient(135deg, var(--copper-light) 0%, var(--coat-palomino) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Viền tiêu điểm mượt mà khi điều hướng bằng bàn phím */
+  .focus-ring {
+    outline: 2px solid transparent;
+    outline-offset: 2px;
+    transition: box-shadow 0.15s ease;
+  }
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 3px rgba(214, 161, 93, 0.35);
+  }
+
+  /* Đường phân cách trang trí hình thoi */
+  .divider-diamond {
+    position: relative;
+    text-align: center;
+  }
+  .divider-diamond::before,
+  .divider-diamond::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background: var(--border);
+  }
+  .divider-diamond::before { left: 0; }
+  .divider-diamond::after { right: 0; }
+
+  /* Viền chuyển sắc tinh tế cho các khối nổi bật */
+  .gradient-accent-border {
+    position: relative;
+  }
+  .gradient-accent-border::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, var(--coat-chestnut), var(--coat-palomino), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .btn-disabled-readable:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+/* Định dạng khi in ấn hóa đơn hoặc chứng từ chuẩn A4 ra giấy / PDF (@media print) */
+@media print {
+  html, body {
+    background: #FFFFFF !important;
+    color: #1F1612 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body * { visibility: hidden; }
+  .print-area, .print-area * {
+    visibility: visible;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  .print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #FFFFFF !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  .print-area thead {
+    display: table-header-group;
+  }
+  .no-print { display: none !important; }
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+}
+
+/* Thanh cuộn tùy chỉnh và các lớp màu bổ trợ cho Badge */
+@layer utilities {
+  .scrollbar-equideli {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--background);
+  }
+  .scrollbar-equideli::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-equideli::-webkit-scrollbar-track {
+    background: var(--background);
+  }
+  .scrollbar-equideli::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+  }
+  .scrollbar-equideli::-webkit-scrollbar-thumb:hover {
+    background-color: var(--coat-palomino);
+  }
+
+  /* Họa tiết ánh sáng nhẹ trên nền da thuộc của Sidebar */
+  .leather-texture {
+    background-image:
+      radial-gradient(circle at 20% 30%, rgba(214, 161, 93, 0.05) 0%, transparent 60%),
+      radial-gradient(circle at 80% 70%, rgba(113, 63, 44, 0.08) 0%, transparent 60%);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Các lớp CSS gán trực tiếp màu trạng thái nghiệp vụ */
+  .status-success {
+    background-color: var(--success-bg) !important;
+    color: var(--success-fg) !important;
+    border: 1px solid var(--success-border) !important;
+  }
+  .status-warning {
+    background-color: var(--warning-bg) !important;
+    color: var(--warning-fg) !important;
+    border: 1px solid var(--warning-border) !important;
+  }
+  .status-danger {
+    background-color: var(--danger-bg) !important;
+    color: var(--danger-fg) !important;
+    border: 1px solid var(--danger-border) !important;
+  }
+  .status-info {
+    background-color: var(--info-bg) !important;
+    color: var(--info-fg) !important;
+    border: 1px solid var(--info-border) !important;
+  }
+
+  /* Các lớp CSS gán màu huy hiệu theo vai trò người dùng */
+  .role-badge-customer {
+    background-color: var(--role-customer-bg);
+    color: var(--role-customer);
+    border: 1px solid var(--role-customer-border);
+  }
+  .role-badge-manager {
+    background-color: var(--role-manager-bg);
+    color: var(--role-manager);
+    border: 1px solid var(--role-manager-border);
+  }
+  .role-badge-specialist {
+    background-color: var(--role-specialist-bg);
+    color: var(--role-specialist);
+    border: 1px solid var(--role-specialist-border);
+  }
+  .role-badge-coordinator {
+    background-color: var(--role-coordinator-bg);
+    color: var(--role-coordinator);
+    border: 1px solid var(--role-coordinator-border);
+  }
+  .role-badge-driver {
+    background-color: var(--role-driver-bg);
+    color: var(--role-driver);
+    border: 1px solid var(--role-driver-border);
+  }
+  .role-badge-escort {
+    background-color: var(--role-escort-bg);
+    color: var(--role-escort);
+    border: 1px solid var(--role-escort-border);
+  }
+
+  /* Các lớp tiện ích tô màu chữ nhanh */
+  .text-link { color: var(--text-link); }
+  .text-purple { color: var(--text-purple); }
+  .text-cyan { color: var(--text-cyan); }
+  .text-pink { color: var(--text-pink); }
+  .text-accent { color: var(--text-accent); }
+}
