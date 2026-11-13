@@ -6,7 +6,7 @@
  * ============================================================================
  * Màn hình này dùng chung cho 2 vai trò:
  * - LOGISTICS_MANAGER: Xem toàn bộ hóa đơn, lọc theo trạng thái, phát hành hóa đơn
- *   tự động / thủ công, xuất PDF chuẩn A4 và xuất báo cáo CSV.
+ *   tự động / thủ công và xuất PDF chuẩn A4.
  * - CUSTOMER: Xem danh sách hóa đơn của các đơn vận chuyển thuộc về mình,
  *   kiểm tra hạn thanh toán, số tiền còn phải trả và tải hóa đơn PDF chuẩn A4.
  *
@@ -41,7 +41,6 @@ import {
   Clock,
   Plus,
   Loader2,
-  Download,
   AlertTriangle,
   ShieldCheck,
   CheckCircle2,
@@ -56,7 +55,6 @@ import {
   normalizePaymentStatus,
   paymentStatusLabel,
 } from "@/lib/constants";
-import { exportToCSV } from "@/lib/csv-export";
 import { exportInvoiceToA4Pdf } from "@/lib/invoice-pdf";
 import { ListStatsBar } from "@/components/app/list-stats-bar";
 
@@ -293,40 +291,6 @@ export function InvoiceList() {
     return matchSearch && matchStatus;
   });
 
-  /** Xuất danh sách hóa đơn đang lọc ra tệp CSV để phục vụ đối soát kế toán */
-  const handleExportCSV = () => {
-    const headers = [
-      "Số hóa đơn",
-      "Mã định danh (UUID)",
-      "Mã đơn vận chuyển",
-      "Khách hàng",
-      "Tổng số tiền (USD)",
-      "Đã thanh toán (USD)",
-      "Còn phải thu (USD)",
-      "Trạng thái thanh toán",
-      "Ngày phát hành",
-      "Hạn thanh toán",
-      "Ngày hoàn tất thanh toán",
-      "Phương thức thanh toán",
-    ];
-    const rows = filtered.map((inv) => [
-      inv.invoiceNumber || invoiceCode(inv.invoiceId),
-      inv.invoiceId,
-      inv.requestId,
-      inv.customerName || "",
-      inv.amount,
-      inv.paidAmount ?? 0,
-      inv.remainingAmount ?? (inv.amount - (inv.paidAmount ?? 0)),
-      resolveInvoiceStatusLabel(inv),
-      inv.issuedAt,
-      inv.dueDate ?? "",
-      inv.paidAt ?? "",
-      inv.paymentMethod || "",
-    ]);
-    exportToCSV(`equideli-hoa-don-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
-    toast({ title: "Đã xuất tệp CSV", description: `${rows.length} hóa đơn đã được tải xuống.` });
-  };
-
   // Tính toán các chỉ số tổng hợp (KPI) trên toàn bộ danh sách hóa đơn
   const totalInvoiced = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   const totalPaid = invoices.reduce((sum, inv) => {
@@ -365,9 +329,6 @@ export function InvoiceList() {
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-1.5">
-              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Xuất CSV</span>
-            </Button>
             {isManager && (
               <Button onClick={() => setShowCreate(true)} className="gap-2 btn-press font-semibold">
                 <Plus className="h-4 w-4" /> Phát hành hóa đơn

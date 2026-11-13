@@ -11,7 +11,7 @@
  *    chi tiết hành trình & ngựa vận chuyển, bảng kê hạng mục dịch vụ và tổng hợp tài chính.
  * 2. Xuất tệp PDF chuẩn A4 (`exportInvoiceToA4Pdf`) hỗ trợ 100% phông chữ tiếng Việt
  *    và tách biệt hoàn toàn khỏi giao diện nền tối của bảng điều khiển.
- * 3. In trực tiếp chứng từ A4 (`window.print()`) hoặc tải dữ liệu đối soát CSV.
+ * 3. In trực tiếp chứng từ A4 (`window.print()`) chuẩn quốc tế.
  * 4. Theo dõi bảng Lịch sử cập nhật trạng thái thanh toán (`paymentHistory`).
  * 5. Chức năng dành riêng cho Quản lý Logistics (`LOGISTICS_MANAGER`):
  *    Mở hộp thoại cập nhật trạng thái thanh toán ngoại tuyến (`PATCH /invoices/{id}/payment-status`),
@@ -44,7 +44,6 @@ import {
   CreditCard,
   Printer,
   History,
-  Download,
   FileDown,
   ExternalLink,
 } from "lucide-react";
@@ -55,7 +54,6 @@ import {
   normalizePaymentStatus,
   paymentStatusLabel,
 } from "@/lib/constants";
-import { exportToCSV } from "@/lib/csv-export";
 import { exportInvoiceToA4Pdf } from "@/lib/invoice-pdf";
 import { InvoiceRecord, resolveInvoiceStatusLabel } from "./invoice-list";
 import {
@@ -190,45 +188,6 @@ export function InvoiceDetail() {
   const paidAmount = invoice.paidAmount ?? (isPaid ? totalAmount : 0);
   const remainingAmount = invoice.remainingAmount ?? Math.max(0, totalAmount - paidAmount);
 
-  const handleExportCsv = () => {
-    exportToCSV(
-      `hoa-don-${formattedInvoiceNo}.csv`,
-      [
-        "Số hóa đơn",
-        "Mã định danh (UUID)",
-        "Mã đơn vận chuyển",
-        "Khách hàng",
-        "Tổng số tiền",
-        "Đã thanh toán",
-        "Còn phải thu",
-        "Đơn vị tiền tệ",
-        "Trạng thái thanh toán",
-        "Ngày phát hành",
-        "Hạn thanh toán",
-        "Ngày hoàn tất",
-        "Phương thức thanh toán",
-      ],
-      [
-        [
-          formattedInvoiceNo,
-          invoice.invoiceId,
-          invoice.requestId,
-          invoice.customerName || "",
-          totalAmount,
-          paidAmount,
-          remainingAmount,
-          invoice.currency,
-          statusLabel,
-          invoice.issuedAt,
-          invoice.dueDate ?? "",
-          invoice.paidAt ?? "",
-          invoice.paymentMethod || "",
-        ],
-      ]
-    );
-    toast({ title: "Đã xuất tệp CSV", description: "Bản sao lưu dữ liệu hóa đơn đã được tải về máy." });
-  };
-
   return (
     <div className="space-y-6">
       {/* Thanh tiêu đề & bộ nút hành động quản trị (ẩn khi in A4) */}
@@ -264,14 +223,6 @@ export function InvoiceDetail() {
                 className="gap-1.5"
               >
                 <Printer className="h-4 w-4" /> <span className="hidden sm:inline">In hóa đơn</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleExportCsv}
-                className="gap-1.5"
-              >
-                <Download className="h-4 w-4" /> <span className="hidden md:inline">CSV</span>
               </Button>
               <Button
                 variant="outline"
