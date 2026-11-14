@@ -49,6 +49,9 @@ public class CompensationClaim {
     @Column(name = "approved_amount", precision = 12, scale = 2)
     private BigDecimal approvedAmount;
 
+    @Column(name = "invoice_adjusted", nullable = false)
+    private boolean invoiceAdjusted;
+
     @Column(name = "evidence_url", length = 512)
     private String evidenceUrl;
 
