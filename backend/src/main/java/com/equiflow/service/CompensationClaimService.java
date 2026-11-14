@@ -39,17 +39,20 @@ public class CompensationClaimService {
     private final DeliveryRepository deliveryRepository;
     private final UserRepository userRepository;
     private final RequestAccessService requestAccess;
+    private final InvoiceService invoiceService;
 
     public CompensationClaimService(CompensationClaimRepository claimRepository,
                                     TransportPlanRepository planRepository,
                                     DeliveryRepository deliveryRepository,
                                     UserRepository userRepository,
-                                    RequestAccessService requestAccess) {
+                                    RequestAccessService requestAccess,
+                                    InvoiceService invoiceService) {
         this.claimRepository = claimRepository;
         this.planRepository = planRepository;
         this.deliveryRepository = deliveryRepository;
         this.userRepository = userRepository;
         this.requestAccess = requestAccess;
+        this.invoiceService = invoiceService;
     }
 
     @Transactional
@@ -151,12 +154,41 @@ public class CompensationClaimService {
             approvedAmount = BigDecimal.ZERO;
         }
 
+        String previousStatus = claim.getStatus();
+        BigDecimal previousAwardAmount = claim.getApprovedAmount();
+        BigDecimal previousAppliedAmount = claim.isInvoiceAdjusted() && claim.getApprovedAmount() != null
+                ? claim.getApprovedAmount()
+                : BigDecimal.ZERO;
+        boolean keepApprovedCompensation = (APPROVED.equals(previousStatus) || PARTIALLY_APPROVED.equals(previousStatus))
+                && (RESOLVED.equals(status) || CLOSED.equals(status))
+                && previousAwardAmount != null;
+        BigDecimal nextAppliedAmount;
+        if (APPROVED.equals(status) || PARTIALLY_APPROVED.equals(status)) {
+            nextAppliedAmount = approvedAmount != null ? approvedAmount : BigDecimal.ZERO;
+            claim.setInvoiceAdjusted(true);
+        } else if (keepApprovedCompensation) {
+            approvedAmount = previousAwardAmount;
+            nextAppliedAmount = previousAwardAmount;
+            claim.setInvoiceAdjusted(true);
+        } else {
+            nextAppliedAmount = BigDecimal.ZERO;
+            claim.setInvoiceAdjusted(false);
+        }
+
         claim.setStatus(status);
         claim.setDecisionNote(note);
         claim.setApprovedAmount(approvedAmount);
         claim.setReviewedBy(managerId);
         claim.setReviewedAt(LocalDateTime.now(ZoneOffset.UTC));
         claim = claimRepository.saveAndFlush(claim);
+
+        invoiceService.applyCompensationAdjustment(
+                claim.getRequestId(),
+                claim.getCurrency(),
+                previousAppliedAmount,
+                nextAppliedAmount,
+                managerId
+        );
 
         requestAccess.notify(claim.getCustomerId(), "REQUEST_STATUS", "Cập nhật xử lý bồi thường",
                 "Yêu cầu bồi thường đã chuyển trạng thái sang " + getStatusLabel(status)

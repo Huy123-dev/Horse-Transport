@@ -366,7 +366,12 @@ export function DriverPlanDetail() {
         <CardContent className="grid gap-4 p-5 sm:grid-cols-4">
           <div>
             <p className="text-xs text-muted-foreground">Trạng thái</p>
-            <div className="mt-1"><StatusBadge status={transportPlanStatusLabel(plan.status)} /></div>
+            <div className="mt-1">
+              <StatusBadge
+                status={transportPlanStatusLabel(plan.status)}
+                toneOverride={transportPlanStatusLabel(plan.status) === "Sẵn sàng" ? "warning" : undefined}
+              />
+            </div>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Tuyến đường</p>

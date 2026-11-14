@@ -190,7 +190,10 @@ export function DriverDashboard() {
                   <FileCheck className="h-3.5 w-3.5 text-emerald-500" /> Ký nhận POD điện tử
                 </span>
               </div>
-              <StatusBadge status={transportPlanStatusLabel(primaryTrip.status)} />
+              <StatusBadge
+                status={transportPlanStatusLabel(primaryTrip.status)}
+                toneOverride={transportPlanStatusLabel(primaryTrip.status) === "Sẵn sàng" ? "warning" : undefined}
+              />
             </div>
           </CardContent>
         </Card>
@@ -249,7 +252,10 @@ export function DriverDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
-                      <StatusBadge status={transportPlanStatusLabel(plan.status)} />
+                      <StatusBadge
+                        status={transportPlanStatusLabel(plan.status)}
+                        toneOverride={transportPlanStatusLabel(plan.status) === "Sẵn sàng" ? "warning" : undefined}
+                      />
                       <ChevronRight className="h-4 w-4 text-muted-foreground" />
                     </div>
                   </button>

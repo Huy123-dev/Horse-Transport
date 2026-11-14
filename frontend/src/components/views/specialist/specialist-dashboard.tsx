@@ -7,10 +7,9 @@
  * Màn hình tổng quan dành cho Chuyên viên Thủ tục & Kiểm dịch (`TRANSPORT_SPECIALIST`).
  *
  * Cơ chế hoạt động:
- * 1. Gọi đồng thời (`Promise.all`) 3 API:
+ * 1. Gọi đồng thời (`Promise.all`) 2 API:
  *    - `/transport-requests`: Danh sách yêu cầu vận chuyển
  *    - `/transport-plans`: Danh sách kế hoạch lộ trình
- *    - `/inspections`: Danh sách hồ sơ kiểm định thú y & thông quan
  * 2. Lọc dữ liệu nghiệp vụ cho Chuyên viên:
  *    - `pendingSpecialistRequests`: Các đơn đã được Quản lý Logistics duyệt cấp 1
  *      (`MANAGER_APPROVED` / `cho chuyen vien kiem tra`) đang chờ Chuyên viên thẩm định cấp 2.
@@ -30,8 +29,8 @@ import { StatusBadge } from "@/components/app/status-badge";
 import { EmptyState, ErrorState, LoadingState } from "@/components/app/empty-state";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, FileText, HeartPulse, Route, ShieldCheck, Truck } from "lucide-react";
-import { formatDateTime, formatRouteDetails, inspectionCode, inspectionStatusLabel, requestCode, transportPlanStatusLabel, transportRequestStatusLabel } from "@/lib/constants";
+import { FileText, Route, ShieldCheck, Truck } from "lucide-react";
+import { formatDateTime, formatRouteDetails, requestCode, transportPlanStatusLabel, transportRequestStatusLabel } from "@/lib/constants";
 import { StatusPieChart } from "@/components/app/charts";
 
 interface TransportRequest {
@@ -51,20 +50,10 @@ interface TransportPlan {
   status: string;
 }
 
-interface Inspection {
-  inspectionId: string;
-  requestId: string;
-  horseName: string;
-  agencyName: string;
-  status: string;
-  updatedAt: string;
-}
-
 interface DashboardData {
   pendingSpecialistRequests: TransportRequest[];
   approvedRequests: TransportRequest[];
   plans: TransportPlan[];
-  inspections: Inspection[];
 }
 
 /** Chuẩn hóa chuỗi trạng thái về chữ thường và thay dấu gạch dưới bằng khoảng trắng để dễ so sánh */
@@ -89,15 +78,14 @@ export function SpecialistDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  /** Tải song song dữ liệu yêu cầu, kế hoạch và hồ sơ kiểm định từ Backend */
+  /** Tải song song dữ liệu yêu cầu và kế hoạch từ Backend */
   const load = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const [allRequests, plans, inspections] = await Promise.all([
+      const [allRequests, plans] = await Promise.all([
         apiGet<TransportRequest[]>("/transport-requests"),
         apiGet<TransportPlan[]>("/transport-plans"),
-        apiGet<Inspection[]>("/inspections"),
       ]);
 
       // Tập hợp các requestId đã có kế hoạch vận chuyển
@@ -117,7 +105,6 @@ export function SpecialistDashboard() {
         pendingSpecialistRequests,
         approvedRequests,
         plans,
-        inspections,
       });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Không thể tải dữ liệu chuyên viên.");
@@ -140,23 +127,21 @@ export function SpecialistDashboard() {
     <div className="space-y-6">
       <PageHeader
         title="Tổng quan Chuyên viên vận tải"
-        description="Theo dõi thẩm định yêu cầu cấp 2, kế hoạch tuyến đường và hồ sơ kiểm định."
+        description="Theo dõi thẩm định yêu cầu cấp 2 và kế hoạch tuyến đường."
         icon={<ShieldCheck className="h-5 w-5" />}
         actions={
           <div className="flex flex-wrap gap-2">
             <Button onClick={() => navigate("approvals")} variant="outline">Thẩm định yêu cầu</Button>
             <Button onClick={() => navigate("plans")} variant="outline">Danh sách kế hoạch</Button>
-            <Button onClick={() => navigate("inspections")}>Hồ sơ kiểm định</Button>
           </div>
         }
       />
 
-      {/* 4 Thẻ thống kê chỉ số chính (StatCard) */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* 3 Thẻ thống kê chỉ số chính (StatCard) */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Chờ chuyên viên thẩm định" value={data.pendingSpecialistRequests.length} icon={<ShieldCheck className="h-6 w-6" />} tone="danger" />
         <StatCard label="Đã duyệt, chưa có kế hoạch" value={data.approvedRequests.length} icon={<FileText className="h-6 w-6" />} tone="warning" />
         <StatCard label="Kế hoạch đang lập" value={planningPlans.length} icon={<Route className="h-6 w-6" />} tone="info" />
-        <StatCard label="Hồ sơ kiểm định" value={data.inspections.length} icon={<ClipboardCheck className="h-6 w-6" />} />
       </div>
 
       {/* Khối ưu tiên: Danh sách yêu cầu đang chờ Chuyên viên thẩm định cấp 2 */}
@@ -189,21 +174,12 @@ export function SpecialistDashboard() {
         </Card>
       )}
 
-      {/* Biểu đồ tròn thống kê tỷ lệ trạng thái Kế hoạch và Kiểm định */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader><CardTitle className="text-base">Trạng thái kế hoạch</CardTitle></CardHeader>
-          <CardContent>
-            <StatusPieChart data={countStatuses(data.plans.map((plan) => transportPlanStatusLabel(plan.status)))} />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader><CardTitle className="text-base">Trạng thái kiểm định</CardTitle></CardHeader>
-          <CardContent>
-            <StatusPieChart data={countStatuses(data.inspections.map((item) => inspectionStatusLabel(item.status)))} />
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader><CardTitle className="text-base">Trạng thái kế hoạch</CardTitle></CardHeader>
+        <CardContent>
+          <StatusPieChart data={countStatuses(data.plans.map((plan) => transportPlanStatusLabel(plan.status)))} />
+        </CardContent>
+      </Card>
 
       {/* Hàng đợi kế hoạch đang lập và yêu cầu chờ lập kế hoạch */}
       <div className="grid gap-6 lg:grid-cols-2">
@@ -260,30 +236,6 @@ export function SpecialistDashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Danh sách 6 hồ sơ kiểm định gần đây nhất */}
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2 text-base"><HeartPulse className="h-4 w-4 text-primary" /> Hồ sơ kiểm định gần đây</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {data.inspections.length === 0 ? (
-            <EmptyState title="Chưa có bản ghi kiểm định" />
-          ) : data.inspections.slice(0, 6).map((inspection) => (
-            <button
-              key={inspection.inspectionId}
-              onClick={() => navigate("inspection-detail", { id: inspection.inspectionId })}
-              className="flex w-full items-center gap-3 rounded-lg border border-border p-3 text-left transition-colors hover:border-primary/40"
-            >
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-semibold text-[var(--text-primary)]">{inspectionCode(inspection.inspectionId)} · {inspection.horseName} · {inspection.agencyName}</span>
-                <span className="mt-1 block text-xs text-[var(--text-secondary)]">
-                  Yêu cầu {requestCode(inspection.requestId)} · {formatDateTime(inspection.updatedAt)}
-                </span>
-              </span>
-              <StatusBadge status={inspectionStatusLabel(inspection.status)} />
-            </button>
-          ))}
-        </CardContent>
-      </Card>
 
     </div>
   );

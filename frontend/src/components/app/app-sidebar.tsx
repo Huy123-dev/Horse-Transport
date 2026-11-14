@@ -19,7 +19,7 @@ import { useAppStore, type ViewKey } from "@/store/app-store";
 import { getRoleConfig } from "@/components/app/role-badge";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Heart, FileText, ClipboardCheck, ShieldAlert,
+  LayoutDashboard, Heart, FileText, ShieldAlert,
   Route, Truck, Users, Bell, ClipboardList, PackageCheck,
   ScrollText, Receipt, Stethoscope, DollarSign, Scale, MessageSquare, type LucideIcon,
 } from "lucide-react";
@@ -46,7 +46,6 @@ const NAV_BY_ROLE: Record<string, NavItem[]> = {
     { key: "dashboard", label: "Tổng quan", icon: LayoutDashboard },
     { key: "approvals", label: "Thẩm định yêu cầu", icon: ScrollText },
     { key: "plans", label: "Kế hoạch & điểm dừng", icon: Route },
-    { key: "inspections", label: "Hồ sơ thẩm định", icon: ClipboardCheck },
     { key: "notifications", label: "Thông báo", icon: Bell },
   ],
   // 3. Quản lý Logistics: Phê duyệt đơn hàng cấp 1, giám sát toàn bộ chuyến đi, hóa đơn, nhân sự, danh sách hạn chế và nhật ký kiểm toán

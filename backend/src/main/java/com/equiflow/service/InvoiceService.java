@@ -232,6 +232,91 @@ public class InvoiceService {
         return inv;
     }
 
+    @Transactional
+    public void applyCompensationAdjustment(UUID requestId, String currency,
+                                           BigDecimal previousDeduction, BigDecimal nextDeduction,
+                                           UUID actorUserId) {
+        previousDeduction = previousDeduction != null ? previousDeduction : BigDecimal.ZERO;
+        nextDeduction = nextDeduction != null ? nextDeduction : BigDecimal.ZERO;
+        if (previousDeduction.compareTo(nextDeduction) == 0) {
+            return;
+        }
+
+        Invoice invoice = repository.findFirstByRequestIdOrderByIssuedAtDesc(requestId)
+                .orElseThrow(() -> new ApiException(HttpStatus.CONFLICT,
+                        "Không thể duyệt bồi thường vì yêu cầu chưa có hóa đơn để khấu trừ"));
+        if (currency == null || invoice.getCurrency() == null
+                || !invoice.getCurrency().equalsIgnoreCase(currency.trim())) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Đơn vị tiền tệ bồi thường phải khớp với đơn vị tiền tệ hóa đơn");
+        }
+        if (REFUNDED.equals(invoice.getPaymentStatus())) {
+            throw new ApiException(HttpStatus.CONFLICT,
+                    "Không thể điều chỉnh hóa đơn đã hoàn tiền");
+        }
+
+        BigDecimal currentTotal = invoice.getAmount() != null ? invoice.getAmount() : BigDecimal.ZERO;
+        BigDecimal availableTotal = currentTotal.add(previousDeduction);
+        if (nextDeduction.compareTo(availableTotal) > 0) {
+            throw new ApiException(HttpStatus.BAD_REQUEST,
+                    "Số tiền bồi thường được duyệt vượt quá số tiền hóa đơn còn có thể khấu trừ");
+        }
+
+        BigDecimal adjustedTotal = availableTotal.subtract(nextDeduction);
+        BigDecimal paidAmount = invoice.getPaidAmount() != null
+                ? invoice.getPaidAmount()
+                : (PAID.equals(invoice.getPaymentStatus()) ? currentTotal : BigDecimal.ZERO);
+        if (PAID.equals(invoice.getPaymentStatus()) && paidAmount.compareTo(BigDecimal.ZERO) == 0) {
+            paidAmount = currentTotal;
+        }
+
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        String oldPaymentStatus = invoice.getPaymentStatus();
+        BigDecimal remainingAmount = adjustedTotal.subtract(paidAmount).max(BigDecimal.ZERO);
+        String adjustedPaymentStatus;
+        if (remainingAmount.compareTo(BigDecimal.ZERO) == 0) {
+            adjustedPaymentStatus = PAID;
+            if (invoice.getPaidAt() == null) {
+                invoice.setPaidAt(now);
+            }
+        } else if (paidAmount.compareTo(BigDecimal.ZERO) > 0) {
+            adjustedPaymentStatus = PARTIALLY_PAID;
+            invoice.setPaidAt(null);
+        } else if (invoice.getDueDate() != null && invoice.getDueDate().isBefore(now)) {
+            adjustedPaymentStatus = OVERDUE;
+            invoice.setPaidAt(null);
+        } else {
+            adjustedPaymentStatus = UNPAID;
+            invoice.setPaidAt(null);
+        }
+
+        invoice.setAmount(adjustedTotal);
+        invoice.setPaidAmount(paidAmount);
+        invoice.setPaymentStatus(adjustedPaymentStatus);
+        invoice.setLastUpdatedBy(actorUserId);
+        invoice.setUpdatedAt(now);
+        repository.saveAndFlush(invoice);
+
+        recordPaymentHistory(
+                invoice.getInvoiceId(),
+                oldPaymentStatus,
+                adjustedPaymentStatus,
+                paidAmount,
+                remainingAmount,
+                invoice.getPaymentMethod(),
+                "Điều chỉnh hóa đơn theo bồi thường đã duyệt: "
+                        + currentTotal + " → " + adjustedTotal + " " + invoice.getCurrency(),
+                actorUserId,
+                now
+        );
+
+        UUID customerId = access.getOrThrow(requestId).getCustomerId();
+        access.notify(customerId, "INVOICE", "Hóa đơn đã được điều chỉnh",
+                "Hóa đơn " + resolveInvoiceNumber(invoice) + " đã được khấu trừ khoản bồi thường được duyệt. "
+                        + "Số dư còn lại: " + remainingAmount + " " + invoice.getCurrency() + ".",
+                "invoices", invoice.getInvoiceId());
+    }
+
     private String validateInvoiceCurrencyAndAmount(TransportRequest request, String requestedCurrency, BigDecimal amount) {
         TransportRequestQuote confirmedQuote = quoteRepository.findTopByRequestIdOrderByVersionDesc(request.getRequestId())
                 .orElse(null);

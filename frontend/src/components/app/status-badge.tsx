@@ -22,8 +22,16 @@ const toneClasses: Record<string, string> = {
  * Tự động nhận diện màu sắc hiển thị thông qua hàm `statusTone(status)` dựa trên
  * nhãn trạng thái tiếng Việt hoặc mã trạng thái truyền vào.
  */
-export function StatusBadge({ status, className }: { status: string; className?: string }) {
-  const tone = statusTone(status);
+export function StatusBadge({
+  status,
+  className,
+  toneOverride,
+}: {
+  status: string;
+  className?: string;
+  toneOverride?: ReturnType<typeof statusTone>;
+}) {
+  const tone = toneOverride ?? statusTone(status);
   return (
     <span
       className={cn(

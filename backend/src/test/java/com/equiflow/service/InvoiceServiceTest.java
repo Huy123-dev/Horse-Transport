@@ -7,6 +7,7 @@ import com.equiflow.entity.TransportRequestQuote;
 import com.equiflow.entity.User;
 import com.equiflow.exception.ApiException;
 import com.equiflow.repository.InvoiceRepository;
+import com.equiflow.repository.InvoicePaymentHistoryRepository;
 import com.equiflow.repository.TransportRequestQuoteRepository;
 import com.equiflow.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,9 @@ class InvoiceServiceTest {
 
     @Mock
     private InvoiceRepository repository;
+
+    @Mock
+    private InvoicePaymentHistoryRepository historyRepository;
 
     @Mock
     private RequestAccessService access;
@@ -210,6 +214,89 @@ class InvoiceServiceTest {
         ApiException ex = assertThrows(ApiException.class, () -> invoiceService.updatePaymentStatus(invoiceId, req));
         assertEquals(HttpStatus.CONFLICT, ex.getStatus());
         assertTrue(ex.getMessage().contains("Không thể chuyển trạng thái"));
+    }
+
+    @Test
+    void applyCompensationAdjustment_reducesInvoiceAndRecordsHistory() {
+        Invoice invoice = new Invoice();
+        invoice.setInvoiceId(invoiceId);
+        invoice.setRequestId(requestId);
+        invoice.setAmount(new BigDecimal("1500.00"));
+        invoice.setPaidAmount(new BigDecimal("200.00"));
+        invoice.setCurrency("USD");
+        invoice.setPaymentStatus(InvoiceService.PARTIALLY_PAID);
+        invoice.setDueDate(LocalDateTime.now().plusDays(3));
+
+        when(repository.findFirstByRequestIdOrderByIssuedAtDesc(requestId)).thenReturn(Optional.of(invoice));
+        when(repository.saveAndFlush(any(Invoice.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(access.getOrThrow(requestId)).thenReturn(request);
+
+        invoiceService.applyCompensationAdjustment(
+                requestId,
+                "USD",
+                BigDecimal.ZERO,
+                new BigDecimal("300.00"),
+                customerId
+        );
+
+        assertEquals(new BigDecimal("1200.00"), invoice.getAmount());
+        assertEquals(new BigDecimal("200.00"), invoice.getPaidAmount());
+        assertEquals(InvoiceService.PARTIALLY_PAID, invoice.getPaymentStatus());
+        verify(repository).saveAndFlush(invoice);
+        verify(historyRepository).saveAndFlush(argThat(history ->
+                history.getRemainingAmount().compareTo(new BigDecimal("1000.00")) == 0
+                        && history.getNotes().contains("1500.00")
+                        && history.getNotes().contains("1200.00")));
+    }
+
+    @Test
+    void applyCompensationAdjustment_restoresInvoiceWhenClaimIsNoLongerApproved() {
+        Invoice invoice = new Invoice();
+        invoice.setInvoiceId(invoiceId);
+        invoice.setRequestId(requestId);
+        invoice.setAmount(new BigDecimal("1200.00"));
+        invoice.setPaidAmount(BigDecimal.ZERO);
+        invoice.setCurrency("USD");
+        invoice.setPaymentStatus(InvoiceService.UNPAID);
+        invoice.setDueDate(LocalDateTime.now().plusDays(3));
+
+        when(repository.findFirstByRequestIdOrderByIssuedAtDesc(requestId)).thenReturn(Optional.of(invoice));
+        when(repository.saveAndFlush(any(Invoice.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(access.getOrThrow(requestId)).thenReturn(request);
+
+        invoiceService.applyCompensationAdjustment(
+                requestId,
+                "USD",
+                new BigDecimal("300.00"),
+                BigDecimal.ZERO,
+                customerId
+        );
+
+        assertEquals(new BigDecimal("1500.00"), invoice.getAmount());
+        assertEquals(InvoiceService.UNPAID, invoice.getPaymentStatus());
+    }
+
+    @Test
+    void applyCompensationAdjustment_rejectsDeductionBeyondInvoiceAmount() {
+        Invoice invoice = new Invoice();
+        invoice.setInvoiceId(invoiceId);
+        invoice.setRequestId(requestId);
+        invoice.setAmount(new BigDecimal("100.00"));
+        invoice.setCurrency("USD");
+        invoice.setPaymentStatus(InvoiceService.UNPAID);
+
+        when(repository.findFirstByRequestIdOrderByIssuedAtDesc(requestId)).thenReturn(Optional.of(invoice));
+
+        ApiException ex = assertThrows(ApiException.class, () -> invoiceService.applyCompensationAdjustment(
+                requestId,
+                "USD",
+                BigDecimal.ZERO,
+                new BigDecimal("200.00"),
+                customerId
+        ));
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        verify(repository, never()).saveAndFlush(any(Invoice.class));
     }
 
     @Test
