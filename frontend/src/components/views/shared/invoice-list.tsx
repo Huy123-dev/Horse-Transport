@@ -6,7 +6,7 @@
  * ============================================================================
  * Màn hình này dùng chung cho 2 vai trò:
  * - LOGISTICS_MANAGER: Xem toàn bộ hóa đơn, lọc theo trạng thái, phát hành hóa đơn
- *   tự động / thủ công, xuất PDF chuẩn A4 và xuất báo cáo CSV.
+ *   tự động / thủ công và xuất PDF chuẩn A4.
  * - CUSTOMER: Xem danh sách hóa đơn của các đơn vận chuyển thuộc về mình,
  *   kiểm tra hạn thanh toán, số tiền còn phải trả và tải hóa đơn PDF chuẩn A4.
  *
@@ -41,7 +41,6 @@ import {
   Clock,
   Plus,
   Loader2,
-  Download,
   AlertTriangle,
   ShieldCheck,
   CheckCircle2,
@@ -56,7 +55,6 @@ import {
   normalizePaymentStatus,
   paymentStatusLabel,
 } from "@/lib/constants";
-import { exportToCSV } from "@/lib/csv-export";
 import { exportInvoiceToA4Pdf } from "@/lib/invoice-pdf";
 import { getInvoiceCsvRows, INVOICE_CSV_HEADERS } from "@/lib/invoice-csv";
 import { ListStatsBar } from "@/components/app/list-stats-bar";
@@ -294,13 +292,6 @@ export function InvoiceList() {
     return matchSearch && matchStatus;
   });
 
-  /** Xuất danh sách hóa đơn đang lọc ra tệp CSV để phục vụ đối soát kế toán */
-  const handleExportCSV = () => {
-    const rows = filtered.flatMap(getInvoiceCsvRows);
-    exportToCSV(`equideli-hoa-don-${new Date().toISOString().slice(0, 10)}.csv`, INVOICE_CSV_HEADERS, rows);
-    toast({ title: "Đã xuất tệp CSV", description: `${filtered.length} hóa đơn đã được tải xuống.` });
-  };
-
   // Tính toán các chỉ số tổng hợp (KPI) trên toàn bộ danh sách hóa đơn
   const totalInvoiced = invoices.reduce((sum, inv) => sum + (Number(inv.amount) || 0), 0);
   const totalPaid = invoices.reduce((sum, inv) => {
@@ -339,9 +330,6 @@ export function InvoiceList() {
                 className="pl-9"
               />
             </div>
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-1.5">
-              <Download className="h-4 w-4" /> <span className="hidden sm:inline">Xuất CSV</span>
-            </Button>
             {isManager && (
               <Button onClick={() => setShowCreate(true)} className="gap-2 btn-press font-semibold">
                 <Plus className="h-4 w-4" /> Phát hành hóa đơn

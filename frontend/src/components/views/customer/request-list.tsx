@@ -10,10 +10,8 @@ import { EmptyState, LoadingState, ErrorState } from "@/components/app/empty-sta
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { FileText, Plus, Search, MapPin, Calendar, Heart, ChevronRight, Download } from "lucide-react";
+import { FileText, Plus, Search, MapPin, Calendar, Heart, ChevronRight } from "lucide-react";
 import { formatDate, formatMoney, requestCode, transportRequestStatusLabel } from "@/lib/constants";
-import { exportToCSV } from "@/lib/csv-export";
-import { useToast } from "@/hooks/use-toast";
 import { ListStatsBar } from "@/components/app/list-stats-bar";
 
 export type RequestStatusGroup = "ALL" | "PENDING" | "APPROVED" | "REJECTED" | "CANCELLED";
@@ -36,10 +34,6 @@ const FILTER_TABS: { key: RequestStatusGroup; label: string }[] = [
   { key: "CANCELLED", label: "Đã hủy" },
 ];
 
-const translateStatus = (status: string) => {
-  return status === "Tất cả" ? status : transportRequestStatusLabel(status);
-};
-
 interface TransportRequest {
   requestId: string;
   origin: { name: string; countryCode: string | null };
@@ -57,7 +51,6 @@ interface TransportRequest {
 
 export function RequestList() {
   const { navigate } = useAppStore();
-  const { toast } = useToast();
   const [requests, setRequests] = useState<TransportRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -103,47 +96,6 @@ export function RequestList() {
     return matchSearch && matchStatus;
   });
 
-  const handleExportCSV = () => {
-    const headers = [
-      "Request code",
-      "Request ID",
-      "Origin",
-      "Origin country/region",
-      "Destination",
-      "Destination country/region",
-      "Scheduled departure date (ISO 8601)",
-      "Scheduled arrival date (ISO 8601)",
-      "Horse count",
-      "Horses (name and microchip)",
-      "Estimated amount",
-      "Currency",
-      "Status",
-      "Special requirements",
-      "Created at (UTC)",
-      "Updated at (UTC)",
-    ];
-    const rows = filtered.map((r) => [
-        requestCode(r.requestId),
-        r.requestId,
-        r.origin?.name ?? "",
-        r.origin?.countryCode ?? "",
-        r.destination?.name ?? "",
-        r.destination?.countryCode ?? "",
-        r.scheduledDepartureDate ?? "",
-        r.scheduledArrivalDate ?? "",
-        r.horses?.length ?? 0,
-        (r.horses ?? []).map((horse) => `${horse.name}${horse.microchipId ? ` (${horse.microchipId})` : ""}`).join("; "),
-        r.estimatedAmount ?? "",
-        r.currency,
-        translateStatus(r.status),
-        r.specialRequirements ?? "",
-        r.createdAt,
-        r.updatedAt,
-      ]);
-    exportToCSV(`equideli-yeu-cau-${new Date().toISOString().slice(0, 10)}.csv`, headers, rows);
-    toast({ title: "Đã xuất CSV", description: `${rows.length} yêu cầu đã được tải xuống.` });
-  };
-
   return (
     <div className="space-y-6">
       <CustomerRestrictedBanner />
@@ -152,10 +104,11 @@ export function RequestList() {
         description="Tạo và theo dõi đơn vận chuyển ngựa đua"
         icon={<FileText className="h-5 w-5" />}
         actions={
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleExportCSV} disabled={filtered.length === 0} className="gap-1.5"><Download className="h-4 w-4" /> <span className="hidden sm:inline">Xuất CSV</span></Button>
-            {!isRestricted && <Button onClick={() => navigate("request-create")} className="gap-2"><Plus className="h-4 w-4" /> Tạo yêu cầu</Button>}
-          </div>
+          !isRestricted ? (
+            <Button onClick={() => navigate("request-create")} className="gap-2">
+              <Plus className="h-4 w-4" /> Tạo yêu cầu
+            </Button>
+          ) : undefined
         }
       />
 

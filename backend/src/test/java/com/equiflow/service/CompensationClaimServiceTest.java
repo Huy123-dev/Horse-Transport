@@ -20,6 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -34,6 +35,7 @@ class CompensationClaimServiceTest {
     private final DeliveryRepository deliveryRepository = mock(DeliveryRepository.class);
     private final UserRepository userRepository = mock(UserRepository.class);
     private final RequestAccessService requestAccess = mock(RequestAccessService.class);
+    private final InvoiceService invoiceService = mock(InvoiceService.class);
 
     private CompensationClaimService service;
 
@@ -44,7 +46,8 @@ class CompensationClaimServiceTest {
                 planRepository,
                 deliveryRepository,
                 userRepository,
-                requestAccess
+                requestAccess,
+                invoiceService
         );
     }
 
@@ -121,6 +124,46 @@ class CompensationClaimServiceTest {
         assertEquals("Chấp thuận một phần", res.statusLabel());
         assertEquals(new BigDecimal("500.00"), res.approvedAmount());
         assertEquals("Trần Quản Lý", res.reviewedByName());
+        verify(invoiceService).applyCompensationAdjustment(
+                claim.getRequestId(),
+                "USD",
+                BigDecimal.ZERO,
+                new BigDecimal("500.00"),
+                managerId
+        );
         verify(claimRepository).saveAndFlush(any(CompensationClaim.class));
+    }
+
+    @Test
+    void resolvingApprovedClaimKeepsItsInvoiceDeduction() {
+        UUID claimId = UUID.randomUUID();
+        UUID managerId = UUID.randomUUID();
+        UUID customerId = UUID.randomUUID();
+        UUID requestId = UUID.randomUUID();
+
+        CompensationClaim claim = new CompensationClaim();
+        claim.setClaimId(claimId);
+        claim.setRequestId(requestId);
+        claim.setCustomerId(customerId);
+        claim.setStatus(CompensationClaimService.APPROVED);
+        claim.setApprovedAmount(new BigDecimal("500.00"));
+        claim.setInvoiceAdjusted(false);
+        when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
+        when(claimRepository.saveAndFlush(any(CompensationClaim.class))).thenAnswer(i -> i.getArgument(0));
+        when(userRepository.findById(customerId)).thenReturn(Optional.empty());
+
+        service.review(claimId, managerId,
+                new CompensationClaimDto.ReviewRequest("RESOLVED", "Đã thanh toán bồi thường", null));
+
+        assertEquals(CompensationClaimService.RESOLVED, claim.getStatus());
+        assertEquals(new BigDecimal("500.00"), claim.getApprovedAmount());
+        assertTrue(claim.isInvoiceAdjusted());
+        verify(invoiceService).applyCompensationAdjustment(
+                requestId,
+                "USD",
+                BigDecimal.ZERO,
+                new BigDecimal("500.00"),
+                managerId
+        );
     }
 }

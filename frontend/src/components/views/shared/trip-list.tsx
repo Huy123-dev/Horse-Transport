@@ -75,7 +75,10 @@ export function TripList() {
                   <span>Kết thúc: {formatDateTime(plan.arrivalTime)}</span>
                 </div>
               </div>
-              <StatusBadge status={transportPlanStatusLabel(plan.status)} />
+              <StatusBadge
+                status={transportPlanStatusLabel(plan.status)}
+                toneOverride={isAssignedCrew && transportPlanStatusLabel(plan.status) === "Sẵn sàng" ? "warning" : undefined}
+              />
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </button>
           ))}

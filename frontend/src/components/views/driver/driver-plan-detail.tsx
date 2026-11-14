@@ -21,7 +21,7 @@ import {
   type DriverTrackingLog,
   type DriverTransportPlan,
 } from "@/lib/driver-api";
-import { uploadFile } from "@/lib/api-client";
+import { apiGet, uploadFile } from "@/lib/api-client";
 import { useToast } from "@/hooks/use-toast";
 import { PageHeader } from "@/components/app/page-header";
 import { HorseImage } from "@/components/app/horse-image";
@@ -56,6 +56,14 @@ function normalizedPlanStatus(status: string): string {
   return status.trim().toLowerCase().replaceAll("_", " ");
 }
 
+interface LocationOption {
+  locationId: string;
+  name: string;
+  countryCode?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+}
+
 export function DriverPlanDetail() {
   const { params, navigate, user } = useAppStore();
   const { toast } = useToast();
@@ -77,13 +85,13 @@ export function DriverPlanDetail() {
     appetiteStatus: "",
     notes: "",
   });
-  const [trackingForm, setTrackingForm] = useState({ milestone: "", latitude: "", longitude: "" });
+  const [locations, setLocations] = useState<LocationOption[]>([]);
+  const [trackingForm, setTrackingForm] = useState({ locationId: "", milestone: "" });
   const [incidentForm, setIncidentForm] = useState({
     category: "",
     description: "",
     sos: false,
-    latitude: "",
-    longitude: "",
+    locationId: "",
     additionalCost: "",
   });
   const [deliveryForm, setDeliveryForm] = useState({
@@ -91,6 +99,10 @@ export function DriverPlanDetail() {
     signatureImageUrl: "",
     podDocumentUrl: "",
   });
+
+  useEffect(() => {
+    apiGet<LocationOption[]>("/locations").then(setLocations).catch(() => setLocations([]));
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -124,6 +136,8 @@ export function DriverPlanDetail() {
   if (!currentState.details) return <LoadingState variant="detail" />;
 
   const { plan, stops, healthLogs, incidents, tracking, delivery } = currentState.details;
+  const locationByCoords = (lat: number | null, lng: number | null) =>
+    lat === null || lng === null ? undefined : locations.find((l) => l.latitude === lat && l.longitude === lng);
   const planStatus = normalizedPlanStatus(plan.status);
   const canRecordTripData = ["san sang", "ready", "dang thuc hien", "in progress"].includes(planStatus);
   const canRecordDelivery = ["dang thuc hien", "in progress"].includes(planStatus);
@@ -201,16 +215,25 @@ export function DriverPlanDetail() {
 
   const handleCreateTrackingLog = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const location = locations.find((l) => l.locationId === trackingForm.locationId);
+    if (!location) {
+      toast({ title: "Vui lòng chọn địa điểm", variant: "destructive" });
+      return;
+    }
+    if (location.latitude == null || location.longitude == null) {
+      toast({ title: "Địa điểm này chưa có tọa độ trong hệ thống", description: "Vui lòng chọn địa điểm khác hoặc liên hệ điều phối viên.", variant: "destructive" });
+      return;
+    }
     setActionLoading(true);
     try {
       await createDriverTrackingLog({
         planId,
-        milestone: trackingForm.milestone.trim() || null,
-        latitude: Number(trackingForm.latitude),
-        longitude: Number(trackingForm.longitude),
+        milestone: trackingForm.milestone.trim() || location.name,
+        latitude: location.latitude,
+        longitude: location.longitude,
       });
       toast({ title: "Đã cập nhật vị trí hành trình" });
-      setTrackingForm({ milestone: "", latitude: "", longitude: "" });
+      setTrackingForm({ locationId: "", milestone: "" });
       setAttempt((value) => value + 1);
     } catch (error) {
       toast({
@@ -225,18 +248,19 @@ export function DriverPlanDetail() {
 
   const handleCreateIncident = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const latitude = incidentForm.latitude.trim() ? Number(incidentForm.latitude) : null;
-    const longitude = incidentForm.longitude.trim() ? Number(incidentForm.longitude) : null;
-    if ((latitude === null) !== (longitude === null)) {
-      toast({ title: "Nhập cả vĩ độ và kinh độ hoặc để trống cả hai", variant: "destructive" });
+    const location = locations.find((l) => l.locationId === incidentForm.locationId);
+    if (!location) {
+      toast({ title: "Vui lòng chọn địa điểm gặp sự cố", variant: "destructive" });
       return;
     }
+    const latitude = location.latitude ?? null;
+    const longitude = location.longitude ?? null;
     setActionLoading(true);
     try {
       await createDriverIncident({
         planId,
         category: incidentForm.category.trim(),
-        description: incidentForm.description.trim(),
+        description: `[Địa điểm: ${location.name}] ${incidentForm.description.trim()}`,
         sos: incidentForm.sos,
         latitude,
         longitude,
@@ -246,7 +270,7 @@ export function DriverPlanDetail() {
         title: incidentForm.sos ? "Đã gửi báo cáo SOS" : "Đã báo sự cố",
         variant: incidentForm.sos ? "destructive" : "default",
       });
-      setIncidentForm({ category: "", description: "", sos: false, latitude: "", longitude: "", additionalCost: "" });
+      setIncidentForm({ category: "", description: "", sos: false, locationId: "", additionalCost: "" });
       setAttempt((value) => value + 1);
     } catch (error) {
       toast({
@@ -342,7 +366,12 @@ export function DriverPlanDetail() {
         <CardContent className="grid gap-4 p-5 sm:grid-cols-4">
           <div>
             <p className="text-xs text-muted-foreground">Trạng thái</p>
-            <div className="mt-1"><StatusBadge status={transportPlanStatusLabel(plan.status)} /></div>
+            <div className="mt-1">
+              <StatusBadge
+                status={transportPlanStatusLabel(plan.status)}
+                toneOverride={transportPlanStatusLabel(plan.status) === "Sẵn sàng" ? "warning" : undefined}
+              />
+            </div>
           </div>
           <div>
             <p className="text-xs text-muted-foreground">Tuyến đường</p>
@@ -630,17 +659,14 @@ export function DriverPlanDetail() {
                       <Textarea id="incident-description" required value={incidentForm.description}
                         onChange={(event) => setIncidentForm((form) => ({ ...form, description: event.target.value }))} />
                     </div>
-                    <div className="grid gap-4 sm:grid-cols-2 sm:col-span-2">
-                      <div className="space-y-2">
-                        <Label htmlFor="incident-latitude">Vĩ độ (nếu có)</Label>
-                        <Input id="incident-latitude" type="number" min="-90" max="90" step="any" value={incidentForm.latitude}
-                          onChange={(event) => setIncidentForm((form) => ({ ...form, latitude: event.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="incident-longitude">Kinh độ (nếu có)</Label>
-                        <Input id="incident-longitude" type="number" min="-180" max="180" step="any" value={incidentForm.longitude}
-                          onChange={(event) => setIncidentForm((form) => ({ ...form, longitude: event.target.value }))} />
-                      </div>
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="incident-location">Địa điểm gặp sự cố</Label>
+                      <select id="incident-location" required value={incidentForm.locationId}
+                        onChange={(event) => setIncidentForm((form) => ({ ...form, locationId: event.target.value }))}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                        <option value="">-- Chọn địa điểm --</option>
+                        {locations.map((l) => <option key={l.locationId} value={l.locationId}>{l.name}{l.countryCode ? ` (${l.countryCode})` : ""}</option>)}
+                      </select>
                     </div>
                     <label className="flex items-center gap-2 text-sm sm:col-span-2">
                       <input type="checkbox" checked={incidentForm.sos}
@@ -677,7 +703,7 @@ export function DriverPlanDetail() {
                             <p className="font-medium">{entry.milestone || "Cập nhật vị trí"}</p>
                             <span className="text-xs text-muted-foreground">{formatDateTime(entry.reportedAt)}</span>
                           </div>
-                          <p className="mt-2 text-sm">{entry.latitude}, {entry.longitude}</p>
+                          <p className="mt-2 text-sm">{locationByCoords(entry.latitude, entry.longitude)?.name ?? entry.milestone ?? "Đã cập nhật vị trí"}</p>
                           {entry.reportedByName && <p className="mt-1 text-xs text-muted-foreground">Cập nhật bởi {entry.reportedByName}</p>}
                         </div>
                       ))}
@@ -692,17 +718,14 @@ export function DriverPlanDetail() {
                           <Input id="tracking-milestone" maxLength={100} value={trackingForm.milestone}
                             onChange={(event) => setTrackingForm((form) => ({ ...form, milestone: event.target.value }))} />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="tracking-latitude">Vĩ độ</Label>
-                          <Input id="tracking-latitude" type="number" required min="-90" max="90" step="any"
-                            value={trackingForm.latitude}
-                            onChange={(event) => setTrackingForm((form) => ({ ...form, latitude: event.target.value }))} />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="tracking-longitude">Kinh độ</Label>
-                          <Input id="tracking-longitude" type="number" required min="-180" max="180" step="any"
-                            value={trackingForm.longitude}
-                            onChange={(event) => setTrackingForm((form) => ({ ...form, longitude: event.target.value }))} />
+                        <div className="space-y-2 sm:col-span-2">
+                          <Label htmlFor="tracking-location">Địa điểm hiện tại</Label>
+                          <select id="tracking-location" required value={trackingForm.locationId}
+                            onChange={(event) => setTrackingForm((form) => ({ ...form, locationId: event.target.value }))}
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm">
+                            <option value="">-- Chọn địa điểm --</option>
+                            {locations.map((l) => <option key={l.locationId} value={l.locationId}>{l.name}{l.countryCode ? ` (${l.countryCode})` : ""}</option>)}
+                          </select>
                         </div>
                       </div>
                       <Button type="submit" disabled={actionLoading}>{actionLoading ? "Đang gửi..." : "Gửi cập nhật"}</Button>
