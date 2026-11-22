@@ -159,6 +159,8 @@ public class SecurityConfig {
         .hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR",
             "DRIVER", "ESCORT", "DRIVER_ESCORT")
     .requestMatchers(HttpMethod.POST, "/api/transport-plans").hasRole("FLEET_COORDINATOR")
+    .requestMatchers(HttpMethod.POST, "/api/route-places")
+        .hasAnyRole("CUSTOMER", "LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR")
     .requestMatchers(HttpMethod.PUT, "/api/transport-plans/*").hasRole("FLEET_COORDINATOR")
     .requestMatchers(HttpMethod.PATCH, "/api/transport-plans/*/status").hasRole("FLEET_COORDINATOR")
     .requestMatchers(HttpMethod.GET, "/api/transport-plans/*/assignments")

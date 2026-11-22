@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/app/status-badge";
 import { ErrorState, LoadingState, EmptyState } from "@/components/app/empty-state";
 import { BackendUnavailableView } from "@/components/views/shared/backend-unavailable-view";
 import { JourneyTimeline } from "@/components/views/shared/journey-timeline";
+import { RouteMap, type SuggestedStop } from "@/components/views/shared/route-map";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,6 +26,20 @@ interface TransportPlan {
   arrivalTime: string;
   status: string;
   coordinatorName: string | null;
+}
+
+interface PlanLocation {
+  locationId: string;
+  name: string;
+  type?: string | null;
+  countryCode: string;
+  latitude: number;
+  longitude: number;
+}
+
+interface RequestRoute {
+  origin: { locationId: string; name: string } | null;
+  destination: { locationId: string; name: string } | null;
 }
 
 interface RouteStop {
@@ -135,7 +150,11 @@ export function TransportPlanDetail() {
     plannedDepartureTime: "",
     notes: "",
   });
-  const [locations, setLocations] = useState<Array<{ locationId: string; name: string; countryCode: string }>>([]);
+  const [locations, setLocations] = useState<PlanLocation[]>([]);
+  const [requestRoute, setRequestRoute] = useState<RequestRoute | null>(null);
+  const [suggestedStops, setSuggestedStops] = useState<SuggestedStop[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+  const [autoStopsSaving, setAutoStopsSaving] = useState(false);
   const [routeStopSaving, setRouteStopSaving] = useState(false);
   const [panelErrors, setPanelErrors] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
@@ -144,6 +163,9 @@ export function TransportPlanDetail() {
   const canManageAssignments = user?.roleId === "FLEET_COORDINATOR";
   const canManageStops = ["FLEET_COORDINATOR", "TRANSPORT_SPECIALIST"].includes(user?.roleId ?? "");
   const canViewAssignments = ["LOGISTICS_MANAGER", "TRANSPORT_SPECIALIST", "FLEET_COORDINATOR"].includes(user?.roleId ?? "");
+  const stopsEditable = Boolean(plan) && ["planning", "dang lap ke hoach", "ready", "san sang"].includes(plan!.status.trim().toLowerCase());
+  const requestOrigin = locations.find((location) => location.locationId === requestRoute?.origin?.locationId) ?? null;
+  const requestDestination = locations.find((location) => location.locationId === requestRoute?.destination?.locationId) ?? null;
   const assignedAttendantIds = new Set((assignments ?? [])
     .map((assignment) => assignment.attendantUserId)
     .filter((attendantId): attendantId is string => attendantId !== null));
@@ -160,6 +182,7 @@ export function TransportPlanDetail() {
     setAssignments(null);
     setAssignmentOptions(null);
     setPanelErrors({});
+    setRequestRoute(null);
     try {
       const planData = await apiGet<TransportPlan>(`/transport-plans/${params.id}`);
       setPlan(planData);
@@ -178,8 +201,11 @@ export function TransportPlanDetail() {
         }
       };
       await Promise.all([
-        apiGet<Array<{ locationId: string; name: string; countryCode: string }>>("/locations")
+        apiGet<PlanLocation[]>("/locations")
           .then(setLocations)
+          .catch(() => {}),
+        apiGet<RequestRoute>(`/transport-requests/${planData.requestId}`)
+          .then(setRequestRoute)
           .catch(() => {}),
         loadPanel("stops", `/transport-plans/${params.id}/stops`, setStops),
         loadPanel("tracking", `/transport-plans/${params.id}/tracking`, setTracking),
@@ -247,6 +273,49 @@ export function TransportPlanDetail() {
       });
     } finally {
       setRouteStopSaving(false);
+    }
+  }
+
+  async function handleAutoRouteStops() {
+    if (!plan || !requestOrigin || !requestDestination) return;
+    const existing = stops ?? [];
+    if (existing.length > 0 && !window.confirm(`Kế hoạch đang có ${existing.length} điểm dừng. Xóa chúng và thay bằng tuyến lấy từ yêu cầu của khách hàng?`)) return;
+
+    const note = "Tự động tạo từ tuyến trên bản đồ của yêu cầu";
+    const items = [
+      { locationId: requestOrigin.locationId, stopName: requestOrigin.name, stopType: "ORIGIN", plannedArrivalTime: null, plannedDepartureTime: plan.departureTime },
+      ...suggestedStops.map((stop) => ({
+        locationId: stop.locationId,
+        stopName: stop.name.slice(0, 150),
+        stopType: stop.stopType,
+        plannedArrivalTime: null,
+        plannedDepartureTime: null,
+        // Bảng route_stops chưa có cột tọa độ nên điểm Geoapify được ghi tọa độ vào ghi chú.
+        notes: stop.source === "geoapify"
+          ? `${stop.label} (Geoapify/OSM) · ${stop.point.lat.toFixed(5)}, ${stop.point.lng.toFixed(5)} · km ${Math.round(stop.alongKm)} trên tuyến`
+          : note,
+      })),
+      { locationId: requestDestination.locationId, stopName: requestDestination.name, stopType: "DESTINATION", plannedArrivalTime: plan.arrivalTime, plannedDepartureTime: null },
+    ];
+
+    setAutoStopsSaving(true);
+    let created = 0;
+    try {
+      for (const stop of existing) await apiDelete(`/route-stops/${stop.stopId}`);
+      for (const [index, item] of items.entries()) {
+        await apiPost(`/transport-plans/${params.id}/stops`, { notes: note, ...item, sequenceNo: index + 1 });
+        created += 1;
+      }
+      toast({ title: "Đã tạo điểm dừng tự động", description: `${items.length} điểm: điểm đi, ${suggestedStops.length} điểm dừng dọc tuyến, điểm đến. Bạn có thể chỉnh giờ và loại điểm dừng sau.` });
+    } catch (autoError: unknown) {
+      toast({
+        title: "Không thể tạo đủ điểm dừng tự động",
+        description: `${autoError instanceof Error ? autoError.message : "Yêu cầu không thành công."} (đã tạo ${created}/${items.length} điểm)`,
+        variant: "destructive",
+      });
+    } finally {
+      setAutoStopsSaving(false);
+      await load();
     }
   }
 
@@ -384,6 +453,22 @@ export function TransportPlanDetail() {
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2 text-base"><MapPin className="h-4 w-4" /> Điểm dừng</CardTitle></CardHeader>
         <CardContent className="space-y-3">
+          {requestOrigin && requestDestination && (
+            <div className="space-y-3">
+              <RouteMap origin={requestOrigin} destination={requestDestination} candidates={locations} onStopsChange={(next, meta) => { setSuggestedStops(next); setSuggestionsLoading(meta.loading); }} />
+              {canManageStops && plan && stopsEditable && (
+                <div className="flex flex-wrap items-center gap-3 rounded-lg border border-dashed border-primary/40 p-3">
+                  <Button type="button" onClick={handleAutoRouteStops} disabled={autoStopsSaving || stops === null || suggestionsLoading} className="gap-2">
+                    <Route className="h-4 w-4" />
+                    {autoStopsSaving ? "Đang tạo điểm dừng..." : suggestionsLoading ? "Đang tìm điểm dừng dọc tuyến..." : stops && stops.length > 0 ? "Thay bằng tuyến từ yêu cầu của khách" : "Tự động tạo điểm dừng từ bản đồ"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Tạo điểm đi, {suggestedStops.length} điểm dừng dọc tuyến và điểm đến theo yêu cầu của khách hàng; giờ đi/đến lấy từ kế hoạch.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
           {panelErrors.stops && <p role="alert" className="text-sm text-destructive">{panelErrors.stops}</p>}
           {stops?.length === 0 && <EmptyState icon={<MapPin className="h-5 w-5" />} title="Chưa có điểm dừng" />}
           {stops?.map((stop) => (
@@ -397,7 +482,7 @@ export function TransportPlanDetail() {
               {stop.notes && <p className="mt-1 text-sm text-muted-foreground">{stop.notes}</p>}
             </div>
           ))}
-          {canManageStops && plan && ["planning", "dang lap ke hoach", "ready", "san sang"].includes(plan.status.trim().toLowerCase()) && (
+          {canManageStops && plan && stopsEditable && (
             <form onSubmit={handleCreateRouteStop} className="grid gap-3 border-t border-border pt-4 sm:grid-cols-2">
               <div className="space-y-2 sm:col-span-2">
                 <label htmlFor="route-stop-location" className="text-sm font-medium">Chọn địa điểm từ danh mục có sẵn</label>

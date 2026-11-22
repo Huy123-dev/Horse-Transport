@@ -1,8 +1,7 @@
 package com.equiflow.security;
 
-import com.equiflow.controller.AuthController;
+import com.equiflow.controller.GoogleAuthController;
 import com.equiflow.repository.UserRepository;
-import com.equiflow.service.AuthService;
 import com.equiflow.service.GoogleAuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +17,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(AuthController.class)
+@WebMvcTest(GoogleAuthController.class)
 @Import({SecurityConfig.class, JwtAuthFilter.class})
 class GoogleAuthEndpointAuthorizationTest {
 
@@ -30,9 +29,6 @@ class GoogleAuthEndpointAuthorizationTest {
 
     @MockBean
     private UserRepository userRepository;
-
-    @MockBean
-    private AuthService authService;
 
     @MockBean
     private GoogleAuthService googleAuthService;

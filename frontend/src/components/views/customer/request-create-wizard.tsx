@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
+import { RouteMap } from "@/components/views/shared/route-map";
 import {
   ShieldAlert,
   ArrowLeft,
@@ -74,7 +75,10 @@ interface HorseOption {
 interface LocationOption {
   locationId: string;
   name: string;
+  type?: string | null;
   countryCode: string;
+  latitude: number;
+  longitude: number;
 }
 
 interface CreatedRequest {
@@ -938,6 +942,13 @@ export function RequestCreateWizard() {
                       setStepError("");
                     }}
                     disabled={formLocked || submitting}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <RouteMap
+                    origin={selectedOrigin ?? null}
+                    destination={selectedDestination ?? null}
+                    candidates={locations}
                   />
                 </div>
                 <div className="space-y-2 sm:col-span-2">

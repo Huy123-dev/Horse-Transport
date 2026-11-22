@@ -3,10 +3,13 @@ package com.equiflow.security;
 import com.equiflow.controller.LocationController;
 import com.equiflow.controller.QuarantineReservationController;
 import com.equiflow.controller.AssignmentController;
+import com.equiflow.controller.RoutePlacesController;
 import com.equiflow.dto.AssignmentDto;
 import com.equiflow.dto.LocationResponse;
+import com.equiflow.dto.RoutePlacesDto;
 import com.equiflow.repository.UserRepository;
 import com.equiflow.service.AssignmentService;
+import com.equiflow.service.GeoapifyPlacesService;
 import com.equiflow.service.LocationService;
 import com.equiflow.service.QuarantineReservationService;
 import org.junit.jupiter.api.Test;
@@ -29,7 +32,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = {LocationController.class, QuarantineReservationController.class, AssignmentController.class})
+@WebMvcTest(controllers = {
+        LocationController.class,
+        QuarantineReservationController.class,
+        AssignmentController.class,
+        RoutePlacesController.class
+})
 @Import({SecurityConfig.class, JwtAuthFilter.class})
 class ApiAuthorizationTest {
 
@@ -50,6 +58,36 @@ class ApiAuthorizationTest {
 
     @MockBean
     private AssignmentService assignmentService;
+
+    @MockBean
+    private GeoapifyPlacesService geoapifyPlacesService;
+
+    @Test
+    void customerCanSearchForRealPlacesAlongRoute() throws Exception {
+        when(geoapifyPlacesService.findAlongRoute(org.mockito.ArgumentMatchers.any()))
+                .thenReturn(new RoutePlacesDto.Response(List.of(), "full"));
+
+        mockMvc.perform(post("/api/route-places")
+                        .with(user("customer").roles("CUSTOMER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"mode":"FULL","path":[{"lat":35.0,"lng":139.5},{"lat":35.3,"lng":139.8}]}
+                                """))
+                .andExpect(status().isOk());
+
+        verify(geoapifyPlacesService).findAlongRoute(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void unrelatedRoleCannotSearchForRoutePlaces() throws Exception {
+        mockMvc.perform(post("/api/route-places")
+                        .with(user("driver").roles("DRIVER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"mode":"FULL","path":[{"lat":35.0,"lng":139.5},{"lat":35.3,"lng":139.8}]}
+                                """))
+                .andExpect(status().isForbidden());
+    }
 
     @Test
     void customerCanReadLocations() throws Exception {
